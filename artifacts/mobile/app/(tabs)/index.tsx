@@ -84,7 +84,7 @@ export default function HomeScreen() {
               style={styles.flameImg}
               resizeMode="contain"
             />
-            <Text style={[styles.streakCount, { color: colors.foreground }]}>
+            <Text style={[styles.streakCount, { color: "#415168" }]}>
               {streak}
             </Text>
           </View>
@@ -103,7 +103,7 @@ export default function HomeScreen() {
             </Text>
             <View style={[styles.card, { backgroundColor: colors.card }]}>
               <View style={styles.cardHeader}>
-                <Text style={[styles.dayName, { color: colors.blue }]}>
+                <Text style={styles.dayName}>
                   {getDayName(
                     nextAlarm.days.findIndex(
                       (d, i) => d && i >= todayIndex
@@ -138,9 +138,7 @@ export default function HomeScreen() {
                   size={13}
                   color={colors.mutedForeground}
                 />
-                <Text
-                  style={[styles.ringsText, { color: colors.mutedForeground }]}
-                >
+                <Text style={styles.ringsText}>
                   {" "}
                   {getRingsIn(nextAlarm.hour, nextAlarm.minute, nextAlarm.isPM)}
                 </Text>
@@ -215,7 +213,7 @@ export default function HomeScreen() {
 
         {/* Today's Verse */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+          <Text style={[styles.sectionTitleSm, { color: colors.foreground }]}>
             Today's Verse
           </Text>
           <Text style={[styles.seeAll, { color: colors.mutedForeground }]}>
@@ -276,7 +274,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 14,
+    marginBottom: 18,
   },
   appTitle: {
     fontSize: 28,
@@ -285,6 +283,7 @@ const styles = StyleSheet.create({
   },
   streakBadge: {
     flexDirection: "row",
+    justifyContent: "flex-start",
     alignItems: "center",
     gap: 4,
     paddingHorizontal: 14,
@@ -309,8 +308,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Inter_400Regular",
     marginBottom: 12,
+  },
+  sectionTitleSm: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    marginBottom: 0,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -342,6 +346,7 @@ const styles = StyleSheet.create({
   dayName: {
     fontSize: 15,
     fontFamily: "Inter_600SemiBold",
+    color: "#415168",
   },
   timeRow: {
     flexDirection: "row",
@@ -366,6 +371,7 @@ const styles = StyleSheet.create({
   ringsText: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
+    color: "#415168",
   },
   miniCardsRow: {
     flexDirection: "row",
