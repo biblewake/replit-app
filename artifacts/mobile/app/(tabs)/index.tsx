@@ -194,21 +194,42 @@ export default function HomeScreen() {
             </View>
           </>
         ) : (
-          <Pressable
-            style={[styles.emptyCard, { backgroundColor: colors.card }]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              setShowAddAlarm(true);
-            }}
-          >
-            <Ionicons name="add-circle-outline" size={32} color={colors.mutedForeground} />
-            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-              No alarms set
+          <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
+            {/* Streak row */}
+            <View style={styles.emptyStreakRow}>
+              <Image
+                source={require("@/assets/images/flame.png")}
+                style={styles.emptyFlame}
+                resizeMode="contain"
+              />
+              <Text style={[styles.emptyStreakText, { color: colors.accent }]}>
+                {streak}-day streak
+              </Text>
+            </View>
+
+            {/* Heading */}
+            <Text style={[styles.emptyHeading, { color: colors.foreground }]}>
+              {streak === 0
+                ? "Set an alarm to start a streak"
+                : "Set an alarm to keep it alive"}
             </Text>
-            <Text style={[styles.emptySubText, { color: colors.mutedForeground }]}>
-              Tap to add your first alarm
-            </Text>
-          </Pressable>
+
+            {/* Subtitle */}
+            <Text style={styles.emptySubText}>Even no-verse counts</Text>
+
+            {/* Add Alarm button */}
+            <Pressable
+              style={styles.emptyAddBtn}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                setShowAddAlarm(true);
+              }}
+            >
+              <Text style={[styles.emptyAddBtnText, { color: colors.accent }]}>
+                + Add Alarm
+              </Text>
+            </Pressable>
+          </View>
         )}
 
         {/* Today's Verse */}
@@ -409,19 +430,54 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   emptyCard: {
-    borderRadius: 18,
-    padding: 32,
+    borderRadius: 20,
+    paddingVertical: 28,
+    paddingHorizontal: 24,
     alignItems: "center",
-    gap: 8,
+    gap: 4,
     marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  emptyText: {
-    fontSize: 17,
+  emptyStreakRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 6,
+  },
+  emptyFlame: {
+    width: 22,
+    height: 22,
+  },
+  emptyStreakText: {
+    fontSize: 15,
     fontFamily: "Inter_600SemiBold",
+  },
+  emptyHeading: {
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+    textAlign: "center",
+    marginBottom: 2,
   },
   emptySubText: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
+    color: "#415168",
+    marginBottom: 6,
+  },
+  emptyAddBtn: {
+    marginTop: 14,
+    backgroundColor: "#FFF3E8",
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 40,
+  },
+  emptyAddBtnText: {
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
   },
   verseCard: {
     borderRadius: 20,
