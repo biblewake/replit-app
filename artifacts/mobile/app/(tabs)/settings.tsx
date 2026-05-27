@@ -9,7 +9,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 
 import { useColors } from "@/hooks/useColors";
 
@@ -34,6 +35,13 @@ function SettingsRow({
   onPress,
   colors,
 }: SettingsRowProps) {
+  const handlePress = () => {
+    if (onPress) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      onPress();
+    }
+  };
+
   return (
     <Pressable
       style={({ pressed }) => [
@@ -48,7 +56,7 @@ function SettingsRow({
           borderBottomColor: colors.border,
         },
       ]}
-      onPress={onPress}
+      onPress={handlePress}
     >
       <View style={styles.rowLeft}>
         <View style={styles.iconWrap}>{icon}</View>
@@ -218,7 +226,10 @@ export default function SettingsScreen() {
             trailing={
               <Switch
                 value={darkMode}
-                onValueChange={setDarkMode}
+                onValueChange={(v) => {
+                  Haptics.selectionAsync();
+                  setDarkMode(v);
+                }}
                 trackColor={{ false: colors.border, true: colors.foreground }}
                 thumbColor="#fff"
               />

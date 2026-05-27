@@ -8,6 +8,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
 import { Alarm } from "@/context/AlarmContext";
 import { BibleVerse, BIBLE_VERSES } from "@/constants/verses";
@@ -63,12 +64,19 @@ export default function AlarmEditSheet({
   }, [alarm, visible]);
 
   const toggleDay = (i: number) => {
+    Haptics.selectionAsync();
     const next = [...days];
     next[i] = !next[i];
     setDays(next);
   };
 
+  const handleCancel = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
+    onClose();
+  };
+
   const handleSave = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     onSave({
       hour,
       minute,
@@ -84,9 +92,9 @@ export default function AlarmEditSheet({
 
   return (
     <>
-      <BottomSheet visible={visible && !showVersePicker} onClose={onClose} height={680}>
+      <BottomSheet visible={visible && !showVersePicker} onClose={handleCancel} height={680}>
         <View style={styles.header}>
-          <Pressable onPress={onClose} hitSlop={12}>
+          <Pressable onPress={handleCancel} hitSlop={12}>
             <Text style={[styles.cancel, { color: colors.mutedForeground }]}>
               Cancel
             </Text>
@@ -112,7 +120,10 @@ export default function AlarmEditSheet({
                 {HOURS.map((h) => (
                   <Pressable
                     key={h}
-                    onPress={() => setHour(h)}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setHour(h);
+                    }}
                     style={[
                       styles.wheelItem,
                       h === hour && {
@@ -143,7 +154,10 @@ export default function AlarmEditSheet({
                 {MINUTES.map((m) => (
                   <Pressable
                     key={m}
-                    onPress={() => setMinute(m)}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setMinute(m);
+                    }}
                     style={[
                       styles.wheelItem,
                       m === minute && {
@@ -170,7 +184,10 @@ export default function AlarmEditSheet({
                 {["AM", "PM"].map((p) => (
                   <Pressable
                     key={p}
-                    onPress={() => setIsPM(p === "PM")}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setIsPM(p === "PM");
+                    }}
                     style={[
                       styles.ampmBtn,
                       {
@@ -252,7 +269,10 @@ export default function AlarmEditSheet({
           </Text>
           <Pressable
             style={[styles.verseRow, { backgroundColor: colors.secondary }]}
-            onPress={() => setShowVersePicker(true)}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              setShowVersePicker(true);
+            }}
           >
             <View style={styles.verseRowContent}>
               <Ionicons name="book" size={18} color={colors.foreground} />
@@ -275,6 +295,7 @@ export default function AlarmEditSheet({
             <Pressable
               style={[styles.deleteBtn, { borderColor: colors.destructive + "40" }]}
               onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
                 onDelete();
                 onClose();
               }}

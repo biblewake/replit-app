@@ -7,8 +7,9 @@ import {
   TextInput,
   View,
 } from "react-native";
+import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
-import { BibleVerse, BIBLE_VERSES, VERSE_CATEGORIES } from "@/constants/verses";
+import { BibleVerse, BIBLE_VERSES } from "@/constants/verses";
 import BottomSheet from "@/components/BottomSheet";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -38,13 +39,18 @@ export default function VersePickerSheet({
     return matchesSearch && matchesCat;
   });
 
+  const handleClose = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
+    onClose();
+  };
+
   return (
-    <BottomSheet visible={visible} onClose={onClose} height={680}>
+    <BottomSheet visible={visible} onClose={handleClose} height={680}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.foreground }]}>
           Choose a Verse
         </Text>
-        <Pressable onPress={onClose} hitSlop={12}>
+        <Pressable onPress={handleClose} hitSlop={12}>
           <Ionicons name="close" size={24} color={colors.mutedForeground} />
         </Pressable>
       </View>
@@ -92,6 +98,7 @@ export default function VersePickerSheet({
                 },
               ]}
               onPress={() => {
+                Haptics.selectionAsync();
                 onSelect(item);
                 onClose();
               }}

@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import {
   Animated,
   Dimensions,
+  Easing,
   Modal,
   Platform,
   Pressable,
@@ -33,15 +34,16 @@ export default function BottomSheet({
   useEffect(() => {
     if (visible) {
       Animated.parallel([
-        Animated.spring(translateY, {
+        Animated.timing(translateY, {
           toValue: 0,
+          duration: 420,
+          easing: Easing.out(Easing.poly(4)),
           useNativeDriver: USE_NATIVE_DRIVER,
-          tension: 65,
-          friction: 11,
         }),
         Animated.timing(backdropOpacity, {
           toValue: 1,
-          duration: 250,
+          duration: 320,
+          easing: Easing.out(Easing.quad),
           useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ]).start();
@@ -49,12 +51,14 @@ export default function BottomSheet({
       Animated.parallel([
         Animated.timing(translateY, {
           toValue: SCREEN_HEIGHT,
-          duration: 280,
+          duration: 300,
+          easing: Easing.in(Easing.quad),
           useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(backdropOpacity, {
           toValue: 0,
-          duration: 230,
+          duration: 260,
+          easing: Easing.linear,
           useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ]).start();

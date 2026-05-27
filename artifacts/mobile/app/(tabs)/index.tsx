@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+  Image,
   ImageBackground,
   Platform,
   Pressable,
@@ -11,12 +12,12 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 
 import { useColors } from "@/hooks/useColors";
 import { useAlarms } from "@/context/AlarmContext";
 import WeekDots from "@/components/WeekDots";
 import AlarmEditSheet from "@/components/AlarmEditSheet";
-import VersePickerSheet from "@/components/VersePickerSheet";
 import { BIBLE_VERSES } from "@/constants/verses";
 
 function formatTime(hour: number, minute: number, isPM: boolean): string {
@@ -78,7 +79,11 @@ export default function HomeScreen() {
             Bible Wake
           </Text>
           <View style={[styles.streakBadge, { backgroundColor: colors.card }]}>
-            <Text style={styles.flameTxt}>🔥</Text>
+            <Image
+              source={require("@/assets/images/flame.png")}
+              style={styles.flameImg}
+              resizeMode="contain"
+            />
             <Text style={[styles.streakCount, { color: colors.foreground }]}>
               {streak}
             </Text>
@@ -86,32 +91,8 @@ export default function HomeScreen() {
         </View>
 
         {/* Week Dots */}
-        <View style={styles.weekRow}>
-          {["S", "M", "T", "W", "T", "F", "S"].map((l, i) => (
-            <View
-              key={i}
-              style={[
-                styles.dayDot,
-                {
-                  backgroundColor:
-                    i === todayIndex ? "transparent" : colors.secondary,
-                  borderWidth: i === todayIndex ? 2 : 0,
-                  borderColor:
-                    i === todayIndex ? colors.foreground : "transparent",
-                },
-              ]}
-            >
-              {i === todayIndex ? (
-                <Ionicons name="checkmark" size={14} color={colors.foreground} />
-              ) : (
-                <Text
-                  style={[styles.dayLetter, { color: colors.mutedForeground }]}
-                >
-                  {l}
-                </Text>
-              )}
-            </View>
-          ))}
+        <View style={styles.weekSection}>
+          <WeekDots activeDayIndex={todayIndex} />
         </View>
 
         {/* Next Wake Up */}
@@ -135,7 +116,10 @@ export default function HomeScreen() {
                 </Text>
                 <Switch
                   value={nextAlarm.enabled}
-                  onValueChange={() => toggleAlarm(nextAlarm.id)}
+                  onValueChange={() => {
+                    Haptics.selectionAsync();
+                    toggleAlarm(nextAlarm.id);
+                  }}
                   trackColor={{ false: colors.border, true: colors.success }}
                   thumbColor="#fff"
                 />
@@ -214,7 +198,10 @@ export default function HomeScreen() {
         ) : (
           <Pressable
             style={[styles.emptyCard, { backgroundColor: colors.card }]}
-            onPress={() => setShowAddAlarm(true)}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              setShowAddAlarm(true);
+            }}
           >
             <Ionicons name="add-circle-outline" size={32} color={colors.mutedForeground} />
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
@@ -237,7 +224,10 @@ export default function HomeScreen() {
         </View>
         <Pressable
           style={styles.verseCard}
-          onPress={() => setShowVerseDetail(true)}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            setShowVerseDetail(true);
+          }}
         >
           <ImageBackground
             source={require("@/assets/images/today_verse_bg.png")}
@@ -286,10 +276,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 14,
   },
   appTitle: {
-    fontSize: 34,
+    fontSize: 28,
     fontFamily: "Inter_700Bold",
     letterSpacing: -0.5,
   },
@@ -306,31 +296,19 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  flameTxt: {
-    fontSize: 16,
+  flameImg: {
+    width: 20,
+    height: 20,
   },
   streakCount: {
     fontSize: 16,
     fontFamily: "Inter_700Bold",
   },
-  weekRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  weekSection: {
     marginBottom: 28,
   },
-  dayDot: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  dayLetter: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-  },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 16,
     fontFamily: "Inter_700Bold",
     marginBottom: 12,
   },

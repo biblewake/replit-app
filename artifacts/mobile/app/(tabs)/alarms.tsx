@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 
 import { useColors } from "@/hooks/useColors";
 import { Alarm, useAlarms } from "@/context/AlarmContext";
@@ -70,8 +71,14 @@ export default function AlarmsScreen() {
         renderItem={({ item }) => (
           <AlarmCard
             alarm={item}
-            onToggle={() => toggleAlarm(item.id)}
-            onPress={() => setEditingAlarm(item)}
+            onToggle={() => {
+              Haptics.selectionAsync();
+              toggleAlarm(item.id);
+            }}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              setEditingAlarm(item);
+            }}
           />
         )}
       />
@@ -85,7 +92,10 @@ export default function AlarmsScreen() {
             bottom: 28 + insets.bottom,
           },
         ]}
-        onPress={() => setShowNewAlarm(true)}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          setShowNewAlarm(true);
+        }}
       >
         <Ionicons name="add" size={28} color={colors.primaryForeground} />
       </Pressable>
