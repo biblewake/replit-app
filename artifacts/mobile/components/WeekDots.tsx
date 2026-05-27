@@ -31,9 +31,9 @@ export default function WeekDots({
                 width: dotSize,
                 height: dotSize,
                 borderRadius: dotSize / 2,
-                backgroundColor: isActive ? "transparent" : colors.secondary,
+                backgroundColor: "#E2E9F1",
                 borderWidth: isActive ? 2 : 0,
-                borderColor: isActive ? colors.foreground : "transparent",
+                borderColor: isActive ? "#ed5b0c" : "transparent",
               },
             ]}
           >
