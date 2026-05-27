@@ -1,0 +1,14 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "hfmrPh1CdrO1Xj9kgwAEd"
+uri = "file://artifacts/mobile/assets/images/icon.png"
+type = "image"
+title = "bible wake app icon"
+
+[[generated]]
+id = "kdepEAYhN0judH2L8h_oD"
+uri = "file://artifacts/mobile/assets/images/today_verse_bg.png"
+type = "image"
+title = "today verse card background"
