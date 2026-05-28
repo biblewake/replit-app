@@ -17,6 +17,9 @@ export interface Alarm {
   verseRef: string;
   verseText: string;
   enabled: boolean;
+  alarmType?: "verse" | "normal";
+  scheduleType?: "scheduled" | "one-time";
+  wakeUpCheck?: boolean;
 }
 
 const STORAGE_KEY = "@bible_wake_alarms";
@@ -37,6 +40,9 @@ const SAMPLE_ALARMS: Alarm[] = [
     verseText:
       "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.",
     enabled: true,
+    alarmType: "verse",
+    scheduleType: "scheduled",
+    wakeUpCheck: false,
   },
 ];
 

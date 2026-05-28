@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  Image,
   Pressable,
   StyleSheet,
   Switch,
@@ -8,7 +9,6 @@ import {
 } from "react-native";
 import { useColors } from "@/hooks/useColors";
 import { Alarm } from "@/context/AlarmContext";
-import { Ionicons } from "@expo/vector-icons";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -97,7 +97,11 @@ export default function AlarmCard({ alarm, onToggle, onPress }: AlarmCardProps) 
         <Text style={[styles.dot, { color: colors.mutedForeground }]}>
           {" · "}
         </Text>
-        <Ionicons name="book" size={13} color={colors.mutedForeground} />
+        <Image
+          source={require("../assets/images/bible_1.png")}
+          style={styles.bibleIcon}
+          resizeMode="contain"
+        />
         <Text style={[styles.verse, { color: colors.mutedForeground }]}>
           {" "}{alarm.verseRef}
         </Text>
@@ -153,6 +157,10 @@ const styles = StyleSheet.create({
   },
   dot: {
     fontSize: 13,
+  },
+  bibleIcon: {
+    width: 14,
+    height: 14,
   },
   verse: {
     fontSize: 13,

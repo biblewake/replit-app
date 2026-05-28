@@ -1,0 +1,2 @@
+- [Nested Modals on Native](nested-modals-native.md) — separate Modal-based bottom sheets don't stack reliably in Expo native; use a single Modal with internal Animated.View panels instead.
+- [FAB Animation Management](fab-animation-management.md) — always stop current animation and reset Animated.Values before starting a new sequence; use a ref to track the active CompositeAnimation.
