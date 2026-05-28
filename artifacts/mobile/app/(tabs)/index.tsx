@@ -16,8 +16,10 @@ import * as Haptics from "expo-haptics";
 
 import { useColors } from "@/hooks/useColors";
 import { useAlarms } from "@/context/AlarmContext";
+import { useAlarmPermission } from "@/hooks/useAlarmPermission";
 import WeekDots from "@/components/WeekDots";
 import AlarmEditSheet from "@/components/AlarmEditSheet";
+import AlarmPermissionSheet from "@/components/AlarmPermissionSheet";
 import { BIBLE_VERSES } from "@/constants/verses";
 
 function formatTime(hour: number, minute: number, isPM: boolean): string {
@@ -54,8 +56,10 @@ export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { alarms, toggleAlarm, addAlarm, streak, getNextAlarm } = useAlarms();
+  const { hasPermission } = useAlarmPermission();
   const [showAddAlarm, setShowAddAlarm] = useState(false);
   const [showVerseDetail, setShowVerseDetail] = useState(false);
+  const [showPermissionSheet, setShowPermissionSheet] = useState(false);
 
   const todayIndex = new Date().getDay();
   const nextAlarm = getNextAlarm();
@@ -95,6 +99,31 @@ export default function HomeScreen() {
           <WeekDots activeDayIndex={todayIndex} />
         </View>
 
+        {/* Permission Warning Banner */}
+        {!hasPermission && (
+          <Pressable
+            style={[styles.permBanner, { backgroundColor: "#FF3B3012", borderColor: "#FF3B3030" }]}
+            onPress={() => setShowPermissionSheet(true)}
+          >
+            <View style={styles.permBannerIcon}>
+              <Image
+                source={require("@/assets/images/alarm_icon.png")}
+                style={styles.permBannerImg}
+                resizeMode="contain"
+              />
+            </View>
+            <View style={styles.permBannerText}>
+              <Text style={[styles.permBannerTitle, { color: "#FF3B30" }]}>
+                Alarm Access Denied
+              </Text>
+              <Text style={[styles.permBannerSub, { color: colors.mutedForeground }]}>
+                Tap to grant permission and enable alarms
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="#FF3B30" />
+          </Pressable>
+        )}
+
         {/* Next Wake Up */}
         {nextAlarm ? (
           <>
@@ -117,6 +146,10 @@ export default function HomeScreen() {
                 <Switch
                   value={nextAlarm.enabled}
                   onValueChange={() => {
+                    if (!hasPermission) {
+                      setShowPermissionSheet(true);
+                      return;
+                    }
                     Haptics.selectionAsync();
                     toggleAlarm(nextAlarm.id);
                   }}
@@ -222,6 +255,10 @@ export default function HomeScreen() {
               style={styles.emptyAddBtn}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                if (!hasPermission) {
+                  setShowPermissionSheet(true);
+                  return;
+                }
                 setShowAddAlarm(true);
               }}
             >
@@ -279,6 +316,10 @@ export default function HomeScreen() {
         visible={showAddAlarm}
         onClose={() => setShowAddAlarm(false)}
         onSave={addAlarm}
+      />
+      <AlarmPermissionSheet
+        visible={showPermissionSheet}
+        onClose={() => setShowPermissionSheet(false)}
       />
     </View>
   );
@@ -534,5 +575,40 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "Inter_600SemiBold",
     lineHeight: 20,
+  },
+  permBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  permBannerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#FF3B3020",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  permBannerImg: {
+    width: 20,
+    height: 20,
+  },
+  permBannerText: {
+    flex: 1,
+    gap: 2,
+  },
+  permBannerTitle: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+  },
+  permBannerSub: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
   },
 });

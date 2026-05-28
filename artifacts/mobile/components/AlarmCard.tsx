@@ -16,6 +16,7 @@ interface AlarmCardProps {
   alarm: Alarm;
   onToggle: () => void;
   onPress: () => void;
+  onPermissionDenied?: () => void;
 }
 
 function formatTime(alarm: Alarm): string {
@@ -47,7 +48,7 @@ function formatDays(days: boolean[]): string {
   return selected.join(", ");
 }
 
-export default function AlarmCard({ alarm, onToggle, onPress }: AlarmCardProps) {
+export default function AlarmCard({ alarm, onToggle, onPress, onPermissionDenied }: AlarmCardProps) {
   const colors = useColors();
 
   return (
@@ -85,7 +86,13 @@ export default function AlarmCard({ alarm, onToggle, onPress }: AlarmCardProps) 
         </View>
         <Switch
           value={alarm.enabled}
-          onValueChange={onToggle}
+          onValueChange={() => {
+            if (onPermissionDenied) {
+              onPermissionDenied();
+              return;
+            }
+            onToggle();
+          }}
           trackColor={{ false: colors.border, true: colors.success }}
           thumbColor="#fff"
         />

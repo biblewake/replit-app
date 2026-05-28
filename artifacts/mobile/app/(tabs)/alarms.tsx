@@ -15,8 +15,10 @@ import * as Haptics from "expo-haptics";
 
 import { useColors } from "@/hooks/useColors";
 import { Alarm, useAlarms } from "@/context/AlarmContext";
+import { useAlarmPermission } from "@/hooks/useAlarmPermission";
 import AlarmCard from "@/components/AlarmCard";
 import AlarmEditSheet from "@/components/AlarmEditSheet";
+import AlarmPermissionSheet from "@/components/AlarmPermissionSheet";
 
 const TAB_BAR_HEIGHT = Platform.OS === "web" ? 84 : 49;
 
@@ -24,10 +26,12 @@ export default function AlarmsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { alarms, addAlarm, updateAlarm, deleteAlarm, toggleAlarm } = useAlarms();
+  const { hasPermission } = useAlarmPermission();
   const [editingAlarm, setEditingAlarm] = useState<Alarm | null>(null);
   const [showNewAlarm, setShowNewAlarm] = useState(false);
   const [newAlarmType, setNewAlarmType] = useState<"verse" | "normal">("verse");
   const [fabOpen, setFabOpen] = useState(false);
+  const [showPermissionSheet, setShowPermissionSheet] = useState(false);
 
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const pill1TranslateY = useRef(new Animated.Value(40)).current;
@@ -42,6 +46,10 @@ export default function AlarmsScreen() {
   const openFab = () => {
     if (fabOpen) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (!hasPermission) {
+      setShowPermissionSheet(true);
+      return;
+    }
 
     currentAnim.current?.stop();
     overlayOpacity.setValue(0);
@@ -155,6 +163,10 @@ export default function AlarmsScreen() {
 
   const handlePickAlarmType = (type: "verse" | "normal") => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (!hasPermission) {
+      closeFab(() => setShowPermissionSheet(true));
+      return;
+    }
     closeFab(() => {
       setNewAlarmType(type);
       setShowNewAlarm(true);
@@ -222,6 +234,7 @@ export default function AlarmsScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               setEditingAlarm(item);
             }}
+            onPermissionDenied={!hasPermission ? () => setShowPermissionSheet(true) : undefined}
           />
         )}
       />
@@ -314,6 +327,10 @@ export default function AlarmsScreen() {
         alarm={editingAlarm}
         onSave={handleSaveEdit}
         onDelete={handleDelete}
+      />
+      <AlarmPermissionSheet
+        visible={showPermissionSheet}
+        onClose={() => setShowPermissionSheet(false)}
       />
     </View>
   );
