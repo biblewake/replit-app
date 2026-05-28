@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import {
+  Alert,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -13,6 +15,8 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
 import { useColors } from "@/hooks/useColors";
+import { useTheme } from "@/context/ThemeContext";
+import TroubleshootSheet from "@/components/TroubleshootSheet";
 
 interface SettingsRowProps {
   icon: React.ReactNode;
@@ -88,10 +92,17 @@ function SettingsRow({
 
 export default function SettingsScreen() {
   const colors = useColors();
+  const { colorScheme, toggleColorScheme } = useTheme();
   const insets = useSafeAreaInsets();
-  const [darkMode, setDarkMode] = useState(false);
+
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [troubleshootVisible, setTroubleshootVisible] = useState(false);
 
   const paddingTop = insets.top + (Platform.OS === "web" ? 67 : 16);
+
+  const openAppSettings = () => Linking.openURL("app-settings:");
+  const openSupport = () =>
+    Linking.openURL("mailto:support@trybiblewake.com");
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -106,25 +117,19 @@ export default function SettingsScreen() {
           Settings
         </Text>
 
+        {/* Alarm */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
           Alarm
         </Text>
-        <View style={[styles.group, { backgroundColor: colors.card }]}>
+        <View
+          style={[
+            styles.group,
+            { backgroundColor: colors.card, shadowColor: colors.foreground },
+          ]}
+        >
           <SettingsRow
             colors={colors}
             isFirst
-            icon={
-              <Ionicons
-                name="settings-outline"
-                size={20}
-                color={colors.foreground}
-              />
-            }
-            label="Alarm Settings"
-            onPress={() => {}}
-          />
-          <SettingsRow
-            colors={colors}
             icon={
               <Ionicons
                 name="volume-medium-outline"
@@ -141,7 +146,7 @@ export default function SettingsScreen() {
                 color={colors.mutedForeground}
               />
             }
-            onPress={() => {}}
+            onPress={openAppSettings}
           />
           <SettingsRow
             colors={colors}
@@ -153,7 +158,7 @@ export default function SettingsScreen() {
               />
             }
             label="Alarm not working?"
-            onPress={() => {}}
+            onPress={() => setTroubleshootVisible(true)}
           />
           <SettingsRow
             colors={colors}
@@ -166,14 +171,20 @@ export default function SettingsScreen() {
               />
             }
             label="Report a Bug"
-            onPress={() => {}}
+            onPress={openSupport}
           />
         </View>
 
+        {/* Preferences */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
           Preferences
         </Text>
-        <View style={[styles.group, { backgroundColor: colors.card }]}>
+        <View
+          style={[
+            styles.group,
+            { backgroundColor: colors.card, shadowColor: colors.foreground },
+          ]}
+        >
           <SettingsRow
             colors={colors}
             isFirst
@@ -185,32 +196,20 @@ export default function SettingsScreen() {
               />
             }
             label="Notifications"
-            onPress={() => {}}
-          />
-          <SettingsRow
-            colors={colors}
-            icon={
-              <Ionicons
-                name="globe-outline"
-                size={20}
-                color={colors.foreground}
+            trailing={
+              <Switch
+                value={notificationsEnabled}
+                onValueChange={(v) => {
+                  Haptics.selectionAsync();
+                  setNotificationsEnabled(v);
+                  if (v) {
+                    openAppSettings();
+                  }
+                }}
+                trackColor={{ false: colors.border, true: colors.blue }}
+                thumbColor="#fff"
               />
             }
-            label="Language"
-            trailing={
-              <View style={styles.languageTrail}>
-                <Text style={styles.flagEmoji}>🇺🇸</Text>
-                <Text style={[styles.languageText, { color: colors.mutedForeground }]}>
-                  English
-                </Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={17}
-                  color={colors.mutedForeground}
-                />
-              </View>
-            }
-            onPress={() => {}}
           />
           <SettingsRow
             colors={colors}
@@ -225,22 +224,33 @@ export default function SettingsScreen() {
             label="Dark Mode"
             trailing={
               <Switch
-                value={darkMode}
-                onValueChange={(v) => {
+                value={colorScheme === "dark"}
+                onValueChange={() => {
                   Haptics.selectionAsync();
-                  setDarkMode(v);
+                  toggleColorScheme();
                 }}
-                trackColor={{ false: colors.border, true: colors.foreground }}
+                trackColor={{ false: colors.border, true: colors.blue }}
                 thumbColor="#fff"
               />
             }
           />
         </View>
+        {!notificationsEnabled && (
+          <Text style={styles.notifWarning}>
+            Enable notifications to receive alarms even when the app is closed.
+          </Text>
+        )}
 
+        {/* About */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
           About
         </Text>
-        <View style={[styles.group, { backgroundColor: colors.card }]}>
+        <View
+          style={[
+            styles.group,
+            { backgroundColor: colors.card, shadowColor: colors.foreground },
+          ]}
+        >
           <SettingsRow
             colors={colors}
             isFirst
@@ -270,7 +280,9 @@ export default function SettingsScreen() {
               />
             }
             label="Privacy Policy"
-            onPress={() => {}}
+            onPress={() =>
+              Linking.openURL("https://trybiblewake.com/privacy-policy")
+            }
           />
           <SettingsRow
             colors={colors}
@@ -283,10 +295,103 @@ export default function SettingsScreen() {
               />
             }
             label="Terms of Service"
-            onPress={() => {}}
+            onPress={() => Linking.openURL("https://biblewake.com/terms")}
           />
         </View>
+
+        {/* Subscription */}
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+          Subscription
+        </Text>
+        <View
+          style={[
+            styles.group,
+            { backgroundColor: colors.card, shadowColor: colors.foreground },
+          ]}
+        >
+          <SettingsRow
+            colors={colors}
+            isFirst
+            icon={
+              <Ionicons
+                name="close-circle-outline"
+                size={20}
+                color={colors.destructive}
+              />
+            }
+            label="Cancel Subscription"
+            onPress={() => {
+              Alert.alert(
+                "Cancel Subscription",
+                "This will take you to manage your subscription. Are you sure?",
+                [
+                  { text: "Not now", style: "cancel" },
+                  {
+                    text: "Continue",
+                    style: "destructive",
+                    onPress: () => {},
+                  },
+                ]
+              );
+            }}
+          />
+          <SettingsRow
+            colors={colors}
+            isLast
+            icon={
+              <Ionicons
+                name="card-outline"
+                size={20}
+                color={colors.foreground}
+              />
+            }
+            label="Manage Subscription"
+            onPress={() => {
+              Alert.alert(
+                "Manage Subscription",
+                "Subscription management coming soon.",
+                [{ text: "OK" }]
+              );
+            }}
+          />
+        </View>
+
+        {/* Delete Account */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.deleteBtn,
+            { opacity: pressed ? 0.8 : 1 },
+          ]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            Alert.alert(
+              "Delete Account",
+              "This will permanently delete your account and all associated data. This action cannot be undone.",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Delete Account",
+                  style: "destructive",
+                  onPress: () => {
+                    Alert.alert(
+                      "Account Deletion",
+                      "Account deletion is not yet available. Please contact support@trybiblewake.com for assistance.",
+                      [{ text: "OK" }]
+                    );
+                  },
+                },
+              ]
+            );
+          }}
+        >
+          <Text style={styles.deleteBtnText}>Delete Account</Text>
+        </Pressable>
       </ScrollView>
+
+      <TroubleshootSheet
+        visible={troubleshootVisible}
+        onClose={() => setTroubleshootVisible(false)}
+      />
     </View>
   );
 }
@@ -312,12 +417,11 @@ const styles = StyleSheet.create({
   },
   group: {
     borderRadius: 16,
-    marginBottom: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    marginBottom: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
     overflow: "hidden",
   },
   row: {
@@ -352,20 +456,29 @@ const styles = StyleSheet.create({
     marginTop: 2,
     lineHeight: 16,
   },
-  languageTrail: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  flagEmoji: {
-    fontSize: 16,
-  },
-  languageText: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-  },
   versionText: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
+  },
+  notifWarning: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: "#FF3B30",
+    marginTop: 4,
+    marginBottom: 16,
+    marginLeft: 4,
+    lineHeight: 16,
+  },
+  deleteBtn: {
+    backgroundColor: "#FF3B30",
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  deleteBtnText: {
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFFFFF",
   },
 });
