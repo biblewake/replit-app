@@ -16,6 +16,7 @@ interface BottomSheetProps {
   onClose: () => void;
   children: React.ReactNode;
   height?: number | "auto";
+  backgroundColor?: string;
 }
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
@@ -26,8 +27,10 @@ export default function BottomSheet({
   onClose,
   children,
   height = SCREEN_HEIGHT * 0.65,
+  backgroundColor,
 }: BottomSheetProps) {
   const colors = useColors();
+  const sheetBg = backgroundColor ?? colors.card;
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
 
@@ -86,7 +89,7 @@ export default function BottomSheet({
             styles.sheet,
             {
               height: sheetHeight,
-              backgroundColor: colors.card,
+              backgroundColor: sheetBg,
               transform: [{ translateY }],
             },
           ]}

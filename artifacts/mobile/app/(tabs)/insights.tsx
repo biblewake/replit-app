@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -8,10 +9,12 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 
 import { useColors } from "@/hooks/useColors";
 import { useAlarms } from "@/context/AlarmContext";
 import RecitationChart from "@/components/RecitationChart";
+import MilestonesSheet from "@/components/MilestonesSheet";
 
 const DAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
 const TODAY_INDEX = new Date().getDay();
@@ -46,6 +49,7 @@ export default function InsightsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { streak } = useAlarms();
+  const [showMilestones, setShowMilestones] = useState(false);
 
   const paddingTop = insets.top + (Platform.OS === "web" ? 67 : 16);
 
@@ -68,7 +72,13 @@ export default function InsightsScreen() {
 
         <View style={styles.topRow}>
           {/* Day Streak Card */}
-          <View style={[styles.streakCard, { backgroundColor: colors.card }]}>
+          <Pressable
+            style={[styles.streakCard, { backgroundColor: colors.card }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowMilestones(true);
+            }}
+          >
             <View style={styles.flameContainer}>
               <Text style={styles.flameEmoji}>🔥</Text>
             </View>
@@ -104,10 +114,16 @@ export default function InsightsScreen() {
                 </View>
               ))}
             </View>
-          </View>
+          </Pressable>
 
           {/* Badges Card */}
-          <View style={[styles.badgesCard, { backgroundColor: colors.card }]}>
+          <Pressable
+            style={[styles.badgesCard, { backgroundColor: colors.card }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowMilestones(true);
+            }}
+          >
             <View style={styles.badgeHexagon}>
               <View style={[styles.hexBg, { backgroundColor: "#2A2A3E" }]}>
                 <Text style={styles.hexNumber}>1</Text>
@@ -127,7 +143,7 @@ export default function InsightsScreen() {
                 />
               </View>
             </View>
-          </View>
+          </Pressable>
         </View>
 
         {/* Stats Grid */}
@@ -230,6 +246,12 @@ export default function InsightsScreen() {
           <RecitationChart />
         </View>
       </ScrollView>
+
+      <MilestonesSheet
+        visible={showMilestones}
+        onClose={() => setShowMilestones(false)}
+        streak={streak}
+      />
     </View>
   );
 }

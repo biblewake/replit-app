@@ -20,6 +20,7 @@ import { useAlarmPermission } from "@/hooks/useAlarmPermission";
 import WeekDots from "@/components/WeekDots";
 import AlarmEditSheet from "@/components/AlarmEditSheet";
 import AlarmPermissionSheet from "@/components/AlarmPermissionSheet";
+import MilestonesSheet from "@/components/MilestonesSheet";
 import { BIBLE_VERSES } from "@/constants/verses";
 
 function formatTime(hour: number, minute: number, isPM: boolean): string {
@@ -60,6 +61,7 @@ export default function HomeScreen() {
   const [showAddAlarm, setShowAddAlarm] = useState(false);
   const [showVerseDetail, setShowVerseDetail] = useState(false);
   const [showPermissionSheet, setShowPermissionSheet] = useState(false);
+  const [showMilestones, setShowMilestones] = useState(false);
 
   const todayIndex = new Date().getDay();
   const nextAlarm = getNextAlarm();
@@ -82,7 +84,13 @@ export default function HomeScreen() {
           <Text style={[styles.appTitle, { color: colors.foreground }]}>
             Bible Wake
           </Text>
-          <View style={[styles.streakBadge, { backgroundColor: colors.card }]}>
+          <Pressable
+            style={[styles.streakBadge, { backgroundColor: colors.card }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowMilestones(true);
+            }}
+          >
             <Image
               source={require("@/assets/images/flame.png")}
               style={styles.flameImg}
@@ -91,7 +99,7 @@ export default function HomeScreen() {
             <Text style={[styles.streakCount, { color: "#415168" }]}>
               {streak}
             </Text>
-          </View>
+          </Pressable>
         </View>
 
         {/* Week Dots */}
@@ -229,7 +237,13 @@ export default function HomeScreen() {
         ) : (
           <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
             {/* Streak row */}
-            <View style={styles.emptyStreakRow}>
+            <Pressable
+              style={styles.emptyStreakRow}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setShowMilestones(true);
+              }}
+            >
               <Image
                 source={require("@/assets/images/flame.png")}
                 style={styles.emptyFlame}
@@ -238,7 +252,7 @@ export default function HomeScreen() {
               <Text style={[styles.emptyStreakText, { color: colors.accent }]}>
                 {streak}-day streak
               </Text>
-            </View>
+            </Pressable>
 
             {/* Heading */}
             <Text style={[styles.emptyHeading, { color: colors.foreground }]}>
@@ -320,6 +334,11 @@ export default function HomeScreen() {
       <AlarmPermissionSheet
         visible={showPermissionSheet}
         onClose={() => setShowPermissionSheet(false)}
+      />
+      <MilestonesSheet
+        visible={showMilestones}
+        onClose={() => setShowMilestones(false)}
+        streak={streak}
       />
     </View>
   );
