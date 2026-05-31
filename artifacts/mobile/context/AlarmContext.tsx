@@ -23,6 +23,7 @@ export interface Alarm {
 }
 
 const STORAGE_KEY = "@bible_wake_alarms";
+const LONGEST_STREAK_KEY = "@bible_wake_longest_streak";
 
 function generateId(): string {
   return Date.now().toString() + Math.random().toString(36).substr(2, 9);
@@ -54,6 +55,7 @@ interface AlarmContextType {
   toggleAlarm: (id: string) => void;
   getNextAlarm: () => Alarm | null;
   streak: number;
+  longestStreak: number;
 }
 
 const AlarmContext = createContext<AlarmContextType>({
@@ -64,11 +66,15 @@ const AlarmContext = createContext<AlarmContextType>({
   toggleAlarm: () => {},
   getNextAlarm: () => null,
   streak: 1,
+  longestStreak: 1,
 });
 
 export function AlarmProvider({ children }: { children: React.ReactNode }) {
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [longestStreak, setLongestStreak] = useState(1);
+
+  const streak = 1;
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
@@ -81,6 +87,14 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
       })
       .catch(() => setAlarms(SAMPLE_ALARMS))
       .finally(() => setLoaded(true));
+
+    AsyncStorage.getItem(LONGEST_STREAK_KEY)
+      .then((val) => {
+        if (val !== null) {
+          setLongestStreak(parseInt(val, 10));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -90,6 +104,13 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
       );
     }
   }, [alarms, loaded]);
+
+  useEffect(() => {
+    if (streak > longestStreak) {
+      setLongestStreak(streak);
+      AsyncStorage.setItem(LONGEST_STREAK_KEY, String(streak)).catch(() => {});
+    }
+  }, [streak, longestStreak]);
 
   const addAlarm = useCallback((alarm: Omit<Alarm, "id">) => {
     setAlarms((prev) => [...prev, { ...alarm, id: generateId() }]);
@@ -167,7 +188,8 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
         deleteAlarm,
         toggleAlarm,
         getNextAlarm,
-        streak: 1,
+        streak,
+        longestStreak,
       }}
     >
       {children}

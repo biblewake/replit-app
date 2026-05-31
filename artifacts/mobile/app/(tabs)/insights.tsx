@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -8,16 +9,74 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
+import { Ionicons } from "@expo/vector-icons";
 
 import { useColors } from "@/hooks/useColors";
 import { useAlarms } from "@/context/AlarmContext";
-import RecitationChart from "@/components/RecitationChart";
-import MilestonesSheet from "@/components/MilestonesSheet";
+import HeatmapCalendar from "@/components/HeatmapCalendar";
+import BottomSheet from "@/components/BottomSheet";
 
-const DAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
-const TODAY_INDEX = new Date().getDay();
+interface MemorizedVerse {
+  ref: string;
+  memorizedPct: number;
+  completions: number;
+}
+
+const PLACEHOLDER_VERSES: MemorizedVerse[] = [
+  { ref: "John 3:16", memorizedPct: 70, completions: 12 },
+  { ref: "Acts 5:16", memorizedPct: 50, completions: 2 },
+  { ref: "Romans 8:28", memorizedPct: 85, completions: 7 },
+];
+
+const AVATAR_COLORS = [
+  "#A8E6CF", "#FFD3B6", "#FFAAA5", "#B5EAD7",
+  "#C7CEEA", "#FFDAC1", "#E2F0CB", "#F0E6EF",
+];
+
+function getAvatarColor(ref: string): string {
+  const idx = ref.charCodeAt(0) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[idx];
+}
+
+function VerseCard({ verse, colors }: { verse: MemorizedVerse; colors: ReturnType<typeof useColors> }) {
+  const firstLetter = verse.ref.charAt(0).toUpperCase();
+  const avatarColor = getAvatarColor(verse.ref);
+
+  return (
+    <View style={[styles.verseCard, { backgroundColor: colors.card }]}>
+      <View style={[styles.verseAvatar, { backgroundColor: avatarColor }]}>
+        <Text style={styles.verseAvatarLetter}>{firstLetter}</Text>
+      </View>
+      <View style={styles.verseContent}>
+        <Text style={[styles.verseRef, { color: colors.foreground }]}>
+          {verse.ref}
+        </Text>
+        <View style={styles.verseStats}>
+          <View style={styles.verseStat}>
+            <Image
+              source={require("@/assets/images/heart_1780185736902.png")}
+              style={styles.verseStatIcon}
+              resizeMode="contain"
+            />
+            <Text style={[styles.verseStatText, { color: colors.mutedForeground }]}>
+              Memorized: {verse.memorizedPct}%
+            </Text>
+          </View>
+          <View style={styles.verseStat}>
+            <Image
+              source={require("@/assets/images/growth_1780185736903.png")}
+              style={styles.verseStatIcon}
+              resizeMode="contain"
+            />
+            <Text style={[styles.verseStatText, { color: colors.mutedForeground }]}>
+              Completions: {verse.completions}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
 
 function StatCell({
   icon,
@@ -48,10 +107,13 @@ function StatCell({
 export default function InsightsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { streak } = useAlarms();
-  const [showMilestones, setShowMilestones] = useState(false);
+  const { streak, longestStreak } = useAlarms();
+  const [showMemoryInfo, setShowMemoryInfo] = useState(false);
 
   const paddingTop = insets.top + (Platform.OS === "web" ? 67 : 16);
+
+  const activeDays = useMemo<Set<string>>(() => new Set(), []);
+  const successfulWakeUps = activeDays.size;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -70,83 +132,58 @@ export default function InsightsScreen() {
           STATS
         </Text>
 
-        <View style={styles.topRow}>
-          {/* Day Streak Card */}
-          <Pressable
-            style={[styles.streakCard, { backgroundColor: colors.card }]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setShowMilestones(true);
-            }}
-          >
-            <View style={styles.flameContainer}>
-              <Text style={styles.flameEmoji}>🔥</Text>
-            </View>
-            <Text style={[styles.streakNumber, { color: colors.foreground }]}>
-              {streak}
+        {/* Heatmap Card */}
+        <View style={[styles.heatmapCard, { backgroundColor: colors.card }]}>
+          <View style={styles.heatmapHeadingRow}>
+            <Text style={[styles.heatmapCount, { color: colors.foreground }]}>
+              {successfulWakeUps} Successful Wake-ups
             </Text>
-            <Text style={[styles.streakLabel, { color: colors.mutedForeground }]}>
-              Day Streak
+            <Text style={[styles.heatmapRange, { color: colors.mutedForeground }]}>
+              Last 12 months
             </Text>
-            <View style={styles.weekDots}>
-              {DAY_LETTERS.map((l, i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.weekDot,
-                    {
-                      backgroundColor:
-                        i === TODAY_INDEX ? "transparent" : colors.secondary,
-                      borderWidth: i === TODAY_INDEX ? 1.5 : 0,
-                      borderColor: i === TODAY_INDEX ? colors.foreground : "transparent",
-                    },
-                  ]}
-                >
-                  {i === TODAY_INDEX ? (
-                    <Ionicons name="checkmark" size={9} color={colors.foreground} />
-                  ) : (
-                    <Text
-                      style={[styles.weekDotLetter, { color: colors.mutedForeground }]}
-                    >
-                      {l}
-                    </Text>
-                  )}
-                </View>
-              ))}
-            </View>
-          </Pressable>
-
-          {/* Badges Card */}
-          <Pressable
-            style={[styles.badgesCard, { backgroundColor: colors.card }]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setShowMilestones(true);
-            }}
-          >
-            <View style={styles.badgeHexagon}>
-              <View style={[styles.hexBg, { backgroundColor: "#2A2A3E" }]}>
-                <Text style={styles.hexNumber}>1</Text>
-              </View>
-            </View>
-            <Text style={[styles.badgeLabel, { color: colors.foreground }]}>
-              Badges Earned
-            </Text>
-            <View style={styles.badgeIconRow}>
-              <View
-                style={[styles.badgeIcon, { backgroundColor: "#FF9500" + "22" }]}
-              >
-                <MaterialCommunityIcons
-                  name="hexagon"
-                  size={28}
-                  color="#FF9500"
-                />
-              </View>
-            </View>
-          </Pressable>
+          </View>
+          <Text style={[styles.heatmapSubtext, { color: colors.mutedForeground }]}>
+            Every successful wake-up is a verse recited
+          </Text>
+          <HeatmapCalendar activeDays={activeDays} />
         </View>
 
-        {/* Stats Grid */}
+        {/* Streak Cards Row */}
+        <View style={styles.streakRow}>
+          <View style={[styles.streakCard, { backgroundColor: colors.card }]}>
+            <Image
+              source={require("@/assets/images/flame_1780182885546.png")}
+              style={styles.streakIcon}
+              resizeMode="contain"
+            />
+            <View style={styles.streakTextCol}>
+              <Text style={[styles.streakNumber, { color: colors.foreground }]}>
+                {streak}
+              </Text>
+              <Text style={[styles.streakLabel, { color: colors.mutedForeground }]}>
+                Day Streak
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.streakCard, { backgroundColor: colors.card }]}>
+            <Image
+              source={require("@/assets/images/medal_1780184643296.png")}
+              style={styles.streakIcon}
+              resizeMode="contain"
+            />
+            <View style={styles.streakTextCol}>
+              <Text style={[styles.streakNumber, { color: colors.foreground }]}>
+                {longestStreak}
+              </Text>
+              <Text style={[styles.streakLabel, { color: colors.mutedForeground }]}>
+                Longest Streak
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Stats Grid (moved below streak row) */}
         <View style={[styles.statsGrid, { backgroundColor: colors.card }]}>
           <View style={styles.statsRow}>
             <StatCell
@@ -205,9 +242,19 @@ export default function InsightsScreen() {
           </View>
         </View>
 
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
-          MEMORY
-        </Text>
+        {/* MEMORY section */}
+        <View style={styles.sectionLabelRow}>
+          <Text style={[styles.sectionLabel, styles.sectionLabelNoMargin, { color: colors.mutedForeground }]}>
+            MEMORY
+          </Text>
+          <Pressable
+            style={[styles.helpIcon, { backgroundColor: colors.secondary }]}
+            onPress={() => setShowMemoryInfo(true)}
+            hitSlop={8}
+          >
+            <Ionicons name="help" size={11} color={colors.mutedForeground} />
+          </Pressable>
+        </View>
 
         <View style={[styles.statsGrid, { backgroundColor: colors.card }]}>
           <View style={styles.statsRow}>
@@ -239,19 +286,42 @@ export default function InsightsScreen() {
           </View>
         </View>
 
-        <Text style={[styles.chartTitle, { color: colors.foreground }]}>
-          Recitation Trend
+        {/* MEMORIZED VERSES section */}
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+          MEMORIZED VERSES
         </Text>
-        <View style={[styles.chartCard, { backgroundColor: colors.card }]}>
-          <RecitationChart />
+
+        <View style={styles.verseList}>
+          {PLACEHOLDER_VERSES.map((verse) => (
+            <VerseCard key={verse.ref} verse={verse} colors={colors} />
+          ))}
         </View>
       </ScrollView>
 
-      <MilestonesSheet
-        visible={showMilestones}
-        onClose={() => setShowMilestones(false)}
-        streak={streak}
-      />
+      {/* Memory info bottom sheet */}
+      <BottomSheet
+        visible={showMemoryInfo}
+        onClose={() => setShowMemoryInfo(false)}
+        height="auto"
+      >
+        <View style={styles.memoryInfoSheet}>
+          <View style={styles.memoryInfoHeader}>
+            <Text style={[styles.memoryInfoTitle, { color: colors.foreground }]}>
+              About Memory
+            </Text>
+            <Pressable
+              onPress={() => setShowMemoryInfo(false)}
+              style={[styles.memoryInfoClose, { backgroundColor: colors.secondary }]}
+              hitSlop={8}
+            >
+              <Ionicons name="close" size={16} color={colors.mutedForeground} />
+            </Pressable>
+          </View>
+          <Text style={[styles.memoryInfoText, { color: colors.mutedForeground }]}>
+            Memorized means you recited the verse from memory, without a hint or preview. Your success rate tracks how often you nailed it at 70% accuracy or above.
+          </Text>
+        </View>
+      </BottomSheet>
     </View>
   );
 }
@@ -275,94 +345,20 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     marginBottom: 10,
   },
-  topRow: {
+  sectionLabelNoMargin: {
+    marginBottom: 0,
+  },
+  sectionLabelRow: {
     flexDirection: "row",
-    gap: 10,
+    alignItems: "center",
+    gap: 6,
+    marginTop: 16,
     marginBottom: 10,
   },
-  streakCard: {
-    flex: 1,
-    borderRadius: 18,
-    padding: 16,
-    alignItems: "center",
-    gap: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  flameContainer: {
-    marginBottom: 4,
-  },
-  flameEmoji: {
-    fontSize: 36,
-  },
-  streakNumber: {
-    fontSize: 28,
-    fontFamily: "Inter_700Bold",
-  },
-  streakLabel: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    marginBottom: 8,
-  },
-  weekDots: {
-    flexDirection: "row",
-    gap: 3,
-  },
-  weekDot: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  weekDotLetter: {
-    fontSize: 9,
-    fontFamily: "Inter_500Medium",
-  },
-  badgesCard: {
-    flex: 1,
-    borderRadius: 18,
-    padding: 16,
-    alignItems: "center",
-    gap: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  badgeHexagon: {
-    marginBottom: 4,
-  },
-  hexBg: {
-    width: 56,
-    height: 56,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  hexNumber: {
-    fontSize: 24,
-    fontFamily: "Inter_700Bold",
-    color: "#fff",
-  },
-  badgeLabel: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  badgeIconRow: {
-    flexDirection: "row",
-    gap: 6,
-  },
-  badgeIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  helpIcon: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -404,19 +400,154 @@ const styles = StyleSheet.create({
   statHDivider: {
     height: StyleSheet.hairlineWidth,
   },
-  chartTitle: {
-    fontSize: 20,
-    fontFamily: "Inter_700Bold",
-    marginTop: 8,
-    marginBottom: 12,
-  },
-  chartCard: {
+  heatmapCard: {
     borderRadius: 18,
     padding: 16,
+    marginBottom: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 2,
+  },
+  heatmapHeadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  heatmapCount: {
+    fontSize: 15,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: -0.3,
+  },
+  heatmapRange: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+  },
+  heatmapSubtext: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    marginBottom: 4,
+  },
+  streakRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 10,
+  },
+  streakCard: {
+    flex: 1,
+    borderRadius: 18,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  streakIcon: {
+    width: 36,
+    height: 36,
+  },
+  streakTextCol: {
+    flexDirection: "column",
+  },
+  streakNumber: {
+    fontSize: 28,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: -1,
+    lineHeight: 32,
+  },
+  streakLabel: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+  },
+  verseList: {
+    gap: 10,
+    marginBottom: 10,
+  },
+  verseCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 16,
+    padding: 14,
+    gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  verseAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  verseAvatarLetter: {
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+    color: "#444",
+  },
+  verseContent: {
+    flex: 1,
+    gap: 4,
+  },
+  verseRef: {
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: -0.3,
+  },
+  verseStats: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flexWrap: "wrap",
+  },
+  verseStat: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  verseStatIcon: {
+    width: 14,
+    height: 14,
+  },
+  verseStatText: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+  },
+  memoryInfoSheet: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 40,
+  },
+  memoryInfoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  memoryInfoTitle: {
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: -0.3,
+  },
+  memoryInfoClose: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  memoryInfoText: {
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 23,
   },
 });
