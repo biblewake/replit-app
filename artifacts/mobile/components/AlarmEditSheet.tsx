@@ -20,9 +20,17 @@ import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
+import { Audio } from "expo-av";
 import { useColors } from "@/hooks/useColors";
 import { Alarm } from "@/context/AlarmContext";
 import { BibleVerse, BIBLE_VERSES } from "@/constants/verses";
+import {
+  ALARM_SOUNDS,
+  SOUND_CATEGORIES,
+  SoundCategory,
+  getSoundById,
+  getSoundsByCategory,
+} from "@/constants/alarmSounds";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
@@ -179,6 +187,8 @@ export default function AlarmEditSheet({
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const panelTranslateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const panelBackdropOpacity = useRef(new Animated.Value(0)).current;
+  const mainSheetScale = useRef(new Animated.Value(1)).current;
+  const mainSheetOffsetY = useRef(new Animated.Value(0)).current;
 
   const [hour, setHour] = useState(7);
   const [minute, setMinute] = useState(0);
@@ -189,6 +199,10 @@ export default function AlarmEditSheet({
   const [scheduleType, setScheduleType] = useState<"scheduled" | "one-time">("scheduled");
   const [wakeUpCheck, setWakeUpCheck] = useState(false);
   const [alarmType, setAlarmType] = useState<"verse" | "normal">(propAlarmType ?? "verse");
+  const [selectedSoundId, setSelectedSoundId] = useState<string | undefined>(undefined);
+  const [activeSoundCategory, setActiveSoundCategory] = useState<SoundCategory>("bright");
+  const [playingSoundId, setPlayingSoundId] = useState<string | null>(null);
+  const soundRef = useRef<Audio.Sound | null>(null);
 
   const [activePanelType, setActivePanelType] = useState<PanelType | null>(null);
   const [verseSearch, setVerseSearch] = useState("");
@@ -206,6 +220,7 @@ export default function AlarmEditSheet({
         setScheduleType(alarm.scheduleType ?? "scheduled");
         setWakeUpCheck(alarm.wakeUpCheck ?? false);
         setAlarmType(alarm.alarmType ?? propAlarmType ?? "verse");
+        setSelectedSoundId(alarm.soundId);
       } else {
         setHour(7);
         setMinute(0);
@@ -216,6 +231,7 @@ export default function AlarmEditSheet({
         setScheduleType("scheduled");
         setWakeUpCheck(false);
         setAlarmType(propAlarmType ?? "verse");
+        setSelectedSoundId(undefined);
       }
     }
   }, [alarm, visible, propAlarmType]);
@@ -254,6 +270,17 @@ export default function AlarmEditSheet({
     }
   }, [visible]);
 
+  const stopCurrentSound = useCallback(async () => {
+    if (soundRef.current) {
+      try {
+        await soundRef.current.stopAsync();
+        await soundRef.current.unloadAsync();
+      } catch (_) {}
+      soundRef.current = null;
+    }
+    setPlayingSoundId(null);
+  }, []);
+
   const openPanel = useCallback((type: PanelType) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     panelTranslateY.setValue(SCREEN_HEIGHT);
@@ -273,11 +300,24 @@ export default function AlarmEditSheet({
           easing: Easing.out(Easing.quad),
           useNativeDriver: USE_NATIVE_DRIVER,
         }),
+        Animated.timing(mainSheetScale, {
+          toValue: 0.93,
+          duration: 360,
+          easing: Easing.out(Easing.poly(4)),
+          useNativeDriver: USE_NATIVE_DRIVER,
+        }),
+        Animated.timing(mainSheetOffsetY, {
+          toValue: -18,
+          duration: 360,
+          easing: Easing.out(Easing.poly(4)),
+          useNativeDriver: USE_NATIVE_DRIVER,
+        }),
       ]).start();
     });
   }, []);
 
   const closePanel = useCallback(() => {
+    stopCurrentSound();
     Animated.parallel([
       Animated.timing(panelTranslateY, {
         toValue: SCREEN_HEIGHT,
@@ -291,13 +331,25 @@ export default function AlarmEditSheet({
         easing: Easing.linear,
         useNativeDriver: USE_NATIVE_DRIVER,
       }),
+      Animated.timing(mainSheetScale, {
+        toValue: 1,
+        duration: 280,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: USE_NATIVE_DRIVER,
+      }),
+      Animated.timing(mainSheetOffsetY, {
+        toValue: 0,
+        duration: 280,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: USE_NATIVE_DRIVER,
+      }),
     ]).start(({ finished }) => {
       if (finished) {
         setActivePanelType(null);
         setVerseSearch("");
       }
     });
-  }, []);
+  }, [stopCurrentSound]);
 
   const toggleDay = (i: number) => {
     Haptics.selectionAsync();
@@ -325,6 +377,7 @@ export default function AlarmEditSheet({
       alarmType,
       scheduleType,
       wakeUpCheck,
+      soundId: selectedSoundId,
     });
     onClose();
   };
@@ -571,34 +624,147 @@ export default function AlarmEditSheet({
           </ScrollView>
         );
 
-      case "sound":
+      case "sound": {
+        const categorySounds = getSoundsByCategory(activeSoundCategory);
         return (
-          <View style={[styles.panelBody, { flex: 1, justifyContent: "space-between" }]}>
-            <View style={[styles.emptyState, { backgroundColor: colors.secondary }]}>
-              <View style={[styles.emptyIconCircle, { backgroundColor: colors.border }]}>
-                <Ionicons name="musical-notes" size={32} color={colors.mutedForeground} />
-              </View>
-              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
-                No sounds yet
-              </Text>
-              <Text style={[styles.emptyDesc, { color: colors.mutedForeground }]}>
-                Sound selection will be available in a future update.
-              </Text>
-            </View>
-            <Pressable
-              style={[
-                styles.doneBtn,
-                { backgroundColor: "#1C1C1E", marginBottom: Math.max(insets.bottom, 16) + 8 },
-              ]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                closePanel();
-              }}
+          <View style={{ flex: 1 }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.soundChipScroll}
+              contentContainerStyle={styles.soundChipRow}
             >
-              <Text style={styles.doneBtnText}>Done</Text>
-            </Pressable>
+              {SOUND_CATEGORIES.map((cat) => {
+                const isActive = cat.id === activeSoundCategory;
+                return (
+                  <Pressable
+                    key={cat.id}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setActiveSoundCategory(cat.id);
+                    }}
+                    style={[
+                      styles.soundChip,
+                      isActive && { backgroundColor: colors.foreground },
+                    ]}
+                  >
+                    <Text style={styles.soundChipEmoji}>{cat.emoji}</Text>
+                    <Text
+                      style={[
+                        styles.soundChipLabel,
+                        { color: isActive ? "#FFFFFF" : colors.mutedForeground },
+                      ]}
+                    >
+                      {cat.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            <FlatList
+              data={categorySounds}
+              keyExtractor={(s) => s.id}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.soundList}
+              renderItem={({ item }) => {
+                const isPlaying = item.id === playingSoundId;
+                const isSelected = item.id === selectedSoundId;
+                return (
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.soundRow,
+                      {
+                        backgroundColor:
+                          isPlaying || isSelected
+                            ? colors.foreground + "0D"
+                            : pressed
+                            ? colors.secondary
+                            : "transparent",
+                        borderBottomColor: colors.border,
+                      },
+                    ]}
+                    onPress={async () => {
+                      Haptics.selectionAsync();
+                      if (isPlaying) {
+                        await stopCurrentSound();
+                        setSelectedSoundId(item.id);
+                        return;
+                      }
+                      await stopCurrentSound();
+                      setPlayingSoundId(item.id);
+                      setSelectedSoundId(item.id);
+                      try {
+                        const { sound } = await Audio.Sound.createAsync(item.source);
+                        soundRef.current = sound;
+                        await sound.playAsync();
+                        sound.setOnPlaybackStatusUpdate((status) => {
+                          if (status.isLoaded && status.didJustFinish) {
+                            setPlayingSoundId(null);
+                            sound.unloadAsync().catch(() => {});
+                            soundRef.current = null;
+                          }
+                        });
+                      } catch (_) {
+                        setPlayingSoundId(null);
+                      }
+                    }}
+                  >
+                    <View style={styles.soundRowLeft}>
+                      {isPlaying || isSelected ? (
+                        <View
+                          style={[
+                            styles.soundActiveIndicator,
+                            { backgroundColor: colors.foreground },
+                          ]}
+                        />
+                      ) : (
+                        <View style={styles.soundInactiveIndicator} />
+                      )}
+                      <Text
+                        style={[
+                          styles.soundRowLabel,
+                          {
+                            color: colors.foreground,
+                            fontFamily:
+                              isPlaying || isSelected
+                                ? "Inter_600SemiBold"
+                                : "Inter_400Regular",
+                          },
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name={isPlaying ? "pause-circle" : "play-circle-outline"}
+                      size={26}
+                      color={isPlaying ? colors.foreground : colors.mutedForeground}
+                    />
+                  </Pressable>
+                );
+              }}
+            />
+
+            <View
+              style={[
+                styles.soundDoneWrap,
+                { paddingBottom: Math.max(insets.bottom, 16) + 8 },
+              ]}
+            >
+              <Pressable
+                style={[styles.doneBtn, { backgroundColor: "#1C1C1E" }]}
+                onPress={() => {
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  closePanel();
+                }}
+              >
+                <Text style={styles.doneBtnText}>Done</Text>
+              </Pressable>
+            </View>
           </View>
         );
+      }
 
       default:
         return null;
@@ -623,7 +789,11 @@ export default function AlarmEditSheet({
             {
               height: sheetHeight,
               backgroundColor: colors.background,
-              transform: [{ translateY: mainTranslateY }],
+              transform: [
+                { translateY: mainTranslateY },
+                { scale: mainSheetScale },
+                { translateY: mainSheetOffsetY },
+              ],
             },
           ]}
         >
@@ -786,7 +956,9 @@ export default function AlarmEditSheet({
                 </View>
                 <Text style={[styles.rowLabel, { color: colors.foreground }]}>Sound</Text>
                 <View style={styles.rowRight}>
-                  <Text style={[styles.rowValue, { color: colors.mutedForeground }]}>Default</Text>
+                  <Text style={[styles.rowValue, { color: colors.mutedForeground }]}>
+                    {selectedSoundId ? getSoundById(selectedSoundId)?.label ?? "Default" : "Default"}
+                  </Text>
                   <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
                 </View>
               </Pressable>
@@ -1290,5 +1462,69 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     textAlign: "center",
     maxWidth: 220,
+  },
+  soundChipScroll: {
+    height: 54,
+  },
+  soundChipRow: {
+    paddingHorizontal: 16,
+    gap: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    height: 54,
+  },
+  soundChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 14,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(0,0,0,0.06)",
+  },
+  soundChipEmoji: {
+    fontSize: 14,
+  },
+  soundChipLabel: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+  },
+  soundList: {
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+  },
+  soundRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderRadius: 8,
+    marginHorizontal: -8,
+  },
+  soundRowLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+  soundActiveIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  soundInactiveIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "transparent",
+  },
+  soundRowLabel: {
+    fontSize: 15,
+  },
+  soundDoneWrap: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
   },
 });
