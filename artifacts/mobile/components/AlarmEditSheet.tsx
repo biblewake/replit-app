@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
   Dimensions,
   Easing,
@@ -31,6 +32,7 @@ import {
   getSoundById,
   getSoundsByCategory,
 } from "@/constants/alarmSounds";
+import { fetchVerseByReference, suggestVerse, VersePassage } from "@/services/verseService";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
@@ -206,6 +208,11 @@ export default function AlarmEditSheet({
 
   const [activePanelType, setActivePanelType] = useState<PanelType | null>(null);
   const [verseSearch, setVerseSearch] = useState("");
+  const [aiRef, setAiRef] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [aiPassage, setAiPassage] = useState<VersePassage | null>(null);
+  const [aiTheme, setAiTheme] = useState<string | null>(null);
 
   useEffect(() => {
     if (visible) {
@@ -450,7 +457,149 @@ export default function AlarmEditSheet({
 
       case "verse":
         return (
-          <View style={[styles.versePanelBody, { flex: 1 }]}>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={[styles.versePanelBody, { paddingBottom: Math.max(insets.bottom, 24) + 16 }]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* AI: Enter reference */}
+            <View style={[styles.aiSection, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+              <Text style={[styles.aiSectionTitle, { color: colors.foreground }]}>Enter a reference</Text>
+              <Text style={[styles.aiSectionSub, { color: colors.mutedForeground }]}>e.g. "John 3:16" or "Romans 5:3-4"</Text>
+              <View style={[styles.aiRefRow, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                <TextInput
+                  style={[styles.aiRefInput, { color: colors.foreground }]}
+                  placeholder="Verse reference…"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={aiRef}
+                  onChangeText={(t) => { setAiRef(t); setAiError(""); }}
+                  returnKeyType="search"
+                  onSubmitEditing={async () => {
+                    if (!aiRef.trim()) return;
+                    setAiLoading(true);
+                    setAiError("");
+                    setAiPassage(null);
+                    try {
+                      const result = await fetchVerseByReference(aiRef.trim());
+                      setAiPassage(result);
+                    } catch {
+                      setAiError("Could not find that verse. Check the reference and try again.");
+                    } finally {
+                      setAiLoading(false);
+                    }
+                  }}
+                />
+                <Pressable
+                  style={[styles.aiLookupBtn, { backgroundColor: colors.foreground }]}
+                  onPress={async () => {
+                    if (!aiRef.trim()) return;
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    setAiLoading(true);
+                    setAiError("");
+                    setAiPassage(null);
+                    try {
+                      const result = await fetchVerseByReference(aiRef.trim());
+                      setAiPassage(result);
+                    } catch {
+                      setAiError("Could not find that verse. Check the reference and try again.");
+                    } finally {
+                      setAiLoading(false);
+                    }
+                  }}
+                  disabled={aiLoading}
+                >
+                  {aiLoading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Ionicons name="search" size={16} color="#fff" />
+                  )}
+                </Pressable>
+              </View>
+            </View>
+
+            {/* AI: Theme picker */}
+            <View style={styles.themePickerRow}>
+              {(["morning", "peace", "strength", "gratitude", "courage", "hope"] as const).map((t) => (
+                <Pressable
+                  key={t}
+                  style={[
+                    styles.themeChip,
+                    { borderColor: aiTheme === t ? "#FF6B00" : colors.border, backgroundColor: aiTheme === t ? "#FF6B0015" : colors.secondary },
+                  ]}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setAiTheme(aiTheme === t ? null : t);
+                  }}
+                >
+                  <Text style={[styles.themeChipText, { color: aiTheme === t ? "#FF6B00" : colors.mutedForeground }]}>
+                    {t}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* AI: Suggest a verse */}
+            <Pressable
+              style={[styles.suggestBtn, { borderColor: colors.border, backgroundColor: colors.secondary }]}
+              onPress={async () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                setAiLoading(true);
+                setAiError("");
+                setAiPassage(null);
+                setAiRef("");
+                try {
+                  const result = await suggestVerse(aiTheme ?? undefined);
+                  setAiPassage(result);
+                } catch {
+                  setAiError("Could not suggest a verse. Please try again.");
+                } finally {
+                  setAiLoading(false);
+                }
+              }}
+              disabled={aiLoading}
+            >
+              {aiLoading ? (
+                <ActivityIndicator size="small" color={colors.mutedForeground} />
+              ) : (
+                <Ionicons name="sparkles" size={18} color="#FF6B00" />
+              )}
+              <Text style={[styles.suggestBtnText, { color: colors.foreground }]}>
+                {aiTheme ? `Suggest a ${aiTheme} verse` : "Suggest a verse for me"}
+              </Text>
+            </Pressable>
+
+            {/* AI error */}
+            {!!aiError && (
+              <Text style={styles.aiErrorText}>{aiError}</Text>
+            )}
+
+            {/* AI result preview */}
+            {aiPassage && (
+              <View style={[styles.aiPreviewCard, { backgroundColor: "#FF6B0010", borderColor: "#FF6B0030" }]}>
+                <Text style={[styles.aiPreviewRef, { color: "#FF6B00" }]}>{aiPassage.reference}</Text>
+                <Text style={[styles.aiPreviewText, { color: colors.foreground }]}>{aiPassage.text}</Text>
+                <Text style={[styles.aiPreviewVersion, { color: colors.mutedForeground }]}>{aiPassage.version}</Text>
+                <Pressable
+                  style={[styles.useVerseBtn, { backgroundColor: colors.foreground }]}
+                  onPress={() => {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    setVerse({ ref: aiPassage.reference, text: aiPassage.text, category: "AI" });
+                    setAiPassage(null);
+                    setAiRef("");
+                    closePanel();
+                  }}
+                >
+                  <Text style={styles.useVerseBtnText}>Use This Verse</Text>
+                </Pressable>
+              </View>
+            )}
+
+            {/* Divider */}
+            <View style={[styles.verseDivider, { backgroundColor: colors.border }]} />
+            <Text style={[styles.verseDividerLabel, { color: colors.mutedForeground }]}>OR CHOOSE FROM LIBRARY</Text>
+
+            {/* Library search */}
             <View
               style={[
                 styles.searchRow,
@@ -460,7 +609,7 @@ export default function AlarmEditSheet({
               <Ionicons name="search" size={16} color={colors.mutedForeground} />
               <TextInput
                 style={[styles.searchInput, { color: colors.foreground }]}
-                placeholder="Search verses..."
+                placeholder="Search library…"
                 placeholderTextColor={colors.mutedForeground}
                 value={verseSearch}
                 onChangeText={setVerseSearch}
@@ -471,68 +620,47 @@ export default function AlarmEditSheet({
                 </Pressable>
               ) : null}
             </View>
-            <FlatList
-              data={filteredVerses}
-              keyExtractor={(v) => v.ref}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.verseList}
-              keyboardShouldPersistTaps="handled"
-              renderItem={({ item }) => {
-                const isSelected = item.ref === verse.ref;
-                return (
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.verseItem,
-                      {
-                        backgroundColor: isSelected
-                          ? colors.primary + "10"
-                          : pressed
-                          ? colors.secondary
-                          : "transparent",
-                        borderBottomColor: colors.border,
-                      },
-                    ]}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setVerse(item);
-                      closePanel();
-                    }}
-                  >
-                    <View style={styles.verseItemTop}>
-                      <View
-                        style={[
-                          styles.categoryBadge,
-                          { backgroundColor: colors.secondary },
-                        ]}
-                      >
-                        <Text
-                          style={[styles.categoryText, { color: colors.mutedForeground }]}
-                        >
-                          {item.category}
-                        </Text>
-                      </View>
-                      {isSelected && (
-                        <Ionicons
-                          name="checkmark-circle"
-                          size={18}
-                          color={colors.primary}
-                        />
-                      )}
+
+            {filteredVerses.map((item) => {
+              const isSelected = item.ref === verse.ref;
+              return (
+                <Pressable
+                  key={item.ref}
+                  style={({ pressed }) => [
+                    styles.verseItem,
+                    {
+                      backgroundColor: isSelected
+                        ? colors.primary + "10"
+                        : pressed
+                        ? colors.secondary
+                        : "transparent",
+                      borderBottomColor: colors.border,
+                    },
+                  ]}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setVerse(item);
+                    closePanel();
+                  }}
+                >
+                  <View style={styles.verseItemTop}>
+                    <View style={[styles.categoryBadge, { backgroundColor: colors.secondary }]}>
+                      <Text style={[styles.categoryText, { color: colors.mutedForeground }]}>
+                        {item.category}
+                      </Text>
                     </View>
-                    <Text style={[styles.verseRef, { color: colors.foreground }]}>
-                      {item.ref}
-                    </Text>
-                    <Text
-                      style={[styles.verseText, { color: colors.mutedForeground }]}
-                      numberOfLines={2}
-                    >
-                      {item.text}
-                    </Text>
-                  </Pressable>
-                );
-              }}
-            />
-          </View>
+                    {isSelected && (
+                      <Ionicons name="checkmark-circle" size={18} color={colors.primary} />
+                    )}
+                  </View>
+                  <Text style={[styles.verseRef, { color: colors.foreground }]}>{item.ref}</Text>
+                  <Text style={[styles.verseText, { color: colors.mutedForeground }]} numberOfLines={2}>
+                    {item.text}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
         );
 
       case "wakeup":
@@ -1325,6 +1453,116 @@ const styles = StyleSheet.create({
   },
   versePanelBody: {
     paddingHorizontal: 20,
+    gap: 12,
+  },
+  aiSection: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+    gap: 8,
+  },
+  aiSectionTitle: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+  },
+  aiSectionSub: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+  },
+  aiRefRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 10,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  aiRefInput: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  aiLookupBtn: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  themePickerRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  themeChip: {
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  themeChipText: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    textTransform: "capitalize",
+  },
+  suggestBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  suggestBtnText: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+  },
+  aiErrorText: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: "#FF3B30",
+    textAlign: "center",
+  },
+  aiPreviewCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 16,
+    gap: 8,
+  },
+  aiPreviewRef: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+  },
+  aiPreviewText: {
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 22,
+  },
+  aiPreviewVersion: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+  },
+  useVerseBtn: {
+    borderRadius: 100,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginTop: 4,
+  },
+  useVerseBtnText: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFFFFF",
+  },
+  verseDivider: {
+    height: StyleSheet.hairlineWidth,
+    marginVertical: 4,
+  },
+  verseDividerLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 0.8,
+    textAlign: "center",
   },
   searchRow: {
     flexDirection: "row",

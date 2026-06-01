@@ -24,6 +24,7 @@ export interface Alarm {
 }
 
 const STORAGE_KEY = "@bible_wake_alarms";
+const STREAK_KEY = "@bible_wake_streak";
 const LONGEST_STREAK_KEY = "@bible_wake_longest_streak";
 
 function generateId(): string {
@@ -57,6 +58,7 @@ interface AlarmContextType {
   getNextAlarm: () => Alarm | null;
   streak: number;
   longestStreak: number;
+  incrementStreak: () => void;
 }
 
 const AlarmContext = createContext<AlarmContextType>({
@@ -68,14 +70,14 @@ const AlarmContext = createContext<AlarmContextType>({
   getNextAlarm: () => null,
   streak: 1,
   longestStreak: 1,
+  incrementStreak: () => {},
 });
 
 export function AlarmProvider({ children }: { children: React.ReactNode }) {
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [longestStreak, setLongestStreak] = useState(1);
-
-  const streak = 1;
+  const [streak, setStreak] = useState(0);
+  const [longestStreak, setLongestStreak] = useState(0);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
@@ -89,29 +91,39 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
       .catch(() => setAlarms(SAMPLE_ALARMS))
       .finally(() => setLoaded(true));
 
+    AsyncStorage.getItem(STREAK_KEY)
+      .then((val) => {
+        if (val !== null) setStreak(parseInt(val, 10));
+      })
+      .catch(() => {});
+
     AsyncStorage.getItem(LONGEST_STREAK_KEY)
       .then((val) => {
-        if (val !== null) {
-          setLongestStreak(parseInt(val, 10));
-        }
+        if (val !== null) setLongestStreak(parseInt(val, 10));
       })
       .catch(() => {});
   }, []);
 
   useEffect(() => {
     if (loaded) {
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(alarms)).catch(
-        () => {}
-      );
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(alarms)).catch(() => {});
     }
   }, [alarms, loaded]);
 
-  useEffect(() => {
-    if (streak > longestStreak) {
-      setLongestStreak(streak);
-      AsyncStorage.setItem(LONGEST_STREAK_KEY, String(streak)).catch(() => {});
-    }
-  }, [streak, longestStreak]);
+  const incrementStreak = useCallback(() => {
+    setStreak((prev) => {
+      const next = prev + 1;
+      AsyncStorage.setItem(STREAK_KEY, String(next)).catch(() => {});
+      setLongestStreak((longest) => {
+        if (next > longest) {
+          AsyncStorage.setItem(LONGEST_STREAK_KEY, String(next)).catch(() => {});
+          return next;
+        }
+        return longest;
+      });
+      return next;
+    });
+  }, []);
 
   const addAlarm = useCallback((alarm: Omit<Alarm, "id">) => {
     setAlarms((prev) => [...prev, { ...alarm, id: generateId() }]);
@@ -191,6 +203,7 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
         getNextAlarm,
         streak,
         longestStreak,
+        incrementStreak,
       }}
     >
       {children}

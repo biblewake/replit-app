@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
 
 import { useColors } from "@/hooks/useColors";
 import { Alarm, useAlarms } from "@/context/AlarmContext";
@@ -25,6 +26,7 @@ const TAB_BAR_HEIGHT = Platform.OS === "web" ? 84 : 49;
 export default function AlarmsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { alarms, addAlarm, updateAlarm, deleteAlarm, toggleAlarm } = useAlarms();
   const { hasPermission } = useAlarmPermission();
   const [editingAlarm, setEditingAlarm] = useState<Alarm | null>(null);
@@ -192,6 +194,16 @@ export default function AlarmsScreen() {
 
   const paddingTop = insets.top + (Platform.OS === "web" ? 67 : 16);
 
+  const handleTestAlarm = () => {
+    const firstActive = alarms.find((a) => a.enabled) ?? alarms[0];
+    if (!firstActive) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    router.push({
+      pathname: "/alarm-ringing",
+      params: { alarmId: firstActive.id, type: firstActive.wakeUpCheck ? "wakeup" : "verse" },
+    });
+  };
+
   const rotateInterpolate = fabRotate.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "135deg"],
@@ -201,6 +213,15 @@ export default function AlarmsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { paddingTop }]}>
         <Text style={[styles.title, { color: colors.foreground }]}>Alarms</Text>
+        {__DEV__ && alarms.length > 0 && (
+          <Pressable
+            style={[styles.testAlarmBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={handleTestAlarm}
+          >
+            <Ionicons name="play-circle-outline" size={14} color={colors.mutedForeground} />
+            <Text style={[styles.testAlarmText, { color: colors.mutedForeground }]}>Test Alarm</Text>
+          </Pressable>
+        )}
       </View>
 
       <FlatList
@@ -343,11 +364,27 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingBottom: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   title: {
     fontSize: 34,
     fontFamily: "Inter_700Bold",
     letterSpacing: -0.5,
+  },
+  testAlarmBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  testAlarmText: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
   },
   list: {
     paddingHorizontal: 20,

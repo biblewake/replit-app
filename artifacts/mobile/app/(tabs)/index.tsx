@@ -21,6 +21,7 @@ import WeekDots from "@/components/WeekDots";
 import AlarmEditSheet from "@/components/AlarmEditSheet";
 import AlarmPermissionSheet from "@/components/AlarmPermissionSheet";
 import MilestonesSheet from "@/components/MilestonesSheet";
+import VerseCard from "@/components/VerseCard";
 import { BIBLE_VERSES } from "@/constants/verses";
 
 function formatTime(hour: number, minute: number, isPM: boolean): string {
@@ -65,7 +66,18 @@ export default function HomeScreen() {
 
   const todayIndex = new Date().getDay();
   const nextAlarm = getNextAlarm();
-  const todayVerse = BIBLE_VERSES[new Date().getDate() % BIBLE_VERSES.length];
+  const fallbackVerse = BIBLE_VERSES[new Date().getDate() % BIBLE_VERSES.length];
+  const nextScheduledVerseAlarm = getNextAlarm();
+  const todayVerseRef =
+    (nextScheduledVerseAlarm?.alarmType === "verse" && nextScheduledVerseAlarm.verseRef
+      ? nextScheduledVerseAlarm.verseRef
+      : alarms.find((a) => a.enabled && a.alarmType === "verse" && a.verseText)?.verseRef) ??
+    fallbackVerse.ref;
+  const todayVerseText =
+    (nextScheduledVerseAlarm?.alarmType === "verse" && nextScheduledVerseAlarm.verseText
+      ? nextScheduledVerseAlarm.verseText
+      : alarms.find((a) => a.enabled && a.alarmType === "verse" && a.verseText)?.verseText) ??
+    fallbackVerse.text;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -288,42 +300,13 @@ export default function HomeScreen() {
           <Text style={[styles.sectionTitleSm, { color: colors.foreground }]}>
             Today's Verse
           </Text>
-          <Text style={[styles.seeAll, { color: colors.mutedForeground }]}>
-            See All
-          </Text>
         </View>
-        <Pressable
-          style={styles.verseCard}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            setShowVerseDetail(true);
-          }}
-        >
-          <ImageBackground
-            source={require("@/assets/images/today_verse_bg.png")}
-            style={styles.verseCardBg}
-            imageStyle={styles.verseCardImg}
-          >
-            <View style={styles.verseCardContent}>
-              <View style={styles.verseCardTop}>
-                <View style={styles.verseTagBg}>
-                  <Text style={styles.verseTagText}>
-                    {todayVerse.category}
-                  </Text>
-                </View>
-                <View style={styles.shareBtn}>
-                  <Feather name="share" size={16} color="#fff" />
-                </View>
-              </View>
-              <View style={styles.verseCardBottom}>
-                <Text style={styles.verseCardRef}>{todayVerse.ref}</Text>
-                <Text style={styles.verseCardText} numberOfLines={3}>
-                  {todayVerse.text}
-                </Text>
-              </View>
-            </View>
-          </ImageBackground>
-        </Pressable>
+        <VerseCard
+          reference={todayVerseRef}
+          text={todayVerseText}
+          version="NIV"
+          showShare
+        />
       </ScrollView>
 
       <AlarmEditSheet
