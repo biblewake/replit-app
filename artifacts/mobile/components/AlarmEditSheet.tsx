@@ -207,6 +207,12 @@ export default function AlarmEditSheet({
   const soundRef = useRef<Audio.Sound | null>(null);
 
   const [activePanelType, setActivePanelType] = useState<PanelType | null>(null);
+  const [verseMode, setVerseMode] = useState<"memory" | "declare" | undefined>(undefined);
+  const [versePanelStep, setVersePanelStep] = useState<"mode" | "verse">("mode");
+  const [pressedVersePanelMode, setPressedVersePanelMode] = useState<"memory" | "declare" | null>(null);
+  const verseFadeAnim = useRef(new Animated.Value(0)).current;
+  const verseSlideAnim = useRef(new Animated.Value(16)).current;
+
   const [verseSearch, setVerseSearch] = useState("");
   const [aiRef, setAiRef] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
@@ -228,6 +234,7 @@ export default function AlarmEditSheet({
         setWakeUpCheck(alarm.wakeUpCheck ?? false);
         setAlarmType(alarm.alarmType ?? propAlarmType ?? "verse");
         setSelectedSoundId(alarm.soundId);
+        setVerseMode(alarm.verseMode);
       } else {
         setHour(7);
         setMinute(0);
@@ -292,6 +299,11 @@ export default function AlarmEditSheet({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     panelTranslateY.setValue(SCREEN_HEIGHT);
     panelBackdropOpacity.setValue(0);
+    if (type === "verse") {
+      setVersePanelStep("mode");
+      verseFadeAnim.setValue(0);
+      verseSlideAnim.setValue(16);
+    }
     setActivePanelType(type);
     requestAnimationFrame(() => {
       Animated.parallel([
@@ -354,6 +366,9 @@ export default function AlarmEditSheet({
       if (finished) {
         setActivePanelType(null);
         setVerseSearch("");
+        setVersePanelStep("mode");
+        verseFadeAnim.setValue(0);
+        verseSlideAnim.setValue(16);
       }
     });
   }, [stopCurrentSound]);
@@ -385,6 +400,7 @@ export default function AlarmEditSheet({
       scheduleType,
       wakeUpCheck,
       soundId: selectedSoundId,
+      verseMode,
     });
     onClose();
   };
@@ -456,211 +472,292 @@ export default function AlarmEditSheet({
         );
 
       case "verse":
+        if (versePanelStep === "mode") {
+          return (
+            <View style={styles.verseModeContainer}>
+              {([
+                { mode: "memory" as const, emoji: "🧠", title: "Memorize", subtitle: "Recite from memory — no peeking at the text", bg: "#4F46E5" },
+                { mode: "declare" as const, emoji: "📖", title: "Declare", subtitle: "Read aloud while following along with the words", bg: "#0891B2" },
+              ]).map((card) => {
+                const isPressed = pressedVersePanelMode === card.mode;
+                return (
+                  <Pressable
+                    key={card.mode}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      setPressedVersePanelMode(card.mode);
+                      setTimeout(() => {
+                        setPressedVersePanelMode(null);
+                        setVerseMode(card.mode);
+                        setVersePanelStep("verse");
+                        verseFadeAnim.setValue(0);
+                        verseSlideAnim.setValue(16);
+                        Animated.parallel([
+                          Animated.timing(verseFadeAnim, {
+                            toValue: 1,
+                            duration: 280,
+                            easing: Easing.out(Easing.quad),
+                            useNativeDriver: USE_NATIVE_DRIVER,
+                          }),
+                          Animated.timing(verseSlideAnim, {
+                            toValue: 0,
+                            duration: 280,
+                            easing: Easing.out(Easing.quad),
+                            useNativeDriver: USE_NATIVE_DRIVER,
+                          }),
+                        ]).start();
+                      }, 120);
+                    }}
+                    style={[
+                      styles.verseModeCard,
+                      {
+                        backgroundColor: card.bg,
+                        opacity: isPressed ? 0.82 : 1,
+                        transform: [{ scale: isPressed ? 0.97 : 1 }],
+                      },
+                    ]}
+                  >
+                    <Text style={styles.verseModeEmoji}>{card.emoji}</Text>
+                    <Text style={styles.verseModeTitle}>{card.title}</Text>
+                    <Text style={styles.verseModeSubtitle}>{card.subtitle}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          );
+        }
+
         return (
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={[styles.versePanelBody, { paddingBottom: Math.max(insets.bottom, 24) + 16 }]}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
+          <Animated.View
+            style={[
+              { flex: 1 },
+              { opacity: verseFadeAnim, transform: [{ translateY: verseSlideAnim }] },
+            ]}
           >
-            {/* AI: Enter reference */}
-            <View style={[styles.aiSection, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-              <Text style={[styles.aiSectionTitle, { color: colors.foreground }]}>Enter a reference</Text>
-              <Text style={[styles.aiSectionSub, { color: colors.mutedForeground }]}>e.g. "John 3:16" or "Romans 5:3-4"</Text>
-              <View style={[styles.aiRefRow, { borderColor: colors.border, backgroundColor: colors.background }]}>
-                <TextInput
-                  style={[styles.aiRefInput, { color: colors.foreground }]}
-                  placeholder="Verse reference…"
-                  placeholderTextColor={colors.mutedForeground}
-                  value={aiRef}
-                  onChangeText={(t) => { setAiRef(t); setAiError(""); }}
-                  returnKeyType="search"
-                  onSubmitEditing={async () => {
-                    if (!aiRef.trim()) return;
-                    setAiLoading(true);
-                    setAiError("");
-                    setAiPassage(null);
-                    try {
-                      const result = await fetchVerseByReference(aiRef.trim());
-                      setAiPassage(result);
-                    } catch {
-                      setAiError("Could not find that verse. Check the reference and try again.");
-                    } finally {
-                      setAiLoading(false);
-                    }
-                  }}
-                />
-                <Pressable
-                  style={[styles.aiLookupBtn, { backgroundColor: colors.foreground }]}
-                  onPress={async () => {
-                    if (!aiRef.trim()) return;
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                    setAiLoading(true);
-                    setAiError("");
-                    setAiPassage(null);
-                    try {
-                      const result = await fetchVerseByReference(aiRef.trim());
-                      setAiPassage(result);
-                    } catch {
-                      setAiError("Could not find that verse. Check the reference and try again.");
-                    } finally {
-                      setAiLoading(false);
-                    }
-                  }}
-                  disabled={aiLoading}
-                >
-                  {aiLoading ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Ionicons name="search" size={16} color="#fff" />
-                  )}
-                </Pressable>
-              </View>
-            </View>
-
-            {/* AI: Theme picker */}
-            <View style={styles.themePickerRow}>
-              {(["morning", "peace", "strength", "gratitude", "courage", "hope"] as const).map((t) => (
-                <Pressable
-                  key={t}
-                  style={[
-                    styles.themeChip,
-                    { borderColor: aiTheme === t ? "#FF6B00" : colors.border, backgroundColor: aiTheme === t ? "#FF6B0015" : colors.secondary },
-                  ]}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setAiTheme(aiTheme === t ? null : t);
-                  }}
-                >
-                  <Text style={[styles.themeChipText, { color: aiTheme === t ? "#FF6B00" : colors.mutedForeground }]}>
-                    {t}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            {/* AI: Suggest a verse */}
+            {/* Mode pill + back affordance */}
             <Pressable
-              style={[styles.suggestBtn, { borderColor: colors.border, backgroundColor: colors.secondary }]}
-              onPress={async () => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                setAiLoading(true);
-                setAiError("");
-                setAiPassage(null);
-                setAiRef("");
-                try {
-                  const result = await suggestVerse(aiTheme ?? undefined);
-                  setAiPassage(result);
-                } catch {
-                  setAiError("Could not suggest a verse. Please try again.");
-                } finally {
-                  setAiLoading(false);
-                }
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                verseFadeAnim.setValue(0);
+                verseSlideAnim.setValue(16);
+                setVersePanelStep("mode");
               }}
-              disabled={aiLoading}
+              style={[styles.versePanelModePill, { backgroundColor: colors.secondary, borderColor: colors.border }]}
             >
-              {aiLoading ? (
-                <ActivityIndicator size="small" color={colors.mutedForeground} />
-              ) : (
-                <Ionicons name="sparkles" size={18} color="#FF6B00" />
-              )}
-              <Text style={[styles.suggestBtnText, { color: colors.foreground }]}>
-                {aiTheme ? `Suggest a ${aiTheme} verse` : "Suggest a verse for me"}
+              <Text style={[styles.versePanelModePillText, { color: colors.foreground }]}>
+                {verseMode === "memory" ? "🧠 Memorize" : "📖 Declare"}
+              </Text>
+              <Ionicons name="chevron-back" size={13} color={colors.mutedForeground} />
+              <Text style={[styles.versePanelModePillChange, { color: colors.mutedForeground }]}>
+                change
               </Text>
             </Pressable>
 
-            {/* AI error */}
-            {!!aiError && (
-              <Text style={styles.aiErrorText}>{aiError}</Text>
-            )}
-
-            {/* AI result preview */}
-            {aiPassage && (
-              <View style={[styles.aiPreviewCard, { backgroundColor: "#FF6B0010", borderColor: "#FF6B0030" }]}>
-                <Text style={[styles.aiPreviewRef, { color: "#FF6B00" }]}>{aiPassage.reference}</Text>
-                <Text style={[styles.aiPreviewText, { color: colors.foreground }]}>{aiPassage.text}</Text>
-                <Text style={[styles.aiPreviewVersion, { color: colors.mutedForeground }]}>{aiPassage.version}</Text>
-                <Pressable
-                  style={[styles.useVerseBtn, { backgroundColor: colors.foreground }]}
-                  onPress={() => {
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                    setVerse({ ref: aiPassage.reference, text: aiPassage.text, category: "AI" });
-                    setAiPassage(null);
-                    setAiRef("");
-                    closePanel();
-                  }}
-                >
-                  <Text style={styles.useVerseBtnText}>Use This Verse</Text>
-                </Pressable>
-              </View>
-            )}
-
-            {/* Divider */}
-            <View style={[styles.verseDivider, { backgroundColor: colors.border }]} />
-            <Text style={[styles.verseDividerLabel, { color: colors.mutedForeground }]}>OR CHOOSE FROM LIBRARY</Text>
-
-            {/* Library search */}
-            <View
-              style={[
-                styles.searchRow,
-                { backgroundColor: colors.secondary, borderColor: colors.border },
-              ]}
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={[styles.versePanelBody, { paddingBottom: Math.max(insets.bottom, 24) + 16 }]}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
             >
-              <Ionicons name="search" size={16} color={colors.mutedForeground} />
-              <TextInput
-                style={[styles.searchInput, { color: colors.foreground }]}
-                placeholder="Search library…"
-                placeholderTextColor={colors.mutedForeground}
-                value={verseSearch}
-                onChangeText={setVerseSearch}
-              />
-              {verseSearch ? (
-                <Pressable onPress={() => setVerseSearch("")} hitSlop={8}>
-                  <Ionicons name="close-circle" size={16} color={colors.mutedForeground} />
-                </Pressable>
-              ) : null}
-            </View>
-
-            {filteredVerses.map((item) => {
-              const isSelected = item.ref === verse.ref;
-              return (
-                <Pressable
-                  key={item.ref}
-                  style={({ pressed }) => [
-                    styles.verseItem,
-                    {
-                      backgroundColor: isSelected
-                        ? colors.primary + "10"
-                        : pressed
-                        ? colors.secondary
-                        : "transparent",
-                      borderBottomColor: colors.border,
-                    },
-                  ]}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setVerse(item);
-                    closePanel();
-                  }}
-                >
-                  <View style={styles.verseItemTop}>
-                    <View style={[styles.categoryBadge, { backgroundColor: colors.secondary }]}>
-                      <Text style={[styles.categoryText, { color: colors.mutedForeground }]}>
-                        {item.category}
-                      </Text>
-                    </View>
-                    {isSelected && (
-                      <Ionicons name="checkmark-circle" size={18} color={colors.primary} />
+              {/* AI: Enter reference */}
+              <View style={[styles.aiSection, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                <Text style={[styles.aiSectionTitle, { color: colors.foreground }]}>Enter a reference</Text>
+                <Text style={[styles.aiSectionSub, { color: colors.mutedForeground }]}>e.g. "John 3:16" or "Romans 5:3-4"</Text>
+                <View style={[styles.aiRefRow, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                  <TextInput
+                    style={[styles.aiRefInput, { color: colors.foreground }]}
+                    placeholder="Verse reference…"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={aiRef}
+                    onChangeText={(t) => { setAiRef(t); setAiError(""); }}
+                    returnKeyType="search"
+                    onSubmitEditing={async () => {
+                      if (!aiRef.trim()) return;
+                      setAiLoading(true);
+                      setAiError("");
+                      setAiPassage(null);
+                      try {
+                        const result = await fetchVerseByReference(aiRef.trim());
+                        setAiPassage(result);
+                      } catch {
+                        setAiError("Could not find that verse. Check the reference and try again.");
+                      } finally {
+                        setAiLoading(false);
+                      }
+                    }}
+                  />
+                  <Pressable
+                    style={[styles.aiLookupBtn, { backgroundColor: colors.foreground }]}
+                    onPress={async () => {
+                      if (!aiRef.trim()) return;
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      setAiLoading(true);
+                      setAiError("");
+                      setAiPassage(null);
+                      try {
+                        const result = await fetchVerseByReference(aiRef.trim());
+                        setAiPassage(result);
+                      } catch {
+                        setAiError("Could not find that verse. Check the reference and try again.");
+                      } finally {
+                        setAiLoading(false);
+                      }
+                    }}
+                    disabled={aiLoading}
+                  >
+                    {aiLoading ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Ionicons name="search" size={16} color="#fff" />
                     )}
-                  </View>
-                  <Text style={[styles.verseRef, { color: colors.foreground }]}>{item.ref}</Text>
-                  <Text style={[styles.verseText, { color: colors.mutedForeground }]} numberOfLines={2}>
-                    {item.text}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* AI: Theme picker */}
+              <View style={styles.themePickerRow}>
+                {(["morning", "peace", "strength", "gratitude", "courage", "hope"] as const).map((t) => (
+                  <Pressable
+                    key={t}
+                    style={[
+                      styles.themeChip,
+                      { borderColor: aiTheme === t ? "#FF6B00" : colors.border, backgroundColor: aiTheme === t ? "#FF6B0015" : colors.secondary },
+                    ]}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setAiTheme(aiTheme === t ? null : t);
+                    }}
+                  >
+                    <Text style={[styles.themeChipText, { color: aiTheme === t ? "#FF6B00" : colors.mutedForeground }]}>
+                      {t}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              {/* AI: Suggest a verse */}
+              <Pressable
+                style={[styles.suggestBtn, { borderColor: colors.border, backgroundColor: colors.secondary }]}
+                onPress={async () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  setAiLoading(true);
+                  setAiError("");
+                  setAiPassage(null);
+                  setAiRef("");
+                  try {
+                    const result = await suggestVerse(aiTheme ?? undefined);
+                    setAiPassage(result);
+                  } catch {
+                    setAiError("Could not suggest a verse. Please try again.");
+                  } finally {
+                    setAiLoading(false);
+                  }
+                }}
+                disabled={aiLoading}
+              >
+                {aiLoading ? (
+                  <ActivityIndicator size="small" color={colors.mutedForeground} />
+                ) : (
+                  <Ionicons name="sparkles" size={18} color="#FF6B00" />
+                )}
+                <Text style={[styles.suggestBtnText, { color: colors.foreground }]}>
+                  {aiTheme ? `Suggest a ${aiTheme} verse` : "Suggest a verse for me"}
+                </Text>
+              </Pressable>
+
+              {/* AI error */}
+              {!!aiError && (
+                <Text style={styles.aiErrorText}>{aiError}</Text>
+              )}
+
+              {/* AI result preview */}
+              {aiPassage && (
+                <View style={[styles.aiPreviewCard, { backgroundColor: "#FF6B0010", borderColor: "#FF6B0030" }]}>
+                  <Text style={[styles.aiPreviewRef, { color: "#FF6B00" }]}>{aiPassage.reference}</Text>
+                  <Text style={[styles.aiPreviewText, { color: colors.foreground }]}>{aiPassage.text}</Text>
+                  <Text style={[styles.aiPreviewVersion, { color: colors.mutedForeground }]}>{aiPassage.version}</Text>
+                  <Pressable
+                    style={[styles.useVerseBtn, { backgroundColor: colors.foreground }]}
+                    onPress={() => {
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                      setVerse({ ref: aiPassage.reference, text: aiPassage.text, category: "AI" });
+                      setAiPassage(null);
+                      setAiRef("");
+                      closePanel();
+                    }}
+                  >
+                    <Text style={styles.useVerseBtnText}>Use This Verse</Text>
+                  </Pressable>
+                </View>
+              )}
+
+              {/* Divider */}
+              <View style={[styles.verseDivider, { backgroundColor: colors.border }]} />
+              <Text style={[styles.verseDividerLabel, { color: colors.mutedForeground }]}>OR CHOOSE FROM LIBRARY</Text>
+
+              {/* Library search */}
+              <View
+                style={[
+                  styles.searchRow,
+                  { backgroundColor: colors.secondary, borderColor: colors.border },
+                ]}
+              >
+                <Ionicons name="search" size={16} color={colors.mutedForeground} />
+                <TextInput
+                  style={[styles.searchInput, { color: colors.foreground }]}
+                  placeholder="Search library…"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={verseSearch}
+                  onChangeText={setVerseSearch}
+                />
+                {verseSearch ? (
+                  <Pressable onPress={() => setVerseSearch("")} hitSlop={8}>
+                    <Ionicons name="close-circle" size={16} color={colors.mutedForeground} />
+                  </Pressable>
+                ) : null}
+              </View>
+
+              {filteredVerses.map((item) => {
+                const isSelected = item.ref === verse.ref;
+                return (
+                  <Pressable
+                    key={item.ref}
+                    style={({ pressed }) => [
+                      styles.verseItem,
+                      {
+                        backgroundColor: isSelected
+                          ? colors.primary + "10"
+                          : pressed
+                          ? colors.secondary
+                          : "transparent",
+                        borderBottomColor: colors.border,
+                      },
+                    ]}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setVerse(item);
+                      closePanel();
+                    }}
+                  >
+                    <View style={styles.verseItemTop}>
+                      <View style={[styles.categoryBadge, { backgroundColor: colors.secondary }]}>
+                        <Text style={[styles.categoryText, { color: colors.mutedForeground }]}>
+                          {item.category}
+                        </Text>
+                      </View>
+                      {isSelected && (
+                        <Ionicons name="checkmark-circle" size={18} color={colors.primary} />
+                      )}
+                    </View>
+                    <Text style={[styles.verseRef, { color: colors.foreground }]}>{item.ref}</Text>
+                    <Text style={[styles.verseText, { color: colors.mutedForeground }]} numberOfLines={2}>
+                      {item.text}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </Animated.View>
         );
 
       case "wakeup":
@@ -1170,7 +1267,9 @@ export default function AlarmEditSheet({
               <View style={styles.panelHeader}>
                 <GlassClose onPress={closePanel} />
                 <Text style={[styles.panelTitle, { color: colors.foreground }]}>
-                  {PANEL_TITLES[activePanelType]}
+                  {activePanelType === "verse" && versePanelStep === "mode"
+                    ? "How will you engage?"
+                    : PANEL_TITLES[activePanelType]}
                 </Text>
                 <View style={styles.headerSpacer} />
               </View>
@@ -1764,5 +1863,56 @@ const styles = StyleSheet.create({
   soundDoneWrap: {
     paddingHorizontal: 20,
     paddingTop: 12,
+  },
+  verseModeContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingBottom: 32,
+    gap: 14,
+  },
+  verseModeCard: {
+    flex: 1,
+    borderRadius: 18,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  verseModeEmoji: {
+    fontSize: 48,
+  },
+  verseModeTitle: {
+    fontSize: 22,
+    fontFamily: "Inter_700Bold",
+    color: "#FFFFFF",
+    letterSpacing: 0.2,
+  },
+  verseModeSubtitle: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: "rgba(255,255,255,0.80)",
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  versePanelModePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    marginHorizontal: 20,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 3,
+  },
+  versePanelModePillText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+  },
+  versePanelModePillChange: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
   },
 });

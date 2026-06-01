@@ -21,6 +21,7 @@ export interface Alarm {
   scheduleType?: "scheduled" | "one-time";
   wakeUpCheck?: boolean;
   soundId?: string;
+  verseMode?: "memory" | "declare";
 }
 
 const STORAGE_KEY = "@bible_wake_alarms";
