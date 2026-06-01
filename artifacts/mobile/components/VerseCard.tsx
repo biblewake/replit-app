@@ -34,6 +34,7 @@ interface VerseCardProps {
   showShare?: boolean;
   onContinue?: () => void;
   isFinalStep?: boolean;
+  flat?: boolean;
 }
 
 export default function VerseCard({
@@ -43,6 +44,7 @@ export default function VerseCard({
   showShare = true,
   onContinue,
   isFinalStep = false,
+  flat = false,
 }: VerseCardProps) {
   const cardRef = useRef<LinearGradientType>(null);
   const gradient = getGradientForDate();
@@ -66,7 +68,7 @@ export default function VerseCard({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, flat && styles.containerFlat]}>
       <LinearGradient colors={gradient} style={styles.gradient} ref={cardRef}>
         <View style={styles.topRow}>
           <View style={styles.versionBadge}>
@@ -104,6 +106,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 20,
     backgroundColor: "#F2F2F7",
+  },
+  containerFlat: {
+    paddingHorizontal: 0,
+    backgroundColor: "transparent",
   },
   gradient: {
     width: "100%",

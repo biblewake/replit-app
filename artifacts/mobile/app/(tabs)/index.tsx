@@ -57,9 +57,10 @@ function getDayName(dayIndex: number): string {
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { alarms, toggleAlarm, addAlarm, streak, getNextAlarm } = useAlarms();
+  const { alarms, toggleAlarm, addAlarm, updateAlarm, streak, getNextAlarm } = useAlarms();
   const { hasPermission } = useAlarmPermission();
   const [showAddAlarm, setShowAddAlarm] = useState(false);
+  const [editingAlarm, setEditingAlarm] = useState<import("@/context/AlarmContext").Alarm | null>(null);
   const [showVerseDetail, setShowVerseDetail] = useState(false);
   const [showPermissionSheet, setShowPermissionSheet] = useState(false);
   const [showMilestones, setShowMilestones] = useState(false);
@@ -150,7 +151,13 @@ export default function HomeScreen() {
             <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
               Next Wake Up
             </Text>
-            <View style={[styles.card, { backgroundColor: colors.card }]}>
+            <Pressable
+              style={[styles.card, { backgroundColor: colors.card }]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setEditingAlarm(nextAlarm);
+              }}
+            >
               <View style={styles.cardHeader}>
                 <Text style={styles.dayName}>
                   {getDayName(
@@ -196,7 +203,7 @@ export default function HomeScreen() {
                   {getRingsIn(nextAlarm.hour, nextAlarm.minute, nextAlarm.isPM)}
                 </Text>
               </View>
-            </View>
+            </Pressable>
 
             {/* Info Cards Row */}
             <View style={styles.miniCardsRow}>
@@ -306,6 +313,7 @@ export default function HomeScreen() {
           text={todayVerseText}
           version="NIV"
           showShare
+          flat
         />
       </ScrollView>
 
@@ -313,6 +321,14 @@ export default function HomeScreen() {
         visible={showAddAlarm}
         onClose={() => setShowAddAlarm(false)}
         onSave={addAlarm}
+      />
+      <AlarmEditSheet
+        visible={editingAlarm !== null}
+        alarm={editingAlarm}
+        onClose={() => setEditingAlarm(null)}
+        onSave={(updated) => {
+          if (editingAlarm) updateAlarm(editingAlarm.id, updated);
+        }}
       />
       <AlarmPermissionSheet
         visible={showPermissionSheet}
