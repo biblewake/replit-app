@@ -9,9 +9,9 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#F7FAFF"
+      "image": "./assets/images/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#1C1C1C"
     },
     "ios": {
       "supportsTablet": false,
@@ -22,7 +22,11 @@
       "associatedDomains": ["applinks:cmaysraaclfvofiynctl.supabase.co"]
     },
     "android": {
-      "package": "com.tinochiwara.biblewake"
+      "package": "com.tinochiwara.biblewake",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#1C1C1C"
+      }
     },
     "web": {
       "favicon": "./assets/images/icon.png"
