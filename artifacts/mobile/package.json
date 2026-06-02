@@ -58,6 +58,7 @@
   "dependencies": {
     "@lottiefiles/dotlottie-react": "^0.19.4",
     "@supabase/supabase-js": "^2.106.2",
+    "expo-apple-authentication": "^56.0.4",
     "expo-auth-session": "^56.0.13",
     "expo-av": "^16.0.8",
     "expo-crypto": "^56.0.4",
