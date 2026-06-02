@@ -17,6 +17,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
 import { useColors } from "@/hooks/useColors";
+import { useIsNativeTabs } from "@/hooks/useIsNativeTabs";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { isSupabaseConfigured } from "@/lib/supabase";
@@ -99,6 +100,7 @@ export default function SettingsScreen() {
   const { colorScheme, toggleColorScheme } = useTheme();
   const { user, profile, signInWithGoogle, signInWithApple, signOut, isLoading } = useAuth();
   const insets = useSafeAreaInsets();
+  const isNativeTabs = useIsNativeTabs();
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [troubleshootVisible, setTroubleshootVisible] = useState(false);

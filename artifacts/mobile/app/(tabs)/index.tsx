@@ -15,6 +15,7 @@ import { Ionicons, Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
 import { useColors } from "@/hooks/useColors";
+import { useIsNativeTabs } from "@/hooks/useIsNativeTabs";
 import { useAlarms } from "@/context/AlarmContext";
 import { useAlarmPermission } from "@/hooks/useAlarmPermission";
 import WeekDots from "@/components/WeekDots";
@@ -57,6 +58,7 @@ function getDayName(dayIndex: number): string {
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const isNativeTabs = useIsNativeTabs();
   const { alarms, toggleAlarm, addAlarm, updateAlarm, streak, getNextAlarm } = useAlarms();
   const { hasPermission } = useAlarmPermission();
   const [showAddAlarm, setShowAddAlarm] = useState(false);

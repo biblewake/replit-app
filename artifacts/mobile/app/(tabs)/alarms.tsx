@@ -15,6 +15,7 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 
 import { useColors } from "@/hooks/useColors";
+import { useIsNativeTabs } from "@/hooks/useIsNativeTabs";
 import { Alarm, useAlarms } from "@/context/AlarmContext";
 import { useAlarmPermission } from "@/hooks/useAlarmPermission";
 import AlarmCard from "@/components/AlarmCard";
@@ -26,6 +27,7 @@ const TAB_BAR_HEIGHT = Platform.OS === "web" ? 84 : 49;
 export default function AlarmsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const isNativeTabs = useIsNativeTabs();
   const router = useRouter();
   const { alarms, addAlarm, updateAlarm, deleteAlarm, toggleAlarm } = useAlarms();
   const { hasPermission } = useAlarmPermission();

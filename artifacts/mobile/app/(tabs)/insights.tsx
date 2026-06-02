@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useColors } from "@/hooks/useColors";
+import { useIsNativeTabs } from "@/hooks/useIsNativeTabs";
 import { useAlarms } from "@/context/AlarmContext";
 import HeatmapCalendar from "@/components/HeatmapCalendar";
 import BottomSheet from "@/components/BottomSheet";
@@ -107,6 +108,7 @@ function StatCell({
 export default function InsightsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const isNativeTabs = useIsNativeTabs();
   const { streak, longestStreak } = useAlarms();
   const [showMemoryInfo, setShowMemoryInfo] = useState(false);
 

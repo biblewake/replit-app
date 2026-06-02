@@ -24,7 +24,6 @@ import React, {
 import { Alert, Platform } from "react-native";
 import { Session, User } from "@supabase/supabase-js";
 import * as WebBrowser from "expo-web-browser";
-import { makeRedirectUri } from "expo-auth-session";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { supabase } from "@/lib/supabase";
@@ -229,8 +228,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   const signInWithGoogle = useCallback(async () => {
     try {
-      // "mobile" matches the scheme in app.json
-      const redirectTo = makeRedirectUri({ scheme: "mobile" });
+      let makeRedirectUri: ((opts: { scheme: string }) => string) | undefined;
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        makeRedirectUri = require("expo-auth-session").makeRedirectUri;
+      } catch {
+        Alert.alert(
+          "Not available",
+          "Google sign-in requires a production build. It is not supported in Expo Go."
+        );
+        return;
+      }
+      const redirectTo = makeRedirectUri!({ scheme: "mobile" });
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -281,7 +290,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   const signInWithApple = useCallback(async () => {
     try {
-      const redirectTo = makeRedirectUri({ scheme: "mobile" });
+      let makeRedirectUri: ((opts: { scheme: string }) => string) | undefined;
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        makeRedirectUri = require("expo-auth-session").makeRedirectUri;
+      } catch {
+        Alert.alert(
+          "Not available",
+          "Apple sign-in requires a production build. It is not supported in Expo Go."
+        );
+        return;
+      }
+      const redirectTo = makeRedirectUri!({ scheme: "mobile" });
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "apple",
