@@ -1,0 +1,33 @@
+ WARN  expo-notifications: Android Push notifications (remote notifications) functionality provided by expo-notifications was removed from Expo Go with the release of SDK 53. Use a development build instead of Expo Go. Learn more at https://docs.expo.dev/develop/development-builds/introduction/.
+ WARN  `expo-notifications` functionality is not fully supported in Expo Go:
+We recommend you instead use a development build to avoid limitations. Learn more: https://expo.fyi/dev-client.
+ WARN  [expo-av]: Expo AV has been deprecated and will be removed in SDK 54. Use the `expo-audio` and `expo-video` packages to replace the required functionality.
+ WARN  Route "./(tabs)/settings.tsx" is missing the required default export. Ensure a React component is exported as default.
+ ERROR  [Error: Cannot find native module 'ExpoCryptoAES'] 
+
+Code: AuthContext.tsx
+  25 | import { Session, User } from "@supabase/supabase-js";
+  26 | import * as WebBrowser from "expo-web-browser";
+> 27 | import { makeRedirectUri } from "expo-auth-session";
+     | ^
+  28 | import AsyncStorage from "@react-native-async-storage/async-storage";
+  29 |
+  30 | import { supabase } from "@/lib/supabase";
+Call Stack
+  <global> (artifacts/mobile/context/AuthContext.tsx:27)
+  <global> (artifacts/mobile/app/(tabs)/settings.tsx:21)
+ ERROR  [Error: Cannot find native module 'ExpoCryptoAES'] 
+
+Code: AuthContext.tsx
+  25 | import { Session, User } from "@supabase/supabase-js";
+  26 | import * as WebBrowser from "expo-web-browser";
+> 27 | import { makeRedirectUri } from "expo-auth-session";
+     | ^
+  28 | import AsyncStorage from "@react-native-async-storage/async-storage";
+  29 |
+  30 | import { supabase } from "@/lib/supabase";
+Call Stack
+  <global> (artifacts/mobile/context/AuthContext.tsx:27)
+  <global> (artifacts/mobile/app/(tabs)/settings.tsx:21)
+ WARN  Route "./_layout.tsx" is missing the required default export. Ensure a React component is exported as default.
+ WARN  [Layout children]: Too many screens defined. Route "settings" is extraneous.
