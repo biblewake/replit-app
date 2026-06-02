@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
 import ReciteVisible from "./ReciteVisible";
@@ -10,6 +10,8 @@ import StreakCelebration from "./StreakCelebration";
 import WakeUpPhraseTyping from "./WakeUpPhraseTyping";
 import VerseCard from "@/components/VerseCard";
 import { useAlarms } from "@/context/AlarmContext";
+import { supabase } from "@/lib/supabase";
+import { recordWakeEvent } from "@/lib/wakeHistory";
 
 type Step =
   | "reciteVisible"
@@ -27,6 +29,8 @@ interface RecitalFlowProps {
   verseReference?: string;
   verseText?: string;
   verseVersion?: string;
+  verseMode?: "memory" | "declare";
+  verseBackgroundImageId?: string | null;
   onDismiss: () => void;
   onReturnToRinging: () => void;
 }
@@ -37,20 +41,78 @@ export default function RecitalFlow({
   verseReference = "",
   verseText = "",
   verseVersion = "NIV",
+  verseMode,
+  verseBackgroundImageId,
   onDismiss,
   onReturnToRinging,
 }: RecitalFlowProps) {
-  const { streak, incrementStreak } = useAlarms();
-  const [step, setStep] = useState<Step>(type === "wakeup" ? "wakeUpPhrase" : "reciteVisible");
+  const { streak, incrementStreak, alarms } = useAlarms();
+  const [step, setStep] = useState<Step>(
+    type === "wakeup" ? "wakeUpPhrase" : "reciteVisible"
+  );
   const [spokenText, setSpokenText] = useState("");
   const [streakJustIncremented, setStreakJustIncremented] = useState(false);
 
+  // Track recital timing
+  const recitalStartRef = useRef<number | null>(null);
+  const recitalResultRef = useRef<{
+    transcript: string;
+    accuracy: number;
+    durationSeconds: number;
+    success: boolean;
+  } | null>(null);
+
+  // Wake-up phrase attempt counter
+  const wakeUpAttemptsRef = useRef(0);
+
+  const alarm = alarms.find((a) => a.id === alarmId);
+
+  /** Persist the wake event to Supabase (non-blocking, best-effort) */
+  const persistWakeEvent = async (opts: {
+    recitalSuccess?: boolean;
+    wakeUpCheckCompleted?: boolean;
+  }) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+
+    await recordWakeEvent({
+      userId: session.user.id,
+      alarmId: alarmId || null,
+      alarmName: alarm?.name ?? null,
+      verseRef: verseReference || null,
+      verseText: verseText || null,
+      verseMode: verseMode ?? alarm?.verseMode ?? null,
+      wakeUpCheckRequired: type === "wakeup",
+      wakeUpCheckCompleted: opts.wakeUpCheckCompleted ?? false,
+      wakeUpPhraseAttempts: wakeUpAttemptsRef.current,
+      recitalTranscript: recitalResultRef.current?.transcript ?? null,
+      recitalAccuracy: recitalResultRef.current?.accuracy ?? null,
+      recitalDurationSeconds: recitalResultRef.current?.durationSeconds ?? null,
+      recitalSuccess: recitalResultRef.current?.success ?? opts.recitalSuccess ?? null,
+      verseBackgroundImageId:
+        alarm?.verseBackgroundImageId ?? verseBackgroundImageId ?? null,
+    });
+  };
+
   const handleTranscript = (text: string) => {
     setSpokenText(text);
+    recitalStartRef.current = recitalStartRef.current ?? Date.now();
     setStep("analyzing");
   };
 
-  const handleAnalysisResult = (passed: boolean) => {
+  const handleAnalysisResult = (passed: boolean, accuracy?: number) => {
+    if (recitalStartRef.current != null) {
+      const durationSeconds = Math.round(
+        (Date.now() - recitalStartRef.current) / 1000
+      );
+      recitalResultRef.current = {
+        transcript: spokenText,
+        accuracy: accuracy ?? (passed ? 1.0 : 0.0),
+        durationSeconds,
+        success: passed,
+      };
+    }
+
     if (passed) {
       setStep("success");
     } else {
@@ -60,9 +122,12 @@ export default function RecitalFlow({
 
   const handleSuccessContinue = () => {
     if (type === "wakeup") {
+      persistWakeEvent({ wakeUpCheckCompleted: true });
       onDismiss();
       return;
     }
+
+    persistWakeEvent({ recitalSuccess: recitalResultRef.current?.success ?? true });
     incrementStreak();
     setStreakJustIncremented(true);
     setStep("streak");
@@ -72,6 +137,11 @@ export default function RecitalFlow({
     setStep("verseOfDay");
   };
 
+  const handleWakeUpSuccess = () => {
+    wakeUpAttemptsRef.current += 1;
+    setStep("success");
+  };
+
   const renderStep = () => {
     switch (step) {
       case "reciteVisible":
@@ -79,7 +149,10 @@ export default function RecitalFlow({
           <ReciteVisible
             reference={verseReference}
             text={verseText}
-            onContinue={() => setStep("reciteMemory")}
+            onContinue={() => {
+              recitalStartRef.current = Date.now();
+              setStep("reciteMemory");
+            }}
           />
         );
       case "reciteMemory":
@@ -98,7 +171,14 @@ export default function RecitalFlow({
           />
         );
       case "tryAgain":
-        return <TryAgain onTryAgain={() => setStep("reciteVisible")} />;
+        return (
+          <TryAgain
+            onTryAgain={() => {
+              recitalStartRef.current = Date.now();
+              setStep("reciteVisible");
+            }}
+          />
+        );
       case "success":
         return <AlarmSuccess onContinue={handleSuccessContinue} />;
       case "streak":
@@ -122,7 +202,7 @@ export default function RecitalFlow({
       case "wakeUpPhrase":
         return (
           <WakeUpPhraseTyping
-            onSuccess={() => setStep("success")}
+            onSuccess={handleWakeUpSuccess}
             onClose={onReturnToRinging}
           />
         );
@@ -131,7 +211,10 @@ export default function RecitalFlow({
     }
   };
 
-  const isDark = step === "reciteVisible" || step === "reciteMemory" || step === "wakeUpPhrase";
+  const isDark =
+    step === "reciteVisible" ||
+    step === "reciteMemory" ||
+    step === "wakeUpPhrase";
   const isStreakDark = step === "streak";
 
   return (
