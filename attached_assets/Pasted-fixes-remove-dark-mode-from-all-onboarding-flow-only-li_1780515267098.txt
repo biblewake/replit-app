@@ -1,0 +1,121 @@
+fixes:
+
+# remove dark mode from all onboarding flow, only light mode. Disregard system mode.
+
+# welcome page
+- remove sun graphic
+- left align the text and increase spacing between title and sub-heading
+- make title and subheading a little bigger
+- use typewriter animation
+- use haptic feedback as type writer is writing
+
+# selectable buttons(answer options)
+- for the check mark, use the same color as the container (#FF9000), instead of green.
+- Center the buttons vertically so that are in the middle between the continue button and the text above
+
+# Bible Wake prevents you from snoozing page
+- for the actual graph and the key indicators, put into a white container. Use reasonable padding
+- for the stat that says: "84% of users report becoming a morning person after just 2 weeks", remove the orange like container, and change the text to grey-like sub-headings you have on other pages.
+- also, slightly slow down the animation and add a 400ms delay
+
+# Which of these verse could you recite right now, from memory? page
+- allow multi-select for options on this page
+
+# Most Christians know verses. Few can actually say them page
+- when percentage animations are loading, use hatpic feedback
+- add 300ms delay before percentage animation starts
+- disable continue button until animation is over
+
+# Start every day with scripture page
+- use attached image, bible.png, for the image
+
+# Memorizing verse helps your faith grow page
+- for the actual graph and the key indicators, put into a white container. Use reasonable inner padding
+- for the stat that says: "Daily scripture engagement is the #1 predictor of lasting spritual growth.", remove the orange like container, and change the text to grey-like sub-headings you have on other pages.
+- also, slightly slow down the animation and add a 400ms delay
+
+
+# Bible Wake combines both. Wake up on time. Start with the Word page
+- Change text to "Bible Wake combines both. Wake up on time & Start with Scripture."
+- Increase font size drastically
+- Pause for about 400-500ms after the first sentence, "Bible Wake combines both."
+- Change "Bible Wake", "Wake up" and "Scripture" to font color #FF9000
+
+# What time do you want to wake up page
+- scrolling wheel kept scrolling and glitching after I spun it
+- Center the wheel vertically so that are in the middle between the continue button and the text above
+
+# Which days page
+- Center the options vertically so that are in the middle between the continue button and the text above
+
+# Choose your verse page
+- At this point the user doesnt know the difference between Memorize and Declare
+- Those terms/options needs to explained
+- this page can be revealed in different parts. The first part is picking between memorize and declare, with a brief description of what each is (like in the choose verse bottom sheet). Then fade out zoom in animation, the next section is revealed (same page), user can pick choose their own verse or select from our library (the current you already have is fine). Fade out zoom in animation to verse library or text box to enter verse depending on their prior choice. The animations are alternating between fading in or our and zooming in or out, similar to animation at "Set only one alarm" page.
+
+# Pick your alarm sound page
+- the sounds are not playing (same issue with alarm sound picker bottom sheet, fix the issue there as well)
+
+# Join thousands waking up in the Word
+- remove this page
+
+# Never miss your wake-up page
+- Align buttons to the bottoms vertifcally, not center
+- replace notifaction and container graphic with attached image, notifcation.png.
+- remove "Not now" option
+
+# Ring even on silent page
+- Align buttons to the bottoms vertifcally, not center
+- replace alarm and container graphic with attached image, alarm-clock.png.
+- remove "Not now" option
+- allow permission wasnt request when i clicked "Allow alarms sounds", maybe its only an expo thing
+
+# Prove you're awake page
+- Align buttons to the bottoms vertifcally, not center
+- replace camera and container graphic with attached image, camera.png.
+- remove "Not now" option
+
+# Sign your commitment page
+- Vertically center the sign text container. Keep the "Sign to make it official" and "Date" text wrap together with the container as it is right now
+
+# We're setting everything up for you page
+- there a white container on the page, not needed, remove it
+- use circle checkmark (#FF9000), not just the check mark.
+- slow down between 60-85 a bit, it's too fast
+- Reduce width of progress a little bit
+- The check marked text list should be:
+1. Reading your answers
+2. Saying goodbye to snoozing
+3. Getting your scriptures ready
+4. Setting you up for success
+- when each line is check marked, use haptics feedback
+- horizontally center the check mark list
+- completely remove the text at the bottom, "We heard you....let's do it."
+
+# Save your progress page
+- remove lock emoji
+- flip order of auth buttons, put sign in with apple on top
+- for the google auth button, make it white with black borders and use the google icon with the colors
+
+# First payment page/part
+- make sure "Privacy Policy" launches to trybiblewake.com/privacy-policy
+- make sure "Terms of Use" launches to trybiblewake.com/terms
+
+# Second payment page/part
+- replace bell graphic with attached image, notification.png
+- for the bottom text, "Just $39.99 per year ($3.33/mo)", change it to: "Just $39.99 per year ($0.76/week)"
+
+# Third payment page/part (How your free trial works)
+- there a orange-like container on the page, not needed, remove it
+- remove the "x" button as well
+- Just like the previous page/part add text underneath the button: "3 days free, then $39.99/year ($0.76/week)"
+- make sure "Privacy Policy" launches to trybiblewake.com/privacy-policy
+- make sure "Terms" launches to trybiblewake.com/terms
+- Change the last two roadmap texts titles from "In 5 Days - Reminder" to "In 2 Days - Reminder" and "In 7 Days - Billing Starts" to "In 3 Days - Billing Starts"
+- Above the "No Payment Due Now" text, add two pricing options the user can select/toggle between, as shown in attached image pricing_options.png. one for weekly at $6.99/week and one for yearly at $0.76/week. The yearly in selected by defaul with the "3-day free trial" tag.
+- When the user switches to the weekly plan, the last two roadmap texts titles should change both to "Today", and the sub-text should be "We won't send you a reminder since you will be charged immediately" then the last subtext to "You will be charged immediately" Keep the first title and subtext of the roadmap the same
+- Also, if weekly option is select, main button text should change from "Try for $0.00" to "Pay $6.99 now", and remove the "Now Payment Due Now" text
+
+# Continue button
+- make button #FF9000 for colors
+- Center the buttons/options vertically so that are in the middle between the continue button and the text above. Right they are at the bottom and vertically overflowing and dissappearing on scroll

@@ -27,6 +27,7 @@ import * as WebBrowser from "expo-web-browser";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { supabase } from "@/lib/supabase";
+import { syncOnboardingAnswers } from "@/services/onboardingSync";
 
 // Required for OAuth on native — allows the browser to close and return to the app
 WebBrowser.maybeCompleteAuthSession();
@@ -44,6 +45,10 @@ interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   isLoading: boolean;
+  /** True once onboarding has been completed (AsyncStorage `onboarding_complete`). null while loading. */
+  onboardingComplete: boolean | null;
+  /** Mark onboarding done — persists the flag and flips the gate. */
+  completeOnboarding: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -54,10 +59,15 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
   isLoading: true,
+  onboardingComplete: null,
+  completeOnboarding: async () => {},
   signInWithGoogle: async () => {},
   signInWithApple: async () => {},
   signOut: async () => {},
 });
+
+/** AsyncStorage key that gates the onboarding flow. */
+const ONBOARDING_COMPLETE_KEY = "onboarding_complete";
 
 /** Flag stored in AsyncStorage to track whether migration has been run on this device */
 const MIGRATION_DONE_KEY = "@bible_wake_supabase_migration_v1";
@@ -181,6 +191,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(
+    null
+  );
+
+  // Load the onboarding gate flag once on mount.
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDING_COMPLETE_KEY)
+      .then((val) => setOnboardingComplete(val === "1"))
+      .catch(() => setOnboardingComplete(false));
+  }, []);
+
+  const completeOnboarding = useCallback(async () => {
+    try {
+      await AsyncStorage.setItem(ONBOARDING_COMPLETE_KEY, "1");
+    } catch {
+      // non-fatal — gate still flips in memory for this session
+    }
+    setOnboardingComplete(true);
+  }, []);
 
   // Handle auth state changes
   useEffect(() => {
@@ -205,6 +234,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await migrateLocalDataToSupabase(session.user.id);
           const p = await fetchProfile(session.user.id);
           setProfile(p);
+          // Fire-and-forget: push any locally-stored onboarding answers now that
+          // a session exists (e.g. user skipped auth during onboarding).
+          void syncOnboardingAnswers(supabase, session.user.id);
         } else {
           setProfile(null);
         }
@@ -352,6 +384,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         profile,
         isLoading,
+        onboardingComplete,
+        completeOnboarding,
         signInWithGoogle,
         signInWithApple,
         signOut,

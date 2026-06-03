@@ -1,2 +1,3 @@
 - [Nested Modals on Native](nested-modals-native.md) — separate Modal-based bottom sheets don't stack reliably in Expo native; use a single Modal with internal Animated.View panels instead.
 - [FAB Animation Management](fab-animation-management.md) — always stop current animation and reset Animated.Values before starting a new sequence; use a ref to track the active CompositeAnimation.
+- [Expo web native-module crash](expo-web-native-modules.md) — native-only Expo modules (e.g. expo-tracking-transparency) throw at import on web and kill the route; import them lazily + platform-guarded.

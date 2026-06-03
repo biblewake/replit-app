@@ -17,9 +17,13 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.tinochiwara.biblewake",
       "infoPlist": {
-        "UIBackgroundModes": ["audio"]
+        "UIBackgroundModes": [
+          "audio"
+        ]
       },
-      "associatedDomains": ["applinks:cmaysraaclfvofiynctl.supabase.co"]
+      "associatedDomains": [
+        "applinks:cmaysraaclfvofiynctl.supabase.co"
+      ]
     },
     "android": {
       "package": "com.tinochiwara.biblewake",
@@ -54,7 +58,19 @@
           "color": "#1A73E8"
         }
       ],
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-tracking-transparency",
+        {
+          "userTrackingPermission": "Bible Wake uses this to measure how well onboarding helps you build your scripture habit."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Bible Wake uses the camera so you can verify you're awake during your morning alarm."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

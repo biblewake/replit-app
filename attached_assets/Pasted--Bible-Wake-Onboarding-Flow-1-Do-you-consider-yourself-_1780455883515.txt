@@ -1,0 +1,197 @@
+# Bible Wake — Onboarding Flow
+
+---
+
+**1. Do you consider yourself a morning person?**
+- Yes
+- No
+
+---
+
+**2. What's your age range?**
+- 13-17
+- 18-24
+- 25-34
+- 45-54
+- 55+
+
+---
+
+**3. What is your biggest obstacle to getting out of bed?**
+- I scroll on my phone
+- I hit snooze repeatedly
+- I sleep through my alarms
+- None of the above
+
+---
+
+**4. *(Stat screen)* Bible Wake prevents you from snoozing**
+- Animated graph with stat
+
+---
+
+**5. How many alarms do you usually set?**
+- Just one
+- 2 or 3
+- 4 or more
+
+---
+
+**6. Do you trust yourself to wake up after the first alarm?**
+- Yes, always
+- Sometimes, it's a gamble
+- No, never
+
+---
+
+**7. Do you ever turn off your alarm and go back to sleep?**
+- Yes, it happens often
+- Sometimes
+- No, but I worry I might
+- No, never
+
+---
+
+**8. *(Insight screen)* Set Only One Alarm**
+- Animated visual with subtext
+
+---
+
+**9. How do you usually feel when you set your alarm at night?**
+- Motivated and ready
+- Anxious about sleep
+- Defeated, I know I'll snooze
+- Neutral
+
+---
+
+**10. When the alarm rings, what is your immediate thought?**
+- I'm up!
+- I'll get up after the next alarm
+- Just 5 more minutes
+- Why did I set this?
+
+---
+
+**11. Do you negotiate with yourself to stay in bed?**
+- Yes, I make deals with myself
+- No, I get right up
+
+---
+
+**12. Which of these verses could you recite right now, from memory?**
+- John 3:16
+- Psalm 23:1
+- Philippians 4:13
+- Jeremiah 29:11
+- Romans 8:28
+- None of these
+
+---
+
+**13. *(Dynamic follow-up stat screen)*
+- "Most Christians know verses exist. Few can actually say them."
+- 89% of Christians believe they should memorize scripture. Only 25% do it weekly.
+
+---
+
+**14. Which Bible translation do you prefer?**
+- KJV
+- NIV
+- ESV
+- NKJV
+- NLT
+- Not sure
+
+---
+
+**15. How many verses would you like to memorize this month?**
+- 4 verses
+- 8 verses
+- 12 verses
+- I will follow Bible Wake's plan
+
+---
+
+**16. *(Insight screen)* Start every day with scripture**
+- Speaking scripture engages your voice, breath, and eyes at once. Three systems on means grogginess can't survive.
+
+---
+
+**17. *(Insight screen)* Memorizing verses helps your faith**
+- For each additional Bible verse memorized, the probability of reading the Bible daily increased by 69.7%
+
+---
+
+**18. *(Transition screen — typewriter effect with haptic feedback)*
+- "Bible Wake combines both. Wake up on time. Start with the Word."
+
+---
+
+**19. When do you want to wake up?**
+- Scrollable wheel to set time
+
+---
+
+**20. Which days should your alarm repeat?**
+*(Subtext: Select at least one day)*
+- Monday
+- Tuesday
+- Wednesday
+- Thursday
+- Friday
+- Saturday
+- Sunday
+
+---
+
+**21. Pick your alarm verse**
+
+---
+
+**22. Choose your alarm sound**
+*(Subtext: You can change this later)*
+
+---
+
+**23. *(App demo screen)* Bible Wake helps you recite and memorize scripture**
+- App video demo
+
+---
+
+**24. *(Rating request)* Enjoying what you see?**
+- Rate us on the App Store
+
+---
+
+**25. Reach your goal with notifications**
+- Allow push notifications
+
+---
+
+**26. Enable ringing through silent and focus**
+- Bible Wake uses iOS's system alarm so it wakes you even on silent and through Sleep and Focus modes.
+
+---
+
+**27. We need the camera**
+- Bible Wake uses your camera to confirm you are awake and present while reciting your verse.
+
+---
+
+**28. *(Commitment screen)*
+- "Promise yourself that you will wake up tomorrow at [alarm_time] and recite scripture when your alarm goes off."
+
+---
+
+**29. *(Analysis screen)*
+- Loading animation processing quiz results with personalized summary
+
+---
+
+**30. Save your progress with an account**
+- Account creation
+
+---
+
+**31. Paywall**

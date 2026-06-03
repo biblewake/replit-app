@@ -228,3 +228,22 @@ create trigger alarms_updated_at
 create trigger streaks_updated_at
   before update on public.streaks
   for each row execute function public.handle_updated_at();
+
+-- ──────────────────────────────────────────────────────────
+-- 9. public.onboarding_answers
+--    One row per user. Stores the first-launch onboarding quiz
+--    responses as a JSONB key/value map.
+-- ──────────────────────────────────────────────────────────
+create table if not exists public.onboarding_answers (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null unique references public.users(id) on delete cascade,
+  answers    jsonb not null default '{}'::jsonb,
+  created_at timestamptz default now()
+);
+
+alter table public.onboarding_answers enable row level security;
+
+create policy "Users can manage own onboarding answers"
+  on public.onboarding_answers for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
