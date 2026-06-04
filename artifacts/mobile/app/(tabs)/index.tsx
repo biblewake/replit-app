@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   ringsText: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: "Inter_500Medium",
     color: "#8E8E93",
   },
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   miniTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: "Inter_600SemiBold",
     marginBottom: 2,
   },
