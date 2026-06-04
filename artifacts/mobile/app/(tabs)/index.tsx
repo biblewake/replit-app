@@ -110,7 +110,7 @@ export default function HomeScreen() {
               style={styles.flameImg}
               resizeMode="contain"
             />
-            <Text style={[styles.streakCount, { color: "#415168" }]}>
+            <Text style={[styles.streakCount, { color: "#1c1c1e" }]}>
               {streak}
             </Text>
           </Pressable>
