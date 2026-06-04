@@ -221,11 +221,6 @@ export function AccountScreen({ onContinue }: { onContinue: () => void }) {
         </Pressable>
       </View>
 
-      <Pressable onPress={onContinue} style={styles.skipBtn} hitSlop={10}>
-        <Text style={[styles.skipText, { color: OL.mutedForeground }]}>
-          Maybe later
-        </Text>
-      </Pressable>
     </View>
   );
 }
@@ -645,14 +640,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
   },
-  skipBtn: {
-    alignSelf: "center",
-  },
-  skipText: {
-    fontSize: 15,
-    fontFamily: "Inter_500Medium",
-  },
-
   /* Paywall shared */
   paywallWrap: {
     flex: 1,
