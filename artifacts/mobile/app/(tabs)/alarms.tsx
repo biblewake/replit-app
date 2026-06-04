@@ -202,7 +202,7 @@ export default function AlarmsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     router.push({
       pathname: "/alarm-ringing",
-      params: { alarmId: firstActive.id, type: firstActive.wakeUpCheck ? "wakeup" : "verse" },
+      params: { alarmId: firstActive.id, type: firstActive.wakeUpCheck ? "wakeup" : "verse", isTest: "true" },
     });
   };
 

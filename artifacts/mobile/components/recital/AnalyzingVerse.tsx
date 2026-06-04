@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
 
 interface AnalyzingVerseProps {
-  onResult: (passed: boolean) => void;
+  onResult: (passed: boolean, accuracy: number) => void;
   spoken: string;
   target: string;
 }
@@ -34,7 +34,7 @@ export default function AnalyzingVerse({ onResult, spoken, target }: AnalyzingVe
       a3.stop();
       const { checkVerseAccuracy } = require("@/utils/verseMatch");
       const score: number = checkVerseAccuracy(spoken, target);
-      onResult(score >= 0.70);
+      onResult(score >= 0.70, score);
     }, 1500);
 
     return () => clearTimeout(timer);

@@ -31,8 +31,10 @@ interface RecitalFlowProps {
   verseVersion?: string;
   verseMode?: "memory" | "declare";
   verseBackgroundImageId?: string | null;
+  isTest?: boolean;
   onDismiss: () => void;
   onReturnToRinging: () => void;
+  onAlarmStop?: () => void;
 }
 
 export default function RecitalFlow({
@@ -43,8 +45,10 @@ export default function RecitalFlow({
   verseVersion = "NIV",
   verseMode,
   verseBackgroundImageId,
+  isTest = false,
   onDismiss,
   onReturnToRinging,
+  onAlarmStop,
 }: RecitalFlowProps) {
   const { streak, incrementStreak, alarms } = useAlarms();
   const [step, setStep] = useState<Step>(
@@ -52,8 +56,8 @@ export default function RecitalFlow({
   );
   const [spokenText, setSpokenText] = useState("");
   const [streakJustIncremented, setStreakJustIncremented] = useState(false);
+  const [lastAccuracy, setLastAccuracy] = useState<number | null>(null);
 
-  // Track recital timing
   const recitalStartRef = useRef<number | null>(null);
   const recitalResultRef = useRef<{
     transcript: string;
@@ -62,12 +66,11 @@ export default function RecitalFlow({
     success: boolean;
   } | null>(null);
 
-  // Wake-up phrase attempt counter
   const wakeUpAttemptsRef = useRef(0);
 
   const alarm = alarms.find((a) => a.id === alarmId);
+  const effectiveVerseMode = verseMode ?? alarm?.verseMode ?? "memory";
 
-  /** Persist the wake event to Supabase (non-blocking, best-effort) */
   const persistWakeEvent = async (opts: {
     recitalSuccess?: boolean;
     wakeUpCheckCompleted?: boolean;
@@ -81,7 +84,7 @@ export default function RecitalFlow({
       alarmName: alarm?.name ?? null,
       verseRef: verseReference || null,
       verseText: verseText || null,
-      verseMode: verseMode ?? alarm?.verseMode ?? null,
+      verseMode: effectiveVerseMode,
       wakeUpCheckRequired: type === "wakeup",
       wakeUpCheckCompleted: opts.wakeUpCheckCompleted ?? false,
       wakeUpPhraseAttempts: wakeUpAttemptsRef.current,
@@ -100,14 +103,15 @@ export default function RecitalFlow({
     setStep("analyzing");
   };
 
-  const handleAnalysisResult = (passed: boolean, accuracy?: number) => {
+  const handleAnalysisResult = (passed: boolean, accuracy: number) => {
+    setLastAccuracy(accuracy);
     if (recitalStartRef.current != null) {
       const durationSeconds = Math.round(
         (Date.now() - recitalStartRef.current) / 1000
       );
       recitalResultRef.current = {
         transcript: spokenText,
-        accuracy: accuracy ?? (passed ? 1.0 : 0.0),
+        accuracy,
         durationSeconds,
         success: passed,
       };
@@ -128,8 +132,10 @@ export default function RecitalFlow({
     }
 
     persistWakeEvent({ recitalSuccess: recitalResultRef.current?.success ?? true });
-    incrementStreak();
-    setStreakJustIncremented(true);
+    if (!isTest) {
+      incrementStreak();
+      setStreakJustIncremented(true);
+    }
     setStep("streak");
   };
 
@@ -149,6 +155,7 @@ export default function RecitalFlow({
           <ReciteVisible
             reference={verseReference}
             text={verseText}
+            verseMode={effectiveVerseMode}
             onContinue={() => {
               recitalStartRef.current = Date.now();
               setStep("reciteMemory");
@@ -159,7 +166,10 @@ export default function RecitalFlow({
         return (
           <ReciteFromMemory
             reference={verseReference}
+            text={verseText}
+            verseMode={effectiveVerseMode}
             onTranscript={handleTranscript}
+            onAlarmStop={onAlarmStop}
           />
         );
       case "analyzing":
@@ -173,6 +183,8 @@ export default function RecitalFlow({
       case "tryAgain":
         return (
           <TryAgain
+            accuracy={lastAccuracy}
+            verseMode={effectiveVerseMode}
             onTryAgain={() => {
               recitalStartRef.current = Date.now();
               setStep("reciteVisible");
@@ -180,7 +192,12 @@ export default function RecitalFlow({
           />
         );
       case "success":
-        return <AlarmSuccess onContinue={handleSuccessContinue} />;
+        return (
+          <AlarmSuccess
+            accuracy={lastAccuracy}
+            onContinue={handleSuccessContinue}
+          />
+        );
       case "streak":
         return (
           <StreakCelebration
@@ -211,20 +228,8 @@ export default function RecitalFlow({
     }
   };
 
-  const isDark =
-    step === "reciteVisible" ||
-    step === "reciteMemory" ||
-    step === "wakeUpPhrase";
-  const isStreakDark = step === "streak";
-
   return (
-    <View
-      style={[
-        styles.container,
-        isDark && styles.darkBg,
-        isStreakDark && styles.streakBg,
-      ]}
-    >
+    <View style={styles.container}>
       {renderStep()}
     </View>
   );
@@ -233,12 +238,6 @@ export default function RecitalFlow({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F2F2F7",
-  },
-  darkBg: {
-    backgroundColor: "#0D0D0D",
-  },
-  streakBg: {
-    backgroundColor: "#1C1C1E",
+    backgroundColor: "#FFFFFF",
   },
 });

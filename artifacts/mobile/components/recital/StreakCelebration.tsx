@@ -1,6 +1,8 @@
-import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import LottieView from "lottie-react-native";
+import * as Haptics from "expo-haptics";
 import WeekDots from "@/components/WeekDots";
 
 interface StreakCelebrationProps {
@@ -10,21 +12,92 @@ interface StreakCelebrationProps {
 
 export default function StreakCelebration({ streak, onContinue }: StreakCelebrationProps) {
   const todayIndex = new Date().getDay();
+
+  const lottieRef = useRef<LottieView>(null);
+  const lottieFade = useRef(new Animated.Value(0)).current;
+  const numFade = useRef(new Animated.Value(0)).current;
+  const dotsFade = useRef(new Animated.Value(0)).current;
+  const btnTranslate = useRef(new Animated.Value(40)).current;
+  const btnOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const hapticRamp = async () => {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await new Promise((r) => setTimeout(r, 80));
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await new Promise((r) => setTimeout(r, 80));
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      await new Promise((r) => setTimeout(r, 80));
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    };
+
+    const sequence = async () => {
+      await new Promise((r) => setTimeout(r, 450));
+
+      lottieRef.current?.play();
+      Animated.timing(lottieFade, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+
+      hapticRamp();
+
+      await new Promise((r) => setTimeout(r, 400));
+
+      Animated.timing(numFade, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+      await new Promise((r) => setTimeout(r, 600));
+
+      Animated.timing(dotsFade, { toValue: 1, duration: 400, useNativeDriver: true }).start();
+
+      await new Promise((r) => setTimeout(r, 400));
+
+      Animated.parallel([
+        Animated.timing(btnOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
+        Animated.timing(btnTranslate, { toValue: 0, duration: 350, useNativeDriver: true }),
+      ]).start();
+    };
+
+    sequence();
+  }, []);
+
+  const handleContinue = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onContinue();
+  };
+
   return (
-    <Pressable style={styles.container} onPress={onContinue}>
-      <LottieView
-        source={require("@/assets/animations/fire.json")}
-        autoPlay
-        loop
-        style={styles.lottie}
-      />
-      <Text style={styles.streakNum}>{streak}</Text>
-      <Text style={styles.streakLabel}>Day Streak!</Text>
-      <View style={styles.weekDotsWrap}>
+    <View style={styles.container}>
+      <StatusBar style="dark" />
+      <Animated.View style={{ opacity: lottieFade }}>
+        <LottieView
+          ref={lottieRef}
+          source={require("@/assets/animations/fire.json")}
+          autoPlay={false}
+          loop
+          style={styles.lottie}
+        />
+      </Animated.View>
+
+      <Animated.View style={{ opacity: numFade, alignItems: "center" }}>
+        <Text style={styles.streakNum}>{streak}</Text>
+        <Text style={styles.streakLabel}>Day Streak!</Text>
+      </Animated.View>
+
+      <Animated.View style={[styles.weekDotsWrap, { opacity: dotsFade }]}>
         <WeekDots activeDayIndex={todayIndex} size="sm" />
-      </View>
-      <Text style={styles.tapHint}>Tap to continue</Text>
-    </Pressable>
+      </Animated.View>
+
+      <Animated.View
+        style={{
+          opacity: btnOpacity,
+          transform: [{ translateY: btnTranslate }],
+          width: "100%",
+        }}
+      >
+        <Pressable style={styles.continueBtn} onPress={handleContinue}>
+          <Text style={styles.continueBtnText}>Tap Continue</Text>
+        </Pressable>
+      </Animated.View>
+    </View>
   );
 }
 
@@ -34,7 +107,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#1C1C1E",
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 32,
   },
   lottie: {
@@ -50,17 +123,25 @@ const styles = StyleSheet.create({
   streakLabel: {
     fontSize: 24,
     fontFamily: "Inter_600SemiBold",
-    color: "#FFFFFF",
-    marginBottom: 16,
+    color: "#1C1C1E",
+    marginBottom: 8,
   },
   weekDotsWrap: {
     width: "100%",
     paddingHorizontal: 16,
+    marginTop: 8,
   },
-  tapHint: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.4)",
+  continueBtn: {
+    backgroundColor: "#FF9000",
+    borderRadius: 100,
+    paddingVertical: 18,
+    alignItems: "center",
     marginTop: 24,
+    width: "100%",
+  },
+  continueBtnText: {
+    fontSize: 17,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFFFFF",
   },
 });

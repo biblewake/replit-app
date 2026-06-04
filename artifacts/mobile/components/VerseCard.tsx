@@ -1,5 +1,6 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import {
+  Animated,
   Platform,
   Pressable,
   Share,
@@ -7,10 +8,12 @@ import {
   Text,
   View,
 } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import type { LinearGradient as LinearGradientType } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Sharing from "expo-sharing";
+import * as Haptics from "expo-haptics";
 import { captureRef } from "react-native-view-shot";
 
 const GRADIENTS: [string, string][] = [
@@ -48,8 +51,18 @@ export default function VerseCard({
 }: VerseCardProps) {
   const cardRef = useRef<LinearGradientType>(null);
   const gradient = getGradientForDate();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   const handleShare = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (Platform.OS === "web") {
       await Share.share({ message: `"${text}" — ${reference} (${version})` });
       return;
@@ -67,10 +80,15 @@ export default function VerseCard({
     }
   };
 
+  const handleContinue = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onContinue?.();
+  };
+
   return (
     <View style={[styles.container, flat && styles.containerFlat]}>
-      <View style={[styles.cardWrapper, flat && styles.cardWrapperFlat]}>
-        {/* Captured area: gradient + verse content only, no border radius, no UI chrome */}
+      <StatusBar style="dark" />
+      <Animated.View style={[styles.cardWrapper, flat && styles.cardWrapperFlat, { opacity: fadeAnim }]}>
         <LinearGradient colors={gradient} style={styles.gradient} ref={cardRef}>
           <View style={styles.verseContent}>
             <Text style={styles.reference}>✦ {reference} ✦</Text>
@@ -79,7 +97,6 @@ export default function VerseCard({
           <Text style={styles.appTag}>Bible Wake</Text>
         </LinearGradient>
 
-        {/* UI chrome overlaid on top — not captured */}
         <View style={styles.overlay} pointerEvents="box-none">
           <View style={styles.versionBadge}>
             <Text style={styles.versionText}>{version}</Text>
@@ -90,10 +107,10 @@ export default function VerseCard({
             </Pressable>
           )}
         </View>
-      </View>
+      </Animated.View>
 
       {isFinalStep && onContinue && (
-        <Pressable style={styles.continueBtn} onPress={onContinue}>
+        <Pressable style={styles.continueBtn} onPress={handleContinue}>
           <Text style={styles.continueBtnText}>Done</Text>
         </Pressable>
       )}
@@ -108,7 +125,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 20,
-    backgroundColor: "#F2F2F7",
+    backgroundColor: "#FFFFFF",
   },
   containerFlat: {
     paddingHorizontal: 0,

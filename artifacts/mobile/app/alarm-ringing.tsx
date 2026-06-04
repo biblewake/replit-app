@@ -43,7 +43,7 @@ function formatClock(date: Date) {
 export default function AlarmRingingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ alarmId: string; type: "verse" | "wakeup" }>();
+  const params = useLocalSearchParams<{ alarmId: string; type: "verse" | "wakeup"; isTest?: string }>();
   const { alarms } = useAlarms();
   const now = useCurrentTime();
   const { time, ampm } = formatClock(now);
@@ -119,8 +119,7 @@ export default function AlarmRingingScreen() {
               duration: 220,
               useNativeDriver: true,
             }),
-          ]).start(async () => {
-            await stopAlarm();
+          ]).start(() => {
             setSlid(true);
             setPhase("recital");
           });
@@ -169,8 +168,10 @@ export default function AlarmRingingScreen() {
         verseReference={alarm?.verseRef ?? ""}
         verseText={alarm?.verseText ?? ""}
         verseVersion="NIV"
+        isTest={params.isTest === "true"}
         onDismiss={handleDismiss}
         onReturnToRinging={handleReturnToRinging}
+        onAlarmStop={stopAlarm}
       />
     );
   }

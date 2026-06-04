@@ -4,16 +4,31 @@ import { Ionicons } from "@expo/vector-icons";
 
 interface TryAgainProps {
   onTryAgain: () => void;
+  accuracy?: number | null;
+  verseMode?: "memory" | "declare";
 }
 
-export default function TryAgain({ onTryAgain }: TryAgainProps) {
+export default function TryAgain({ onTryAgain, accuracy, verseMode = "memory" }: TryAgainProps) {
+  const accuracyPct = accuracy != null ? Math.round(accuracy * 100) : null;
+
+  const subMessage =
+    verseMode === "declare"
+      ? "Try reading the verse more clearly and slowly"
+      : "Speak the verse from memory, word for word";
+
   return (
     <View style={styles.container}>
       <View style={styles.iconCircle}>
         <Ionicons name="close" size={40} color="#FF3B30" />
       </View>
       <Text style={styles.heading}>Let's Try Again</Text>
-      <Text style={styles.sub}>Speak clearly and match the words shown</Text>
+      {accuracyPct != null && (
+        <View style={styles.scoreBadge}>
+          <Text style={styles.scoreLabel}>Accuracy</Text>
+          <Text style={styles.scoreValue}>{accuracyPct}%</Text>
+        </View>
+      )}
+      <Text style={styles.sub}>{subMessage}</Text>
       <Pressable style={styles.btn} onPress={onTryAgain}>
         <Text style={styles.btnText}>Try Again</Text>
       </Pressable>
@@ -44,6 +59,32 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
     color: "#1C1C1E",
     textAlign: "center",
+  },
+  scoreBadge: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    gap: 2,
+  },
+  scoreLabel: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: "#8E8E93",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  scoreValue: {
+    fontSize: 40,
+    fontFamily: "Inter_700Bold",
+    color: "#FF3B30",
+    lineHeight: 46,
   },
   sub: {
     fontSize: 15,
