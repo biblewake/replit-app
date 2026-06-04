@@ -189,7 +189,7 @@ export default function HomeScreen() {
                 <Text style={[styles.bigTime, { color: colors.foreground }]}>
                   {formatTime(nextAlarm.hour, nextAlarm.minute, nextAlarm.isPM)}
                 </Text>
-                <Text style={[styles.amPm, { color: colors.foreground }]}>
+                <Text style={[styles.amPm, { color: "#8E8E93" }]}>
                   {" "}{getAmPm(nextAlarm.isPM)}
                 </Text>
               </View>
@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Inter_600SemiBold",
     marginBottom: 12,
   },
   sectionTitleSm: {
@@ -420,8 +420,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   dayName: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
+    fontSize: 16,
+    fontFamily: "Inter_500Medium",
     color: "#415168",
   },
   timeRow: {
@@ -446,8 +446,8 @@ const styles = StyleSheet.create({
   },
   ringsText: {
     fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    color: "#415168",
+    fontFamily: "Inter_500Medium",
+    color: "#8E8E93",
   },
   miniCardsRow: {
     flexDirection: "row",
