@@ -18,6 +18,7 @@ import { useColors } from "@/hooks/useColors";
 import { useIsNativeTabs } from "@/hooks/useIsNativeTabs";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
+import { useSubscription } from "@/lib/revenuecat";
 import TroubleshootSheet from "@/components/TroubleshootSheet";
 
 interface SettingsRowProps {
@@ -92,10 +93,22 @@ function SettingsRow({
   );
 }
 
+function openSubscriptionManagement(managementURL: string | undefined | null) {
+  const fallback =
+    Platform.OS === "android"
+      ? "https://play.google.com/store/account/subscriptions"
+      : "https://apps.apple.com/account/subscriptions";
+  const url = managementURL ?? fallback;
+  Linking.openURL(url).catch(() => {
+    Alert.alert("Unable to open", "Please manage your subscription in the App Store.");
+  });
+}
+
 export default function SettingsScreen() {
   const colors = useColors();
   const { colorScheme, toggleColorScheme } = useTheme();
   const { signOut } = useAuth();
+  const { customerInfo } = useSubscription();
   const insets = useSafeAreaInsets();
   const isNativeTabs = useIsNativeTabs();
 
@@ -118,6 +131,25 @@ export default function SettingsScreen() {
         onPress: () => signOut(),
       },
     ]);
+  };
+
+  const handleManageSubscription = () => {
+    openSubscriptionManagement(customerInfo?.managementURL);
+  };
+
+  const handleCancelSubscription = () => {
+    Alert.alert(
+      "Cancel Subscription",
+      "This will take you to manage your subscription in the App Store where you can cancel.",
+      [
+        { text: "Not now", style: "cancel" },
+        {
+          text: "Continue",
+          style: "destructive",
+          onPress: () => openSubscriptionManagement(customerInfo?.managementURL),
+        },
+      ]
+    );
   };
 
   return (
@@ -336,20 +368,7 @@ export default function SettingsScreen() {
               />
             }
             label="Cancel Subscription"
-            onPress={() => {
-              Alert.alert(
-                "Cancel Subscription",
-                "This will take you to manage your subscription. Are you sure?",
-                [
-                  { text: "Not now", style: "cancel" },
-                  {
-                    text: "Continue",
-                    style: "destructive",
-                    onPress: () => {},
-                  },
-                ]
-              );
-            }}
+            onPress={handleCancelSubscription}
           />
           <SettingsRow
             colors={colors}
@@ -362,13 +381,7 @@ export default function SettingsScreen() {
               />
             }
             label="Manage Subscription"
-            onPress={() => {
-              Alert.alert(
-                "Manage Subscription",
-                "Subscription management coming soon.",
-                [{ text: "OK" }]
-              );
-            }}
+            onPress={handleManageSubscription}
           />
         </View>
 

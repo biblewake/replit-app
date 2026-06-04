@@ -15,6 +15,9 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useAuth } from "@/context/AuthContext";
 import { OL, ONBOARDING_ORANGE } from "@/components/onboarding/primitives";
+import { useSubscription } from "@/lib/revenuecat";
+import { PaywallBottom } from "@/components/PaywallBottom";
+import type { PurchasesPackage } from "react-native-purchases";
 
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
 
@@ -228,7 +231,7 @@ export function AccountScreen({ onContinue }: { onContinue: () => void }) {
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
- * Paywall — step 30. Three pages with plan toggle on Page C.
+ * Paywall — step 30. Three pages wired to RevenueCat.
  * ────────────────────────────────────────────────────────────────────────── */
 function openPrivacy() {
   Linking.openURL("https://trybiblewake.com/privacy-policy").catch(() => {});
@@ -245,8 +248,28 @@ function LinkText({ label, onPress }: { label: string; onPress: () => void }) {
   );
 }
 
-/* Page A — "We want you to try 'Bible Wake' for free." */
-function PageA({ onNext }: { onNext: () => void }) {
+/** Extract trial info from a package's intro price. Returns null when no intro offer. */
+function getIntroOffer(pkg: PurchasesPackage | undefined) {
+  const intro = pkg?.product.introPrice as
+    | { priceString?: string; periodNumberOfUnits?: number; periodUnit?: string }
+    | null
+    | undefined;
+  if (!intro) return null;
+  return {
+    priceString: intro.priceString,
+    days: intro.periodNumberOfUnits,
+    unit: intro.periodUnit?.toLowerCase() ?? "day",
+  };
+}
+
+/* Page A — design/marketing slide. CTA simply advances to next page. */
+interface PageAProps {
+  onContinue: () => void;
+  onRestore: () => void;
+  isRestoring: boolean;
+}
+
+function PageA({ onContinue, onRestore, isRestoring }: PageAProps) {
   return (
     <View style={styles.pageWrap}>
       <View style={styles.pageHero}>
@@ -266,42 +289,45 @@ function PageA({ onNext }: { onNext: () => void }) {
       </View>
 
       <View style={styles.pageFooter}>
-        <View style={styles.noPay}>
-          <Ionicons name="checkmark" size={16} color={OL.foreground} />
-          <Text style={styles.noPayText}>No Payment Due Now</Text>
-        </View>
         <Pressable
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            onNext();
+            onContinue();
           }}
           style={({ pressed }) => [
             styles.ctaBtn,
-            { backgroundColor: ONBOARDING_ORANGE, opacity: pressed ? 0.88 : 1 },
+            { backgroundColor: ONBOARDING_ORANGE, opacity: pressed ? 0.8 : 1 },
           ]}
         >
-          <Text style={styles.ctaText}>Try For $0.00</Text>
+          <Text style={styles.ctaText}>Continue</Text>
         </Pressable>
         <Text style={styles.noCommit}>No commitment, cancel anytime.</Text>
         <View style={styles.linksRow}>
-          <LinkText label="Privacy Policy" onPress={openPrivacy} />
+          <LinkText label="Privacy" onPress={openPrivacy} />
           <Text style={styles.linkDot}>·</Text>
-          <LinkText label="Restore Purchase" onPress={() => {}} />
+          <LinkText
+            label={isRestoring ? "Restoring…" : "Restore Purchase"}
+            onPress={onRestore}
+          />
           <Text style={styles.linkDot}>·</Text>
-          <LinkText label="Terms of Use" onPress={openTerms} />
+          <LinkText label="Terms" onPress={openTerms} />
         </View>
       </View>
     </View>
   );
 }
 
-/* Page B — Reminder bell with notification image */
-function PageB({ onNext }: { onNext: () => void }) {
+/* Page B — design/marketing slide. CTA simply advances to next page. */
+interface PageBProps {
+  onContinue: () => void;
+}
+
+function PageB({ onContinue }: PageBProps) {
   return (
     <View style={styles.pageWrap}>
       <View style={[styles.pageHero, { gap: 20 }]}>
         <Text style={styles.pageBTitle}>
-          We&apos;ll send you a{"\n"}reminder before your{"\n"}free trial ends
+          {"We\u2019ll send you a\nreminder before your\nfree trial ends"}
         </Text>
         <Image
           source={require("../../assets/images/notification.png")}
@@ -309,36 +335,29 @@ function PageB({ onNext }: { onNext: () => void }) {
           resizeMode="contain"
         />
         <Text style={styles.pageBBody}>
-          We&apos;ll send you a reminder before your trial ends. No surprise charges.
+          {"We\u2019ll send you a reminder before your trial ends. No surprise charges."}
         </Text>
       </View>
 
       <View style={styles.pageFooter}>
-        <View style={styles.noPay}>
-          <Ionicons name="checkmark" size={16} color={OL.foreground} />
-          <Text style={styles.noPayText}>No Payment Due Now</Text>
-        </View>
         <Pressable
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            onNext();
+            onContinue();
           }}
           style={({ pressed }) => [
             styles.ctaBtn,
-            { backgroundColor: ONBOARDING_ORANGE, opacity: pressed ? 0.88 : 1 },
+            { backgroundColor: ONBOARDING_ORANGE, opacity: pressed ? 0.8 : 1 },
           ]}
         >
-          <Text style={styles.ctaText}>Continue For Free</Text>
+          <Text style={styles.ctaText}>Continue</Text>
         </Pressable>
-        <Text style={styles.pricingNote}>$39.99 per year ($0.76/week)</Text>
       </View>
     </View>
   );
 }
 
-/* Page C — How your free trial works, with plan toggle */
-type Plan = "yearly" | "weekly";
-
+/* Page C — How your free trial works, with plan toggle via PaywallBottom */
 function futureDateStr(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
@@ -349,20 +368,33 @@ function futureDateStr(days: number): string {
   });
 }
 
-function PageC({ onComplete }: { onComplete: () => void }) {
-  const [plan, setPlan] = useState<Plan>("yearly");
+interface PageCProps {
+  onPurchase: (pkg: PurchasesPackage) => Promise<void>;
+  onRestore: () => Promise<void>;
+  annualPkg: PurchasesPackage | undefined;
+  weeklyPkg: PurchasesPackage | undefined;
+  isPurchasing: boolean;
+  isRestoring: boolean;
+}
+
+function PageC({
+  onPurchase,
+  onRestore,
+  annualPkg,
+  weeklyPkg,
+  isPurchasing,
+  isRestoring,
+}: PageCProps) {
+  const [plan, setPlan] = useState<"yearly" | "weekly">("yearly");
   const isYearly = plan === "yearly";
-
-  const selectPlan = (p: Plan) => {
-    Haptics.selectionAsync();
-    setPlan(p);
-  };
-
-  const billingDate = futureDateStr(isYearly ? 3 : 0);
+  // Trial duration derived from package intro price metadata — no hardcoded days.
+  const annualIntro = getIntroOffer(annualPkg);
+  const trialDays = annualIntro?.days ?? null;
+  const billingDate = futureDateStr(isYearly && trialDays != null ? trialDays : 0);
 
   return (
     <View style={styles.pageWrap}>
-      {/* Top: title + timeline, centered vertically */}
+      {/* Top: title + timeline */}
       <View style={styles.pageCTop}>
         <Text style={styles.pageCTitle}>How your free trial works</Text>
 
@@ -393,12 +425,14 @@ function PageC({ onComplete }: { onComplete: () => void }) {
             </View>
             <View style={styles.timelineText}>
               <Text style={styles.timelineLabel}>
-                {isYearly ? "In 2 Days – Reminder" : "Today"}
+                {isYearly && trialDays != null
+                  ? `In ${trialDays - 1} Day${trialDays - 1 !== 1 ? "s" : ""} – Reminder`
+                  : "Today"}
               </Text>
               <Text style={styles.timelineBody}>
-                {isYearly
+                {isYearly && trialDays != null
                   ? "We'll send you a reminder that your trial is ending soon."
-                  : "Payment of $6.99 will be charged today."}
+                  : `Payment of ${weeklyPkg?.product.priceString ?? "…"} will be charged today.`}
               </Text>
             </View>
           </View>
@@ -412,117 +446,47 @@ function PageC({ onComplete }: { onComplete: () => void }) {
             </View>
             <View style={styles.timelineText}>
               <Text style={[styles.timelineLabel, { color: ONBOARDING_ORANGE }]}>
-                {isYearly ? "In 3 Days – Billing Starts" : "Today – Billed Weekly"}
+                {isYearly && trialDays != null
+                  ? `In ${trialDays} Day${trialDays !== 1 ? "s" : ""} – Billing Starts`
+                  : "Today – Billed Weekly"}
               </Text>
               <Text style={styles.timelineBody}>
-                {isYearly
+                {isYearly && trialDays != null
                   ? `You'll be charged on ${billingDate} unless you cancel before.`
-                  : "You'll be billed $6.99/week. Cancel anytime."}
+                  : `You'll be billed ${weeklyPkg?.product.priceString ?? "…"}/week. Cancel anytime.`}
               </Text>
             </View>
           </View>
         </View>
       </View>
 
-      {/* Bottom: plan toggle + CTA */}
-      <View style={styles.pageCBottom}>
-        {/* Horizontal plan toggle — side by side */}
-        <View style={styles.planToggle}>
-          {/* Weekly option (left) */}
-          <Pressable
-            onPress={() => selectPlan("weekly")}
-            style={[
-              styles.planOption,
-              { flex: 1, marginTop: 12 },
-              !isYearly
-                ? { borderColor: ONBOARDING_ORANGE, backgroundColor: `${ONBOARDING_ORANGE}12` }
-                : { borderColor: OL.border },
-            ]}
-          >
-            <View style={styles.planRow}>
-              <View style={[styles.planRadio, { borderColor: !isYearly ? ONBOARDING_ORANGE : OL.border }]}>
-                {!isYearly ? <View style={[styles.planRadioDot, { backgroundColor: ONBOARDING_ORANGE }]} /> : null}
-              </View>
-              <View>
-                <Text style={[styles.planName, { color: OL.mutedForeground }]}>Weekly</Text>
-                <Text style={[styles.planPriceBold, { color: OL.foreground }]}>$6.99/week</Text>
-              </View>
-            </View>
-          </Pressable>
-
-          {/* Yearly option (right) */}
-          <Pressable
-            onPress={() => selectPlan("yearly")}
-            style={[
-              styles.planOption,
-              { flex: 1, marginTop: 12 },
-              isYearly
-                ? { borderColor: ONBOARDING_ORANGE, backgroundColor: `${ONBOARDING_ORANGE}12` }
-                : { borderColor: OL.border },
-            ]}
-          >
-            {/* "3-day free trial" badge overlapping top border */}
-            <View style={styles.trialTagWrap}>
-              <View
-                style={[
-                  styles.trialTag,
-                  { backgroundColor: isYearly ? ONBOARDING_ORANGE : OL.card, borderColor: isYearly ? ONBOARDING_ORANGE : OL.border, borderWidth: 1 },
-                ]}
-              >
-                <Text style={[styles.trialTagText, { color: isYearly ? "#FFFFFF" : OL.mutedForeground }]}>
-                  3-day free trial
-                </Text>
-              </View>
-            </View>
-            <View style={styles.planRow}>
-              <View style={[styles.planRadio, { borderColor: isYearly ? ONBOARDING_ORANGE : OL.border }]}>
-                {isYearly ? <View style={[styles.planRadioDot, { backgroundColor: ONBOARDING_ORANGE }]} /> : null}
-              </View>
-              <View>
-                <Text style={[styles.planName, { color: OL.mutedForeground }]}>Yearly</Text>
-                <Text style={[styles.planPriceBold, { color: OL.foreground }]}>$0.76/week</Text>
-              </View>
-            </View>
-          </Pressable>
-        </View>
-
-        {isYearly ? (
-          <View style={styles.noPay}>
-            <Ionicons name="checkmark" size={16} color={OL.foreground} />
-            <Text style={styles.noPayText}>No Payment Due Now</Text>
-          </View>
-        ) : null}
-
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            onComplete();
-          }}
-          style={({ pressed }) => [
-            styles.ctaBtn,
-            { backgroundColor: ONBOARDING_ORANGE, opacity: pressed ? 0.88 : 1 },
-          ]}
-        >
-          <Text style={styles.ctaText}>
-            {isYearly ? "Try for $0.00  →" : "Get Started"}
-          </Text>
-        </Pressable>
-
-        <View style={styles.linksRow}>
-          <LinkText label="Terms" onPress={openTerms} />
-          <Text style={styles.linkDot}>·</Text>
-          <LinkText label="Privacy Policy" onPress={openPrivacy} />
-          <Text style={styles.linkDot}>·</Text>
-          <LinkText label="Restore" onPress={() => {}} />
-        </View>
-      </View>
+      {/* Bottom: shared PaywallBottom — onPlanChange keeps timeline in sync */}
+      <PaywallBottom
+        annualPkg={annualPkg}
+        weeklyPkg={weeklyPkg}
+        onPurchase={onPurchase}
+        onRestore={onRestore}
+        isPurchasing={isPurchasing}
+        isRestoring={isRestoring}
+        defaultPlan={plan}
+        onPlanChange={setPlan}
+      />
     </View>
   );
 }
 
+/* ── Paywall container — manages page flow + RevenueCat integration ── */
 export function Paywall({ onComplete }: { onComplete: () => void }) {
   const [page, setPage] = useState(0);
   const fade = useRef(new Animated.Value(1)).current;
+  const { offerings, purchasePackage, restore, isPurchasing, isRestoring } = useSubscription();
+
+  const annualPkg = offerings?.current?.availablePackages.find(
+    (p) => p.identifier === "$rc_annual",
+  );
+  const weeklyPkg = offerings?.current?.availablePackages.find(
+    (p) => p.identifier === "$rc_weekly",
+  );
 
   const goPage = (next: number) => {
     Haptics.selectionAsync();
@@ -533,11 +497,41 @@ export function Paywall({ onComplete }: { onComplete: () => void }) {
     setPage(next);
   };
 
+  // Purchase and restore — called only from Page C (PaywallBottom).
+  const handlePurchase = async (pkg: PurchasesPackage) => {
+    await purchasePackage(pkg);
+    onComplete();
+  };
+
+  const handleRestore = async () => {
+    const info = await restore();
+    if (info?.entitlements.active?.["premium"] !== undefined) onComplete();
+  };
+
   return (
     <Animated.View style={[styles.paywallWrap, { opacity: fade }]}>
-      {page === 0 && <PageA onNext={() => goPage(1)} />}
-      {page === 1 && <PageB onNext={() => goPage(2)} />}
-      {page === 2 && <PageC onComplete={onComplete} />}
+      {page === 0 && (
+        <PageA
+          onContinue={() => goPage(1)}
+          onRestore={() => { void handleRestore(); }}
+          isRestoring={isRestoring}
+        />
+      )}
+      {page === 1 && (
+        <PageB
+          onContinue={() => goPage(2)}
+        />
+      )}
+      {page === 2 && (
+        <PageC
+          onPurchase={handlePurchase}
+          onRestore={handleRestore}
+          annualPkg={annualPkg}
+          weeklyPkg={weeklyPkg}
+          isPurchasing={isPurchasing}
+          isRestoring={isRestoring}
+        />
+      )}
     </Animated.View>
   );
 }
@@ -758,10 +752,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     gap: 12,
   },
-  pageCBottom: {
-    gap: 10,
-    paddingTop: 4,
-  },
   pageCTitle: {
     fontSize: 28,
     fontFamily: "Inter_700Bold",
@@ -769,68 +759,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     lineHeight: 36,
     textAlign: "center",
-  },
-  /* Horizontal plan toggle */
-  planToggle: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  planOption: {
-    borderRadius: 14,
-    borderWidth: 1.5,
-    padding: 14,
-    paddingTop: 10,
-    overflow: "visible",
-  },
-  planRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  planRadio: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  planRadioDot: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-  },
-  planName: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-  },
-  planPrice: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    marginTop: 1,
-  },
-  planPriceBold: {
-    fontSize: 14,
-    fontFamily: "Inter_700Bold",
-    marginTop: 1,
-  },
-  /* Trial tag overlapping top border */
-  trialTagWrap: {
-    position: "absolute",
-    top: -11,
-    left: 0,
-    right: 0,
-    alignItems: "center",
-    zIndex: 10,
-  },
-  trialTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  trialTagText: {
-    fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
   },
 
   /* Page C — timeline */
@@ -879,7 +807,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
-  /* Shared CTA + footer */
+  /* Shared CTA + footer (for Pages A & B which don't use PaywallBottom) */
   noPay: {
     flexDirection: "row",
     alignItems: "center",
@@ -929,5 +857,49 @@ const styles = StyleSheet.create({
   linkDot: {
     fontSize: 12,
     color: OL.mutedForeground,
+  },
+
+  /* DEV confirm modal (Pages A & B) */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  modalBox: {
+    backgroundColor: OL.background,
+    borderRadius: 20,
+    padding: 24,
+    width: "100%",
+    maxWidth: 340,
+    gap: 12,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontFamily: "Inter_700Bold",
+    color: OL.foreground,
+    textAlign: "center",
+  },
+  modalBody: {
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    color: OL.mutedForeground,
+    textAlign: "center",
+    lineHeight: 22,
+  },
+  modalBtn: {
+    height: 50,
+    borderRadius: 25,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalBtnCancel: {
+    backgroundColor: OL.secondary,
+  },
+  modalBtnText: {
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFFFFF",
   },
 });
