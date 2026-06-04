@@ -9,8 +9,7 @@ import {
   View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { LinearGradient } from "expo-linear-gradient";
-import type { LinearGradient as LinearGradientType } from "expo-linear-gradient";
+import type { View as ViewType } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Sharing from "expo-sharing";
 import * as Haptics from "expo-haptics";
@@ -49,7 +48,7 @@ export default function VerseCard({
   isFinalStep = false,
   flat = false,
 }: VerseCardProps) {
-  const cardRef = useRef<LinearGradientType>(null);
+  const cardRef = useRef<ViewType>(null);
   const gradient = getGradientForDate();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -89,13 +88,13 @@ export default function VerseCard({
     <View style={[styles.container, flat && styles.containerFlat]}>
       <StatusBar style="dark" />
       <Animated.View style={[styles.cardWrapper, flat && styles.cardWrapperFlat, { opacity: fadeAnim }]}>
-        <LinearGradient colors={gradient} style={styles.gradient} ref={cardRef}>
+        <View style={styles.gradient} ref={cardRef}>
           <View style={styles.verseContent}>
             <Text style={styles.reference}>✦ {reference} ✦</Text>
             <Text style={styles.verseText}>{text}</Text>
           </View>
           <Text style={styles.appTag}>Bible Wake</Text>
-        </LinearGradient>
+        </View>
 
         <View style={styles.overlay} pointerEvents="box-none">
           <View style={styles.versionBadge}>
@@ -145,6 +144,7 @@ const styles = StyleSheet.create({
     gap: 28,
     minHeight: 320,
     justifyContent: "space-between",
+    backgroundColor: "#1c1c1e",
   },
   overlay: {
     position: "absolute",
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   versionText: {
     fontSize: 12,
     fontFamily: "Inter_600SemiBold",
-    color: "rgba(255,255,255,0.7)",
+    color: "#ebebf5",
     letterSpacing: 1,
   },
   shareBtn: {
@@ -176,22 +176,22 @@ const styles = StyleSheet.create({
   },
   reference: {
     fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
-    color: "rgba(255,255,255,0.6)",
+    fontFamily: "Inter_700Bold",
+    color: "#ffffff",
     textAlign: "center",
     letterSpacing: 0.8,
   },
   verseText: {
-    fontSize: 20,
-    fontFamily: "Inter_400Regular",
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
     color: "#FFFFFF",
     textAlign: "center",
     lineHeight: 32,
   },
   appTag: {
-    fontSize: 12,
-    fontFamily: "Inter_500Medium",
-    color: "rgba(255,255,255,0.3)",
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    color: "#ebebf5",
     textAlign: "center",
     letterSpacing: 1.5,
     textTransform: "uppercase",
