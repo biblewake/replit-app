@@ -149,7 +149,7 @@ export default function HomeScreen() {
         {/* Next Wake Up */}
         {nextAlarm ? (
           <>
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+            <Text style={[styles.sectionTitle, { color: "#1c1c1e" }]}>
               Next Wake Up
             </Text>
             <Pressable
@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   miniSub: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: "Inter_400Regular",
   },
   miniIcon: {
