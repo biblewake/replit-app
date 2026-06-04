@@ -12,7 +12,7 @@ import { useColors } from "@/hooks/useColors";
 
 function NativeTabLayout() {
   return (
-    <NativeTabs>
+    <NativeTabs tintColor="#FF9000">
       <NativeTabs.Trigger name="index">
         <Icon sf={{ default: "house", selected: "house.fill" }} />
         <Label>Home</Label>
@@ -44,7 +44,7 @@ function ClassicTabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: "#FF9000",
         tabBarInactiveTintColor: colors.mutedForeground,
         headerShown: false,
         tabBarStyle: {

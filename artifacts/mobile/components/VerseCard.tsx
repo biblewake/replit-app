@@ -69,8 +69,18 @@ export default function VerseCard({
 
   return (
     <View style={[styles.container, flat && styles.containerFlat]}>
-      <LinearGradient colors={gradient} style={styles.gradient} ref={cardRef}>
-        <View style={styles.topRow}>
+      <View style={[styles.cardWrapper, flat && styles.cardWrapperFlat]}>
+        {/* Captured area: gradient + verse content only, no border radius, no UI chrome */}
+        <LinearGradient colors={gradient} style={styles.gradient} ref={cardRef}>
+          <View style={styles.verseContent}>
+            <Text style={styles.reference}>✦ {reference} ✦</Text>
+            <Text style={styles.verseText}>{text}</Text>
+          </View>
+          <Text style={styles.appTag}>Bible Wake</Text>
+        </LinearGradient>
+
+        {/* UI chrome overlaid on top — not captured */}
+        <View style={styles.overlay} pointerEvents="box-none">
           <View style={styles.versionBadge}>
             <Text style={styles.versionText}>{version}</Text>
           </View>
@@ -80,14 +90,7 @@ export default function VerseCard({
             </Pressable>
           )}
         </View>
-
-        <View style={styles.verseContent}>
-          <Text style={styles.reference}>✦ {reference} ✦</Text>
-          <Text style={styles.verseText}>{text}</Text>
-        </View>
-
-        <Text style={styles.appTag}>Bible Wake</Text>
-      </LinearGradient>
+      </View>
 
       {isFinalStep && onContinue && (
         <Pressable style={styles.continueBtn} onPress={onContinue}>
@@ -111,15 +114,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     backgroundColor: "transparent",
   },
-  gradient: {
+  cardWrapper: {
     width: "100%",
     borderRadius: 24,
+    overflow: "hidden",
+    position: "relative",
+  },
+  cardWrapperFlat: {},
+  gradient: {
+    width: "100%",
     padding: 28,
+    paddingTop: 60,
     gap: 28,
     minHeight: 320,
     justifyContent: "space-between",
   },
-  topRow: {
+  overlay: {
+    position: "absolute",
+    top: 20,
+    left: 24,
+    right: 24,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",

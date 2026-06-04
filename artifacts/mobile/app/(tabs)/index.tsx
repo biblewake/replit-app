@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { router } from "expo-router";
 
 import { useColors } from "@/hooks/useColors";
 import { useIsNativeTabs } from "@/hooks/useIsNativeTabs";
@@ -21,7 +22,6 @@ import { useAlarmPermission } from "@/hooks/useAlarmPermission";
 import WeekDots from "@/components/WeekDots";
 import AlarmEditSheet from "@/components/AlarmEditSheet";
 import AlarmPermissionSheet from "@/components/AlarmPermissionSheet";
-import MilestonesSheet from "@/components/MilestonesSheet";
 import VerseCard from "@/components/VerseCard";
 import { BIBLE_VERSES } from "@/constants/verses";
 
@@ -65,7 +65,6 @@ export default function HomeScreen() {
   const [editingAlarm, setEditingAlarm] = useState<import("@/context/AlarmContext").Alarm | null>(null);
   const [showVerseDetail, setShowVerseDetail] = useState(false);
   const [showPermissionSheet, setShowPermissionSheet] = useState(false);
-  const [showMilestones, setShowMilestones] = useState(false);
 
   const todayIndex = new Date().getDay();
   const nextAlarm = getNextAlarm();
@@ -103,7 +102,7 @@ export default function HomeScreen() {
             style={[styles.streakBadge, { backgroundColor: colors.card }]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setShowMilestones(true);
+              router.push("/(tabs)/insights");
             }}
           >
             <Image
@@ -262,7 +261,7 @@ export default function HomeScreen() {
               style={styles.emptyStreakRow}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setShowMilestones(true);
+                router.push("/(tabs)/insights");
               }}
             >
               <Image
@@ -335,11 +334,6 @@ export default function HomeScreen() {
       <AlarmPermissionSheet
         visible={showPermissionSheet}
         onClose={() => setShowPermissionSheet(false)}
-      />
-      <MilestonesSheet
-        visible={showMilestones}
-        onClose={() => setShowMilestones(false)}
-        streak={streak}
       />
     </View>
   );

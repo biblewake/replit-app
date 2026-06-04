@@ -18,8 +18,10 @@
       "bundleIdentifier": "com.tinochiwara.biblewake",
       "infoPlist": {
         "UIBackgroundModes": [
-          "audio"
-        ]
+          "audio",
+          "fetch"
+        ],
+        "NSMicrophoneUsageDescription": "Bible Wake uses the microphone so you can recite your scripture verse aloud during your morning alarm."
       },
       "associatedDomains": [
         "applinks:cmaysraaclfvofiynctl.supabase.co"

@@ -1,6 +1,7 @@
 import React from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTheme } from "@/context/ThemeContext";
 
 const DAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -16,6 +17,8 @@ export default function WeekDots({
   size = "md",
 }: WeekDotsProps) {
   const dotSize = size === "sm" ? 28 : 34;
+  const { colorScheme } = useTheme();
+  const inactiveDotColor = colorScheme === "dark" ? "#94989D" : "#E2E9F1";
 
   return (
     <View style={styles.row}>
@@ -44,7 +47,7 @@ export default function WeekDots({
                 <View
                   style={[
                     styles.dotInner,
-                    { width: dotSize, height: dotSize, borderRadius: dotSize / 2 },
+                    { width: dotSize, height: dotSize, borderRadius: dotSize / 2, backgroundColor: inactiveDotColor },
                   ]}
                 >
                   <Image
@@ -58,7 +61,7 @@ export default function WeekDots({
               <View
                 style={[
                   styles.dot,
-                  { width: dotSize, height: dotSize, borderRadius: dotSize / 2 },
+                  { width: dotSize, height: dotSize, borderRadius: dotSize / 2, backgroundColor: inactiveDotColor },
                 ]}
               />
             )}
@@ -93,13 +96,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   dotInner: {
-    backgroundColor: "#E2E9F1",
     alignItems: "center",
     justifyContent: "center",
   },
-  dot: {
-    backgroundColor: "#E2E9F1",
-  },
+  dot: {},
   checkIcon: {
     width: 14,
     height: 14,

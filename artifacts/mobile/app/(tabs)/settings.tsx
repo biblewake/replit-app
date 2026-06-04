@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
-  Image,
   Linking,
   Platform,
   Pressable,
@@ -20,7 +18,6 @@ import { useColors } from "@/hooks/useColors";
 import { useIsNativeTabs } from "@/hooks/useIsNativeTabs";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
-import { isSupabaseConfigured } from "@/lib/supabase";
 import TroubleshootSheet from "@/components/TroubleshootSheet";
 
 interface SettingsRowProps {
@@ -98,33 +95,18 @@ function SettingsRow({
 export default function SettingsScreen() {
   const colors = useColors();
   const { colorScheme, toggleColorScheme } = useTheme();
-  const { user, profile, signInWithGoogle, signInWithApple, signOut, isLoading } = useAuth();
+  const { signOut } = useAuth();
   const insets = useSafeAreaInsets();
   const isNativeTabs = useIsNativeTabs();
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [troubleshootVisible, setTroubleshootVisible] = useState(false);
-  const [signingIn, setSigningIn] = useState(false);
 
   const paddingTop = insets.top + (Platform.OS === "web" ? 67 : 16);
 
   const openAppSettings = () => Linking.openURL("app-settings:");
   const openSupport = () =>
     Linking.openURL("mailto:support@trybiblewake.com");
-
-  const handleGoogleSignIn = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setSigningIn(true);
-    await signInWithGoogle();
-    setSigningIn(false);
-  };
-
-  const handleAppleSignIn = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setSigningIn(true);
-    await signInWithApple();
-    setSigningIn(false);
-  };
 
   const handleSignOut = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -150,111 +132,6 @@ export default function SettingsScreen() {
         <Text style={[styles.title, { color: colors.foreground }]}>
           Settings
         </Text>
-
-        {/* Account — only shown when Supabase is configured */}
-        {isSupabaseConfigured && (
-          <>
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
-              Account
-            </Text>
-            <View
-              style={[
-                styles.group,
-                { backgroundColor: colors.card, shadowColor: colors.foreground },
-              ]}
-            >
-              {isLoading ? (
-                <View style={styles.accountLoading}>
-                  <ActivityIndicator color={colors.mutedForeground} />
-                </View>
-              ) : user ? (
-                <>
-                  <View style={[styles.accountRow, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
-                    {profile?.avatar_url ? (
-                      <Image
-                        source={{ uri: profile.avatar_url }}
-                        style={styles.accountAvatar}
-                      />
-                    ) : (
-                      <View style={[styles.accountAvatarPlaceholder, { backgroundColor: colors.secondary }]}>
-                        <Ionicons name="person" size={20} color={colors.mutedForeground} />
-                      </View>
-                    )}
-                    <View style={styles.accountInfo}>
-                      <Text style={[styles.accountName, { color: colors.foreground }]}>
-                        {profile?.display_name ?? user.email ?? "Signed in"}
-                      </Text>
-                      {profile?.email && profile.email !== profile?.display_name && (
-                        <Text style={[styles.accountEmail, { color: colors.mutedForeground }]}>
-                          {profile.email}
-                        </Text>
-                      )}
-                    </View>
-                  </View>
-                  <SettingsRow
-                    colors={colors}
-                    isLast
-                    icon={
-                      <Ionicons
-                        name="log-out-outline"
-                        size={20}
-                        color={colors.destructive}
-                      />
-                    }
-                    label="Sign Out"
-                    onPress={handleSignOut}
-                  />
-                </>
-              ) : (
-                <>
-                  <View style={styles.signInPrompt}>
-                    <Text style={[styles.signInTitle, { color: colors.foreground }]}>
-                      Sync across devices
-                    </Text>
-                    <Text style={[styles.signInSubtitle, { color: colors.mutedForeground }]}>
-                      Sign in to save your alarms, streaks, and verse progress to the cloud.
-                    </Text>
-                  </View>
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.signInBtn,
-                      { backgroundColor: pressed ? "#222" : "#000", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-                    ]}
-                    onPress={handleGoogleSignIn}
-                    disabled={signingIn}
-                  >
-                    {signingIn ? (
-                      <ActivityIndicator color="#fff" size="small" />
-                    ) : (
-                      <>
-                        <Ionicons name="logo-google" size={18} color="#fff" />
-                        <Text style={styles.signInBtnText}>Continue with Google</Text>
-                      </>
-                    )}
-                  </Pressable>
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.signInBtn,
-                      styles.signInBtnLast,
-                      { backgroundColor: pressed ? "#111" : "#000" },
-                    ]}
-                    onPress={handleAppleSignIn}
-                    disabled={signingIn}
-                  >
-                    {signingIn ? (
-                      <ActivityIndicator color="#fff" size="small" />
-                    ) : (
-                      <>
-                        <Ionicons name="logo-apple" size={18} color="#fff" />
-                        <Text style={styles.signInBtnText}>Continue with Apple</Text>
-                      </>
-                    )}
-                  </Pressable>
-                </>
-              )}
-            </View>
-          </>
-        )}
 
         {/* Alarm */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
@@ -525,6 +402,16 @@ export default function SettingsScreen() {
         >
           <Text style={styles.deleteBtnText}>Delete Account</Text>
         </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.logoutBtn,
+            { opacity: pressed ? 0.8 : 1 },
+          ]}
+          onPress={handleSignOut}
+        >
+          <Text style={[styles.logoutBtnText, { color: colors.foreground }]}>Log Out</Text>
+        </Pressable>
       </ScrollView>
 
       <TroubleshootSheet
@@ -620,71 +507,17 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     color: "#FFFFFF",
   },
-  accountLoading: {
-    padding: 20,
+  logoutBtn: {
+    borderRadius: 16,
+    paddingVertical: 16,
     alignItems: "center",
+    marginTop: 8,
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "rgba(142,142,147,0.3)",
   },
-  accountRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  accountAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  accountAvatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  accountInfo: {
-    flex: 1,
-  },
-  accountName: {
-    fontSize: 15,
+  logoutBtnText: {
+    fontSize: 16,
     fontFamily: "Inter_600SemiBold",
-  },
-  accountEmail: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    marginTop: 2,
-  },
-  signInPrompt: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
-    gap: 4,
-  },
-  signInTitle: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-  },
-  signInSubtitle: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    lineHeight: 18,
-  },
-  signInBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-  },
-  signInBtnLast: {
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
-  },
-  signInBtnText: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-    color: "#FFFFFF",
   },
 });
