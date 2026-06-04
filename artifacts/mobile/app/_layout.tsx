@@ -48,6 +48,13 @@ function RootLayoutNav() {
     const inOnboarding = segments[0] === "onboarding";
     const inPaywall = segments[0] === "paywall";
 
+    // DEV: skip onboarding + paywall gates during development
+    const DEV_SKIP_GATES = __DEV__;
+    if (DEV_SKIP_GATES) {
+      if (inOnboarding || inPaywall) router.replace("/(tabs)");
+      return;
+    }
+
     if (!onboardingComplete) {
       if (!inOnboarding) router.replace("/onboarding");
       return;
