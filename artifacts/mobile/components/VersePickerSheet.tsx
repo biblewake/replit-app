@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
 import { BibleVerse, BIBLE_VERSES } from "@/constants/verses";
@@ -138,6 +139,7 @@ export default function VersePickerSheet({
         handleClose();
       }}
       height={680}
+      showCloseButton={false}
     >
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.foreground }]}>
@@ -148,9 +150,11 @@ export default function VersePickerSheet({
             resetStepState();
             handleClose();
           }}
-          hitSlop={12}
+          hitSlop={4}
         >
-          <Ionicons name="close" size={24} color={colors.mutedForeground} />
+          <BlurView intensity={65} tint="light" style={styles.glassClose}>
+            <Ionicons name="close" size={20} color="rgba(0,0,0,0.55)" />
+          </BlurView>
         </Pressable>
       </View>
 
@@ -375,6 +379,16 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     padding: 0,
+  },
+  glassClose: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,0,0,0.1)",
   },
   list: {
     paddingHorizontal: 20,

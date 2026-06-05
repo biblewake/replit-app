@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
+import { Appearance } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -22,6 +23,10 @@ import {
   SubscriptionProvider,
   useSubscription,
 } from "@/lib/revenuecat";
+
+// Force the app to always run in light mode regardless of system preference.
+// This prevents React Navigation and native components from auto-switching to dark.
+Appearance.setColorScheme?.("light");
 
 SplashScreen.preventAutoHideAsync();
 

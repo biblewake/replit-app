@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet from "@/components/BottomSheet";
 import { useColors } from "@/hooks/useColors";
@@ -45,7 +46,7 @@ export default function MilestonesSheet({
   const badgeProgress = earnedBadges / BADGES.length;
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} height="auto" backgroundColor="#F7FAFF">
+    <BottomSheet visible={visible} onClose={onClose} height="auto" backgroundColor="#F7FAFF" showCloseButton={false}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -54,11 +55,12 @@ export default function MilestonesSheet({
         {/* Header row */}
         <View style={styles.headerRow}>
           <Pressable
-            style={styles.closeBtn}
             onPress={onClose}
-            hitSlop={8}
+            hitSlop={4}
           >
-            <Ionicons name="close" size={18} color="#415168" />
+            <BlurView intensity={65} tint="light" style={styles.closeBtn}>
+              <Ionicons name="close" size={20} color="rgba(0,0,0,0.55)" />
+            </BlurView>
           </Pressable>
           <Text style={[styles.title, { color: colors.foreground }]}>
             Milestones
@@ -206,14 +208,14 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(65,81,104,0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(65,81,104,0.12)",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,0,0,0.1)",
   },
   title: {
     fontSize: 18,

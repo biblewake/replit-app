@@ -16,7 +16,6 @@ import * as Haptics from "expo-haptics";
 
 import { useColors } from "@/hooks/useColors";
 import { useIsNativeTabs } from "@/hooks/useIsNativeTabs";
-import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { useSubscription } from "@/lib/revenuecat";
 import TroubleshootSheet from "@/components/TroubleshootSheet";
@@ -106,7 +105,6 @@ function openSubscriptionManagement(managementURL: string | undefined | null) {
 
 export default function SettingsScreen() {
   const colors = useColors();
-  const { colorScheme, toggleColorScheme } = useTheme();
   const { signOut } = useAuth();
   const { customerInfo } = useSubscription();
   const insets = useSafeAreaInsets();
@@ -236,6 +234,7 @@ export default function SettingsScreen() {
           <SettingsRow
             colors={colors}
             isFirst
+            isLast
             icon={
               <Ionicons
                 name="notifications-outline"
@@ -253,29 +252,6 @@ export default function SettingsScreen() {
                   if (v) {
                     openAppSettings();
                   }
-                }}
-                trackColor={{ false: colors.border, true: colors.blue }}
-                thumbColor="#fff"
-              />
-            }
-          />
-          <SettingsRow
-            colors={colors}
-            isLast
-            icon={
-              <Ionicons
-                name="sunny-outline"
-                size={20}
-                color={colors.foreground}
-              />
-            }
-            label="Dark Mode"
-            trailing={
-              <Switch
-                value={colorScheme === "dark"}
-                onValueChange={() => {
-                  Haptics.selectionAsync();
-                  toggleColorScheme();
                 }}
                 trackColor={{ false: colors.border, true: colors.blue }}
                 thumbColor="#fff"
@@ -456,7 +432,7 @@ const styles = StyleSheet.create({
   },
   group: {
     borderRadius: 16,
-    marginBottom: 8,
+    marginBottom: 24,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 12,

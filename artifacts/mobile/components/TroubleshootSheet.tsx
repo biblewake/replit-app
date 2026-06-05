@@ -1,13 +1,13 @@
 import React from "react";
 import {
   Linking,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
@@ -119,25 +119,18 @@ export default function TroubleshootSheet({
   };
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} height="auto">
+    <BottomSheet visible={visible} onClose={onClose} height="auto" showCloseButton={false}>
       <View style={styles.header}>
         <Pressable
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             onClose();
           }}
-          style={({ pressed }) => [
-            styles.closeBtn,
-            {
-              backgroundColor: pressed
-                ? "rgba(120,120,128,0.3)"
-                : Platform.OS === "ios"
-                  ? "rgba(120,120,128,0.18)"
-                  : colors.secondary,
-            },
-          ]}
+          hitSlop={4}
         >
-          <Ionicons name="close" size={18} color={colors.foreground} />
+          <BlurView intensity={65} tint="light" style={styles.closeBtn}>
+            <Ionicons name="close" size={20} color="rgba(0,0,0,0.55)" />
+          </BlurView>
         </Pressable>
         <Text style={[styles.sheetTitle, { color: colors.foreground }]}>
           Alarm Troubleshooting
@@ -295,11 +288,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,0,0,0.1)",
   },
   sheetTitle: {
     fontSize: 17,

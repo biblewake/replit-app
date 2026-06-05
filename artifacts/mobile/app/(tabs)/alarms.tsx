@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import {
+  Alert,
   Animated,
   Easing,
   FlatList,
@@ -189,8 +190,21 @@ export default function AlarmsScreen() {
 
   const handleDelete = () => {
     if (editingAlarm) {
-      deleteAlarm(editingAlarm.id);
-      setEditingAlarm(null);
+      Alert.alert(
+        "Delete Alarm",
+        "Are you sure you want to delete this alarm? This cannot be undone.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => {
+              deleteAlarm(editingAlarm.id);
+              setEditingAlarm(null);
+            },
+          },
+        ]
+      );
     }
   };
 

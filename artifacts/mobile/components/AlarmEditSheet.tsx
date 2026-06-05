@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Dimensions,
   Easing,
@@ -62,13 +63,13 @@ const PANEL_TITLES: Record<PanelType, string> = {
 
 function GlassClose({ onPress }: { onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} hitSlop={10}>
+    <Pressable onPress={onPress} hitSlop={4}>
       <BlurView
         intensity={65}
         tint="light"
         style={styles.glassClose}
       >
-        <Ionicons name="close" size={14} color="rgba(0,0,0,0.6)" />
+        <Ionicons name="close" size={20} color="rgba(0,0,0,0.55)" />
       </BlurView>
     </Pressable>
   );
@@ -191,6 +192,8 @@ export default function AlarmEditSheet({
   const panelBackdropOpacity = useRef(new Animated.Value(0)).current;
   const mainSheetScale = useRef(new Animated.Value(1)).current;
   const mainSheetOffsetY = useRef(new Animated.Value(0)).current;
+  const mainAnimRef = useRef<Animated.CompositeAnimation | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const [hour, setHour] = useState(7);
   const [minute, setMinute] = useState(0);
@@ -252,22 +255,15 @@ export default function AlarmEditSheet({
 
   useEffect(() => {
     if (visible) {
-      Animated.parallel([
-        Animated.timing(mainTranslateY, {
-          toValue: 0,
-          duration: 420,
-          easing: Easing.out(Easing.poly(4)),
-          useNativeDriver: USE_NATIVE_DRIVER,
-        }),
-        Animated.timing(backdropOpacity, {
-          toValue: 1,
-          duration: 320,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: USE_NATIVE_DRIVER,
-        }),
-      ]).start();
+      mainAnimRef.current?.stop();
+      mainTranslateY.setValue(SCREEN_HEIGHT);
+      backdropOpacity.setValue(0);
+      mainSheetScale.setValue(1);
+      mainSheetOffsetY.setValue(0);
+      setModalVisible(true);
     } else {
-      Animated.parallel([
+      mainAnimRef.current?.stop();
+      mainAnimRef.current = Animated.parallel([
         Animated.timing(mainTranslateY, {
           toValue: SCREEN_HEIGHT,
           duration: 300,
@@ -280,9 +276,31 @@ export default function AlarmEditSheet({
           easing: Easing.linear,
           useNativeDriver: USE_NATIVE_DRIVER,
         }),
-      ]).start();
+      ]);
+      mainAnimRef.current.start(({ finished }) => {
+        if (finished) setModalVisible(false);
+      });
     }
   }, [visible]);
+
+  useEffect(() => {
+    if (!modalVisible) return;
+    mainAnimRef.current = Animated.parallel([
+      Animated.timing(mainTranslateY, {
+        toValue: 0,
+        duration: 420,
+        easing: Easing.out(Easing.poly(4)),
+        useNativeDriver: USE_NATIVE_DRIVER,
+      }),
+      Animated.timing(backdropOpacity, {
+        toValue: 1,
+        duration: 320,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: USE_NATIVE_DRIVER,
+      }),
+    ]);
+    mainAnimRef.current.start();
+  }, [modalVisible]);
 
   const stopCurrentSound = useCallback(async () => {
     if (soundRef.current) {
@@ -999,7 +1017,7 @@ export default function AlarmEditSheet({
   return (
     <Modal
       transparent
-      visible={visible}
+      visible={modalVisible}
       animationType="none"
       onRequestClose={handleCancel}
       statusBarTranslucent
@@ -1232,8 +1250,21 @@ export default function AlarmEditSheet({
                 style={[styles.deleteBtn, { borderColor: colors.destructive + "40" }]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
-                  onDelete();
-                  onClose();
+                  Alert.alert(
+                    "Delete Alarm",
+                    "Are you sure you want to delete this alarm? This cannot be undone.",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Delete",
+                        style: "destructive",
+                        onPress: () => {
+                          onDelete();
+                          onClose();
+                        },
+                      },
+                    ]
+                  );
                 }}
               >
                 <Text style={[styles.deleteBtnText, { color: colors.destructive }]}>
@@ -1315,14 +1346,14 @@ const styles = StyleSheet.create({
     width: 30,
   },
   glassClose: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,0,0,0.08)",
+    borderColor: "rgba(0,0,0,0.1)",
   },
   scrollView: {
     flex: 1,

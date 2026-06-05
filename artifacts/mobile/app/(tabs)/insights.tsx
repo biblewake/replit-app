@@ -305,6 +305,7 @@ export default function InsightsScreen() {
         visible={showMemoryInfo}
         onClose={() => setShowMemoryInfo(false)}
         height="auto"
+        showCloseButton={false}
       >
         <View style={styles.memoryInfoSheet}>
           <View style={styles.memoryInfoHeader}>

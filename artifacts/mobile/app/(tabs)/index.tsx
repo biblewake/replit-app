@@ -196,7 +196,7 @@ export default function HomeScreen() {
               <View style={styles.ringsRow}>
                 <Ionicons
                   name="time-outline"
-                  size={13}
+                  size={17}
                   color={colors.mutedForeground}
                 />
                 <Text style={styles.ringsText}>
@@ -388,8 +388,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitleSm: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
     marginBottom: 0,
   },
   sectionHeader: {

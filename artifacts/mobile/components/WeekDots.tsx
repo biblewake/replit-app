@@ -1,8 +1,6 @@
 import React from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useTheme } from "@/context/ThemeContext";
-
 const DAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
 
 const FLAME_ICON = require("@/assets/images/check_mark.png");
@@ -17,8 +15,7 @@ export default function WeekDots({
   size = "md",
 }: WeekDotsProps) {
   const dotSize = size === "sm" ? 28 : 34;
-  const { colorScheme } = useTheme();
-  const inactiveDotColor = colorScheme === "dark" ? "#94989D" : "#E2E9F1";
+  const inactiveDotColor = "#E2E9F1";
 
   return (
     <View style={styles.row}>
