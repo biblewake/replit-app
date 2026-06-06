@@ -2,9 +2,9 @@ import { useState, useRef, useCallback } from "react";
 import { Platform } from "react-native";
 import { Audio } from "expo-av";
 
-const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
-  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
-  : "/api";
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? "";
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "";
+const FUNCTIONS_BASE = `${SUPABASE_URL}/functions/v1`;
 
 const RECORDING_OPTIONS: Audio.RecordingOptions = {
   android: {
@@ -140,8 +140,11 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
         } as unknown as Blob);
       }
 
-      const res = await fetch(`${API_BASE}/deepgram/transcribe`, {
+      const res = await fetch(`${FUNCTIONS_BASE}/transcribe`, {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        },
         body: formData,
       });
 

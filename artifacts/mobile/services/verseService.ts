@@ -4,17 +4,24 @@ export interface VersePassage {
   version: string;
 }
 
-const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
-  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
-  : "/api";
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? "";
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "";
+const FUNCTIONS_BASE = `${SUPABASE_URL}/functions/v1`;
+
+function functionsHeaders(): Record<string, string> {
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+  };
+}
 
 export async function fetchVerseByReference(
   reference: string,
   version = "NIV"
 ): Promise<VersePassage> {
-  const res = await fetch(`${API_BASE}/verses/by-reference`, {
+  const res = await fetch(`${FUNCTIONS_BASE}/verses/by-reference`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: functionsHeaders(),
     body: JSON.stringify({ reference, version }),
   });
   if (!res.ok) throw new Error("Failed to fetch verse");
@@ -22,9 +29,9 @@ export async function fetchVerseByReference(
 }
 
 export async function suggestVerse(theme?: string, version = "NIV"): Promise<VersePassage> {
-  const res = await fetch(`${API_BASE}/verses/suggest`, {
+  const res = await fetch(`${FUNCTIONS_BASE}/verses/suggest`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: functionsHeaders(),
     body: JSON.stringify({ theme, version }),
   });
   if (!res.ok) throw new Error("Failed to suggest verse");

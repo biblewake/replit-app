@@ -36,6 +36,29 @@ _Describe the high-level user-facing capabilities of this app once they exist._
 
 _Populate as you build — explicit user instructions worth remembering across sessions._
 
+## Supabase Edge Functions
+
+The mobile app calls two Supabase Edge Functions (in `supabase/functions/`) instead of the local API server for production/TestFlight builds:
+
+- `verses` — Bible verse lookup and suggestions (uses OpenAI)
+- `transcribe` — Audio transcription (uses Deepgram)
+
+Before deploying the edge functions, set the required secrets in your Supabase project:
+
+```
+supabase secrets set OPENAI_API_KEY=<your-key>
+supabase secrets set DEEPGRAM_API_KEY=<your-key>
+```
+
+Then deploy with:
+
+```
+supabase functions deploy verses
+supabase functions deploy transcribe
+```
+
+The mobile app reads `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` (already required for auth) to construct the functions base URL — no additional env vars are needed in the app bundle. The local API server (`artifacts/api-server`) remains available for dev use.
+
 ## Gotchas
 
 _Populate as you build — sharp edges, "always run X before Y" rules._
