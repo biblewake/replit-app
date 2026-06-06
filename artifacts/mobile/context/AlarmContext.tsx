@@ -19,6 +19,10 @@ import React, {
 } from "react";
 import { supabase } from "@/lib/supabase";
 import { pickRandomVerseBackground } from "@/lib/wakeHistory";
+import {
+  cancelAlarmNotifications,
+  scheduleAlarmNotifications,
+} from "@/lib/alarmScheduler";
 
 export interface Alarm {
   id: string;
@@ -44,6 +48,8 @@ export interface Alarm {
 const STORAGE_KEY = "@bible_wake_alarms";
 const STREAK_KEY = "@bible_wake_streak";
 const LONGEST_STREAK_KEY = "@bible_wake_longest_streak";
+/** Written for both guest and authenticated users so the background task can read it. */
+export const ALARM_CACHE_KEY = "@bible_wake_alarms_cache";
 
 function generateId(): string {
   return Date.now().toString() + Math.random().toString(36).substr(2, 9);
@@ -230,6 +236,15 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
     }
   }, [alarms, loaded, userId]);
 
+  // ── Universal alarm cache (for both auth modes) ───────────────────────────
+  // The background fetch task reads from ALARM_CACHE_KEY since authenticated
+  // users don't have their alarms persisted to STORAGE_KEY.
+  useEffect(() => {
+    if (loaded) {
+      AsyncStorage.setItem(ALARM_CACHE_KEY, JSON.stringify(alarms)).catch(() => {});
+    }
+  }, [alarms, loaded]);
+
   // ── Streak (local + Supabase) ─────────────────────────────────────────────────
   const incrementStreak = useCallback((recitalSuccess?: boolean) => {
     // Guard: only verse alarms with a passed recital increment the streak
@@ -270,6 +285,8 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
 
   const addAlarm = useCallback(
     async (alarm: Omit<Alarm, "id">) => {
+      let newAlarm: Alarm;
+
       if (userId) {
         // If this is a verse alarm, try to pick a random background image
         let verseBackgroundImageId = alarm.verseBackgroundImageId ?? null;
@@ -288,22 +305,31 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
           .single();
 
         if (!error && data) {
-          setAlarms((prev) => [...prev, rowToAlarm(data)]);
+          newAlarm = rowToAlarm(data);
+          setAlarms((prev) => [...prev, newAlarm]);
+          scheduleAlarmNotifications(newAlarm).catch(() => {});
           return;
         }
       }
 
       // Guest mode or Supabase error — local only
-      setAlarms((prev) => [...prev, { ...alarm, id: generateId() }]);
+      newAlarm = { ...alarm, id: generateId() };
+      setAlarms((prev) => [...prev, newAlarm]);
+      scheduleAlarmNotifications(newAlarm).catch(() => {});
     },
     [userId]
   );
 
   const updateAlarm = useCallback(
     (id: string, updates: Partial<Alarm>) => {
-      setAlarms((prev) =>
-        prev.map((a) => (a.id === id ? { ...a, ...updates } : a))
-      );
+      setAlarms((prev) => {
+        const updated = prev.map((a) => (a.id === id ? { ...a, ...updates } : a));
+        const updatedAlarm = updated.find((a) => a.id === id);
+        if (updatedAlarm) {
+          scheduleAlarmNotifications(updatedAlarm).catch(() => {});
+        }
+        return updated;
+      });
 
       if (userId) {
         // Convert camelCase updates to snake_case for Supabase
@@ -341,6 +367,7 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
   const deleteAlarm = useCallback(
     (id: string) => {
       setAlarms((prev) => prev.filter((a) => a.id !== id));
+      cancelAlarmNotifications(id).catch(() => {});
 
       if (userId) {
         Promise.resolve(
@@ -362,9 +389,11 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
           a.id === id ? { ...a, enabled: !a.enabled } : a
         );
 
-        if (userId) {
-          const alarm = updated.find((a) => a.id === id);
-          if (alarm) {
+        const alarm = updated.find((a) => a.id === id);
+        if (alarm) {
+          scheduleAlarmNotifications(alarm).catch(() => {});
+
+          if (userId) {
             Promise.resolve(
               supabase
                 .from("alarms")

@@ -6,10 +6,11 @@ import {
   useFonts,
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import * as Notifications from "expo-notifications";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
-import { Appearance } from "react-native";
+import { Appearance, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -18,11 +19,32 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AlarmProvider } from "@/context/AlarmContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { registerBackgroundAlarmTask } from "@/lib/backgroundAlarmCheck";
 import {
   initializeRevenueCat,
   SubscriptionProvider,
   useSubscription,
 } from "@/lib/revenuecat";
+
+// ── Global notification handler ───────────────────────────────────────────────
+// Must be set before any notification fires. Controls foreground presentation.
+if (Platform.OS !== "web") {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+}
+
+// Register the background alarm check task at module load time so the task
+// definition is present before any JS suspension (required by TaskManager).
+if (Platform.OS !== "web") {
+  registerBackgroundAlarmTask().catch(() => {});
+}
 
 // Force the app to always run in light mode regardless of system preference.
 // This prevents React Navigation and native components from auto-switching to dark.
@@ -79,6 +101,52 @@ function RootLayoutNav() {
       router.replace("/(tabs)");
     }
   }, [onboardingComplete, isSubscribed, subscriptionLoading, segments, router]);
+
+  // ── Cold-launch: app opened by tapping an alarm notification ─────────────
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    Notifications.getLastNotificationResponseAsync()
+      .then((response) => {
+        if (!response) return;
+        const data = response.notification.request.content.data as {
+          alarmId?: string;
+          type?: string;
+        };
+        if (data?.alarmId) {
+          router.push({
+            pathname: "/alarm-ringing",
+            params: {
+              alarmId: data.alarmId,
+              type: data.type ?? "verse",
+            },
+          });
+        }
+      })
+      .catch(() => {});
+  }, []); // run once on mount
+
+  // ── Foreground / background tap listener ─────────────────────────────────
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const data = response.notification.request.content.data as {
+          alarmId?: string;
+          type?: string;
+        };
+        if (data?.alarmId) {
+          router.push({
+            pathname: "/alarm-ringing",
+            params: {
+              alarmId: data.alarmId,
+              type: data.type ?? "verse",
+            },
+          });
+        }
+      }
+    );
+    return () => subscription.remove();
+  }, [router]);
 
   return (
     <Stack screenOptions={{ headerShown: false }}>

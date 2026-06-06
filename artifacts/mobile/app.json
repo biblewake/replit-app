@@ -16,6 +16,9 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.tinochiwara.biblewake",
+      "entitlements": {
+        "com.apple.developer.usernotifications.critical-alerts": true
+      },
       "infoPlist": {
         "UIBackgroundModes": [
           "audio",
@@ -61,6 +64,8 @@
         }
       ],
       "expo-apple-authentication",
+      "expo-task-manager",
+      "expo-background-fetch",
       [
         "expo-tracking-transparency",
         {
