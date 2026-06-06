@@ -47,3 +47,6 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Google Play service account key — contains credentials, never commit
+artifacts/mobile/google-play-service-account.json
