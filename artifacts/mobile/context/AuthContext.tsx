@@ -49,6 +49,8 @@ interface AuthContextType {
   onboardingComplete: boolean | null;
   /** Mark onboarding done — persists the flag and flips the gate. */
   completeOnboarding: () => Promise<void>;
+  /** Update a subset of the user's profile (persists to Supabase and updates local state). */
+  updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -61,6 +63,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   onboardingComplete: null,
   completeOnboarding: async () => {},
+  updateProfile: async () => {},
   signInWithGoogle: async () => {},
   signInWithApple: async () => {},
   signOut: async () => {},
@@ -372,6 +375,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const updateProfile = useCallback(async (updates: Partial<UserProfile>) => {
+    if (!user) return;
+    // Optimistic local update
+    setProfile((prev) => prev ? { ...prev, ...updates } : prev);
+    try {
+      await supabase
+        .from("users")
+        .update(updates)
+        .eq("id", user.id);
+    } catch (err) {
+      console.warn("[BibleWake] Failed to update profile:", err);
+    }
+  }, [user]);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setProfile(null);
@@ -386,6 +403,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         onboardingComplete,
         completeOnboarding,
+        updateProfile,
         signInWithGoogle,
         signInWithApple,
         signOut,

@@ -5,9 +5,14 @@ interface AnalyzingVerseProps {
   onResult: (passed: boolean, accuracy: number) => void;
   spoken: string;
   target: string;
+  /** The user's preferred Bible translation (e.g. "NIV", "ESV"). Passed to the
+   *  accuracy-check function so AI-backed validation can reference the correct
+   *  translation text. Currently used by the local matcher; reserved for server
+   *  calls once AI validation is wired. */
+  translation?: string;
 }
 
-export default function AnalyzingVerse({ onResult, spoken, target }: AnalyzingVerseProps) {
+export default function AnalyzingVerse({ onResult, spoken, target, translation = "NIV" }: AnalyzingVerseProps) {
   const dot1 = useRef(new Animated.Value(0)).current;
   const dot2 = useRef(new Animated.Value(0)).current;
   const dot3 = useRef(new Animated.Value(0)).current;
@@ -33,7 +38,7 @@ export default function AnalyzingVerse({ onResult, spoken, target }: AnalyzingVe
       a2.stop();
       a3.stop();
       const { checkVerseAccuracy } = require("@/utils/verseMatch");
-      const score: number = checkVerseAccuracy(spoken, target);
+      const score: number = checkVerseAccuracy(spoken, target, translation);
       onResult(score >= 0.70, score);
     }, 1500);
 

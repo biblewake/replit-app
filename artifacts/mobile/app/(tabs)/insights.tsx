@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   Platform,
   Pressable,
@@ -9,25 +10,15 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useColors } from "@/hooks/useColors";
 import { useIsNativeTabs } from "@/hooks/useIsNativeTabs";
 import { useAlarms } from "@/context/AlarmContext";
+import { useInsightsData, MemorizedVerseRow } from "@/hooks/useInsightsData";
 import HeatmapCalendar from "@/components/HeatmapCalendar";
 import BottomSheet from "@/components/BottomSheet";
-
-interface MemorizedVerse {
-  ref: string;
-  memorizedPct: number;
-  completions: number;
-}
-
-const PLACEHOLDER_VERSES: MemorizedVerse[] = [
-  { ref: "John 3:16", memorizedPct: 70, completions: 12 },
-  { ref: "Acts 5:16", memorizedPct: 50, completions: 2 },
-  { ref: "Romans 8:28", memorizedPct: 85, completions: 7 },
-];
 
 const AVATAR_COLORS = [
   "#A8E6CF", "#FFD3B6", "#FFAAA5", "#B5EAD7",
@@ -39,7 +30,7 @@ function getAvatarColor(ref: string): string {
   return AVATAR_COLORS[idx];
 }
 
-function VerseCard({ verse, colors }: { verse: MemorizedVerse; colors: ReturnType<typeof useColors> }) {
+function VerseCard({ verse, colors }: { verse: MemorizedVerseRow; colors: ReturnType<typeof useColors> }) {
   const firstLetter = verse.ref.charAt(0).toUpperCase();
   const avatarColor = getAvatarColor(verse.ref);
 
@@ -112,10 +103,24 @@ export default function InsightsScreen() {
   const { streak, longestStreak } = useAlarms();
   const [showMemoryInfo, setShowMemoryInfo] = useState(false);
 
-  const paddingTop = insets.top + (Platform.OS === "web" ? 67 : 16);
+  const {
+    loading,
+    activeDays,
+    successfulWakeUps,
+    avgWakeTime,
+    avgResponse,
+    versesRecited,
+    favoriteVerse,
+    versesMemorized,
+    successRate,
+    memorizedVerses,
+    refetch,
+  } = useInsightsData();
 
-  const activeDays = useMemo<Set<string>>(() => new Set(), []);
-  const successfulWakeUps = activeDays.size;
+  // Refresh stats every time the tab comes into focus
+  useFocusEffect(useCallback(() => { refetch(); }, [refetch]));
+
+  const paddingTop = insets.top + (Platform.OS === "web" ? 67 : 16);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -137,9 +142,14 @@ export default function InsightsScreen() {
         {/* Heatmap Card */}
         <View style={[styles.heatmapCard, { backgroundColor: colors.card }]}>
           <View style={styles.heatmapHeadingRow}>
-            <Text style={[styles.heatmapCount, { color: colors.foreground }]}>
-              {successfulWakeUps} Successful Wake-ups
-            </Text>
+            <View style={styles.heatmapCountRow}>
+              <Text style={[styles.heatmapCount, { color: colors.foreground }]}>
+                {loading ? "—" : successfulWakeUps} Successful Wake-ups
+              </Text>
+              {loading && (
+                <ActivityIndicator size="small" color={colors.mutedForeground} style={styles.loadingSpinner} />
+              )}
+            </View>
             <Text style={[styles.heatmapRange, { color: colors.mutedForeground }]}>
               Last 12 months
             </Text>
@@ -185,7 +195,7 @@ export default function InsightsScreen() {
           </View>
         </View>
 
-        {/* Stats Grid (moved below streak row) */}
+        {/* Stats Grid */}
         <View style={[styles.statsGrid, { backgroundColor: colors.card }]}>
           <View style={styles.statsRow}>
             <StatCell
@@ -197,7 +207,7 @@ export default function InsightsScreen() {
                 />
               }
               label="Avg Wake Time"
-              value="11:38 AM"
+              value={loading ? "—" : avgWakeTime}
               colors={colors}
             />
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
@@ -210,7 +220,7 @@ export default function InsightsScreen() {
                 />
               }
               label="Avg Response"
-              value="36s"
+              value={loading ? "—" : avgResponse}
               colors={colors}
             />
           </View>
@@ -225,7 +235,7 @@ export default function InsightsScreen() {
                 />
               }
               label="Verses Recited"
-              value="17"
+              value={loading ? "—" : versesRecited === 0 ? "0" : String(versesRecited)}
               colors={colors}
             />
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
@@ -238,7 +248,7 @@ export default function InsightsScreen() {
                 />
               }
               label="Favorite Verse"
-              value="1 Cor 2:3"
+              value={loading ? "—" : favoriteVerse}
               colors={colors}
             />
           </View>
@@ -269,7 +279,7 @@ export default function InsightsScreen() {
                 />
               }
               label="Verses Memorized"
-              value="11"
+              value={loading ? "—" : versesMemorized === 0 ? "0" : String(versesMemorized)}
               colors={colors}
             />
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
@@ -282,7 +292,7 @@ export default function InsightsScreen() {
                 />
               }
               label="Success Rate"
-              value="87%"
+              value={loading ? "—" : successRate}
               colors={colors}
             />
           </View>
@@ -293,11 +303,24 @@ export default function InsightsScreen() {
           MEMORIZED VERSES
         </Text>
 
-        <View style={styles.verseList}>
-          {PLACEHOLDER_VERSES.map((verse) => (
-            <VerseCard key={verse.ref} verse={verse} colors={colors} />
-          ))}
-        </View>
+        {loading ? (
+          <View style={[styles.versesLoadingCard, { backgroundColor: colors.card }]}>
+            <ActivityIndicator size="small" color={colors.mutedForeground} />
+          </View>
+        ) : memorizedVerses.length === 0 ? (
+          <View style={[styles.versesEmptyCard, { backgroundColor: colors.card }]}>
+            <Ionicons name="book-outline" size={24} color={colors.mutedForeground} />
+            <Text style={[styles.versesEmptyText, { color: colors.mutedForeground }]}>
+              No verses recited yet
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.verseList}>
+            {memorizedVerses.map((verse) => (
+              <VerseCard key={verse.ref} verse={verse} colors={colors} />
+            ))}
+          </View>
+        )}
       </ScrollView>
 
       {/* Memory info bottom sheet */}
@@ -419,6 +442,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 4,
   },
+  heatmapCountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  loadingSpinner: {},
   heatmapCount: {
     fontSize: 15,
     fontFamily: "Inter_700Bold",
@@ -471,6 +500,23 @@ const styles = StyleSheet.create({
   verseList: {
     gap: 10,
     marginBottom: 10,
+  },
+  versesLoadingCard: {
+    borderRadius: 18,
+    paddingVertical: 32,
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  versesEmptyCard: {
+    borderRadius: 18,
+    paddingVertical: 32,
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 10,
+  },
+  versesEmptyText: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
   },
   verseCard: {
     flexDirection: "row",

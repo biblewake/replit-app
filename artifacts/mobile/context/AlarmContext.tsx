@@ -76,7 +76,7 @@ interface AlarmContextType {
   getNextAlarm: () => Alarm | null;
   streak: number;
   longestStreak: number;
-  incrementStreak: () => void;
+  incrementStreak: (recitalSuccess?: boolean) => void;
   /** Whether alarms are loaded from their source (Supabase or AsyncStorage) */
   isLoaded: boolean;
 }
@@ -90,7 +90,7 @@ const AlarmContext = createContext<AlarmContextType>({
   getNextAlarm: () => null,
   streak: 1,
   longestStreak: 1,
-  incrementStreak: () => {},
+  incrementStreak: (_recitalSuccess?: boolean) => {},
   isLoaded: false,
 });
 
@@ -231,7 +231,9 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
   }, [alarms, loaded, userId]);
 
   // ── Streak (local + Supabase) ─────────────────────────────────────────────────
-  const incrementStreak = useCallback(() => {
+  const incrementStreak = useCallback((recitalSuccess?: boolean) => {
+    // Guard: only verse alarms with a passed recital increment the streak
+    if (recitalSuccess === false) return;
     setStreak((prev) => {
       const next = prev + 1;
 

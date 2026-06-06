@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Image,
-  ImageBackground,
   Platform,
   Pressable,
   ScrollView,
@@ -11,19 +10,29 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons, Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 
 import { useColors } from "@/hooks/useColors";
 import { useIsNativeTabs } from "@/hooks/useIsNativeTabs";
 import { useAlarms } from "@/context/AlarmContext";
 import { useAlarmPermission } from "@/hooks/useAlarmPermission";
+import { useAuth } from "@/context/AuthContext";
 import WeekDots from "@/components/WeekDots";
 import AlarmEditSheet from "@/components/AlarmEditSheet";
 import AlarmPermissionSheet from "@/components/AlarmPermissionSheet";
 import VerseCard from "@/components/VerseCard";
 import { BIBLE_VERSES } from "@/constants/verses";
+import { getSoundById } from "@/constants/alarmSounds";
+import { supabase } from "@/lib/supabase";
+
+interface TodayVerseState {
+  ref: string;
+  text: string;
+  backgroundImageUrl?: string | null;
+  found: boolean;
+}
 
 function formatTime(hour: number, minute: number, isPM: boolean): string {
   const h = hour === 0 ? 12 : hour;
@@ -61,25 +70,91 @@ export default function HomeScreen() {
   const isNativeTabs = useIsNativeTabs();
   const { alarms, toggleAlarm, addAlarm, updateAlarm, streak, getNextAlarm } = useAlarms();
   const { hasPermission } = useAlarmPermission();
+  const { user, profile } = useAuth();
   const [showAddAlarm, setShowAddAlarm] = useState(false);
   const [editingAlarm, setEditingAlarm] = useState<import("@/context/AlarmContext").Alarm | null>(null);
-  const [showVerseDetail, setShowVerseDetail] = useState(false);
   const [showPermissionSheet, setShowPermissionSheet] = useState(false);
+  const [todayVerse, setTodayVerse] = useState<TodayVerseState | null>(null);
 
   const todayIndex = new Date().getDay();
   const nextAlarm = getNextAlarm();
+  const nextScheduledVerseAlarm = nextAlarm;
+
+  // Derive sound name from the next alarm's soundId
+  const alarmSoundName = nextAlarm?.soundId
+    ? (getSoundById(nextAlarm.soundId)?.label ?? "Custom")
+    : "Default";
+
+  // Fetch today's successfully recited verse — runs on mount and every time the tab gains focus
+  const fetchTodayVerse = useCallback(async () => {
+    if (!user) {
+      setTodayVerse({ ref: "", text: "", found: false });
+      return;
+    }
+    try {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
+
+      const { data } = await supabase
+        .from("wake_history")
+        .select("verse_ref, verse_text, verse_background_image_id")
+        .eq("user_id", user.id)
+        .eq("recital_success", true)
+        .gte("dismissed_at", todayStart.toISOString())
+        .lte("dismissed_at", todayEnd.toISOString())
+        .order("dismissed_at", { ascending: false })
+        .limit(1);
+
+      if (data && data.length > 0 && data[0].verse_ref) {
+        const backgroundImageId = data[0].verse_background_image_id ?? null;
+
+        // Resolve the background image URL if an ID is present
+        let backgroundImageUrl: string | null = null;
+        if (backgroundImageId) {
+          const { data: imgData } = await supabase
+            .from("verse_background_images")
+            .select("url")
+            .eq("id", backgroundImageId)
+            .single();
+          backgroundImageUrl = imgData?.url ?? null;
+        }
+
+        setTodayVerse({
+          ref: data[0].verse_ref,
+          text: data[0].verse_text ?? "",
+          backgroundImageUrl,
+          found: true,
+        });
+      } else {
+        setTodayVerse({ ref: "", text: "", found: false });
+      }
+    } catch {
+      setTodayVerse({ ref: "", text: "", found: false });
+    }
+  }, [user]);
+
+  // Refresh on initial mount and when user changes
+  useEffect(() => { fetchTodayVerse(); }, [fetchTodayVerse]);
+
+  // Refresh every time the tab comes into focus (handles post-recital updates in tab nav)
+  useFocusEffect(useCallback(() => { fetchTodayVerse(); }, [fetchTodayVerse]));
+
+  // Fallback verse for when user hasn't recited today
   const fallbackVerse = BIBLE_VERSES[new Date().getDate() % BIBLE_VERSES.length];
-  const nextScheduledVerseAlarm = getNextAlarm();
-  const todayVerseRef =
+  const nextVerseRef =
     (nextScheduledVerseAlarm?.alarmType === "verse" && nextScheduledVerseAlarm.verseRef
       ? nextScheduledVerseAlarm.verseRef
       : alarms.find((a) => a.enabled && a.alarmType === "verse" && a.verseText)?.verseRef) ??
     fallbackVerse.ref;
-  const todayVerseText =
+  const nextVerseText =
     (nextScheduledVerseAlarm?.alarmType === "verse" && nextScheduledVerseAlarm.verseText
       ? nextScheduledVerseAlarm.verseText
       : alarms.find((a) => a.enabled && a.alarmType === "verse" && a.verseText)?.verseText) ??
     fallbackVerse.text;
+
+  const translation = profile?.preferred_translation ?? "NIV";
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -218,7 +293,7 @@ export default function HomeScreen() {
                   <Text
                     style={[styles.miniSub, { color: colors.mutedForeground }]}
                   >
-                    {nextAlarm.verseRef}
+                    {nextAlarm.verseRef || "—"}
                   </Text>
                 </View>
                 <View
@@ -240,7 +315,7 @@ export default function HomeScreen() {
                   <Text
                     style={[styles.miniSub, { color: colors.mutedForeground }]}
                   >
-                    Sound
+                    {alarmSoundName}
                   </Text>
                 </View>
                 <View
@@ -309,13 +384,49 @@ export default function HomeScreen() {
             Today's Verse
           </Text>
         </View>
-        <VerseCard
-          reference={todayVerseRef}
-          text={todayVerseText}
-          version="NIV"
-          showShare
-          flat
-        />
+
+        {todayVerse === null ? (
+          // Loading state — subtle placeholder
+          <View style={[styles.verseLoadingCard, { backgroundColor: colors.card }]} />
+        ) : todayVerse.found ? (
+          <VerseCard
+            reference={todayVerse.ref}
+            text={todayVerse.text}
+            version={translation}
+            backgroundImageUrl={todayVerse.backgroundImageUrl}
+            showShare
+            flat
+          />
+        ) : (
+          // No successful recital today
+          <View style={[styles.emptyVerseCard, { backgroundColor: colors.card }]}>
+            <Ionicons name="book-outline" size={28} color={colors.mutedForeground} />
+            <Text style={[styles.emptyVerseTitle, { color: colors.foreground }]}>
+              No verse recited today
+            </Text>
+            <Text style={[styles.emptyVerseSub, { color: colors.mutedForeground }]}>
+              Complete today's alarm to see your verse here
+            </Text>
+          </View>
+        )}
+
+        {/* Upcoming verse preview when no today-verse */}
+        {todayVerse !== null && !todayVerse.found && nextAlarm?.alarmType === "verse" && nextVerseRef ? (
+          <>
+            <View style={[styles.sectionHeader, { marginTop: 16 }]}>
+              <Text style={[styles.sectionTitleSm, { color: colors.foreground }]}>
+                Up Next
+              </Text>
+            </View>
+            <VerseCard
+              reference={nextVerseRef}
+              text={nextVerseText}
+              version={translation}
+              showShare
+              flat
+            />
+          </>
+        ) : null}
       </ScrollView>
 
       <AlarmEditSheet
@@ -533,6 +644,35 @@ const styles = StyleSheet.create({
   emptyAddBtnText: {
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
+  },
+  verseLoadingCard: {
+    borderRadius: 20,
+    height: 120,
+    opacity: 0.4,
+  },
+  emptyVerseCard: {
+    borderRadius: 20,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+    alignItems: "center",
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  emptyVerseTitle: {
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    textAlign: "center",
+    marginTop: 4,
+  },
+  emptyVerseSub: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    lineHeight: 18,
   },
   verseCard: {
     borderRadius: 20,

@@ -247,3 +247,5 @@ create policy "Users can manage own onboarding answers"
   on public.onboarding_answers for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- delete_user() RPC lives in 002_delete_user_rpc.sql

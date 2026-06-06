@@ -131,9 +131,10 @@ export default function RecitalFlow({
       return;
     }
 
-    persistWakeEvent({ recitalSuccess: recitalResultRef.current?.success ?? true });
+    const recitalPassed = recitalResultRef.current?.success ?? true;
+    persistWakeEvent({ recitalSuccess: recitalPassed });
     if (!isTest) {
-      incrementStreak();
+      incrementStreak(recitalPassed);
       setStreakJustIncremented(true);
     }
     setStep("streak");
@@ -177,6 +178,7 @@ export default function RecitalFlow({
           <AnalyzingVerse
             spoken={spokenText}
             target={verseText}
+            translation={verseVersion}
             onResult={handleAnalysisResult}
           />
         );

@@ -116,8 +116,10 @@ export async function recordWakeEvent(payload: WakeEventPayload): Promise<void> 
       );
     }
 
-    // 3. Update streak
-    await updateStreak(userId);
+    // 3. Update streak — only increment when the recital was passed
+    if (recitalSuccess === true) {
+      await updateStreak(userId);
+    }
   } catch (err) {
     // Non-fatal — local streak state is updated separately via AlarmContext
     console.warn("[BibleWake] Failed to record wake event in Supabase:", err);

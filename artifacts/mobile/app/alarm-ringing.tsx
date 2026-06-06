@@ -13,8 +13,10 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Audio } from "expo-av";
 import * as Haptics from "expo-haptics";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { useAlarms } from "@/context/AlarmContext";
+import { useAuth } from "@/context/AuthContext";
 import { getSoundById } from "@/constants/alarmSounds";
 import RecitalFlow from "@/components/recital/RecitalFlow";
 
@@ -45,7 +47,19 @@ export default function AlarmRingingScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ alarmId: string; type: "verse" | "wakeup"; isTest?: string }>();
   const { alarms } = useAlarms();
+  const { user, profile } = useAuth();
   const now = useCurrentTime();
+  const [guestTranslation, setGuestTranslation] = useState<string>("NIV");
+
+  // For guest users (no profile), read translation from AsyncStorage
+  // Key matches the one written by settings.tsx: "@bible_wake_preferred_translation"
+  useEffect(() => {
+    if (!user && !profile) {
+      AsyncStorage.getItem("@bible_wake_preferred_translation")
+        .then((val) => { if (val) setGuestTranslation(val); })
+        .catch(() => {});
+    }
+  }, [user, profile]);
   const { time, ampm } = formatClock(now);
 
   const alarm = alarms.find((a) => a.id === params.alarmId) ?? alarms[0] ?? null;
@@ -167,7 +181,7 @@ export default function AlarmRingingScreen() {
         type={alarmType}
         verseReference={alarm?.verseRef ?? ""}
         verseText={alarm?.verseText ?? ""}
-        verseVersion="NIV"
+        verseVersion={profile?.preferred_translation ?? guestTranslation}
         isTest={params.isTest === "true"}
         onDismiss={handleDismiss}
         onReturnToRinging={handleReturnToRinging}

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import {
   Animated,
+  ImageBackground,
   Platform,
   Pressable,
   Share,
@@ -10,7 +11,6 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
-import type { LinearGradient as LinearGradientType } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Sharing from "expo-sharing";
 import * as Haptics from "expo-haptics";
@@ -38,6 +38,9 @@ interface VerseCardProps {
   onContinue?: () => void;
   isFinalStep?: boolean;
   flat?: boolean;
+  /** Optional background image URL fetched from verse_background_images.
+   *  When provided, replaces the daily gradient with a photo background. */
+  backgroundImageUrl?: string | null;
 }
 
 export default function VerseCard({
@@ -48,8 +51,10 @@ export default function VerseCard({
   onContinue,
   isFinalStep = false,
   flat = false,
+  backgroundImageUrl,
 }: VerseCardProps) {
-  const cardRef = useRef<LinearGradientType>(null);
+  // captureRef wraps the outer View to capture both gradient and image-background variants
+  const cardRef = useRef<View>(null);
   const gradient = getGradientForDate();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -85,17 +90,38 @@ export default function VerseCard({
     onContinue?.();
   };
 
+  const cardInner = (
+    <View style={styles.cardInner}>
+      <View style={styles.verseContent}>
+        <Text style={styles.reference}>✦ {reference} ✦</Text>
+        <Text style={styles.verseText}>{text}</Text>
+      </View>
+      <Text style={styles.appTag}>Bible Wake</Text>
+    </View>
+  );
+
   return (
     <View style={[styles.container, flat && styles.containerFlat]}>
       <StatusBar style="dark" />
       <Animated.View style={[styles.cardWrapper, flat && styles.cardWrapperFlat, { opacity: fadeAnim }]}>
-        <LinearGradient colors={gradient} style={styles.gradient} ref={cardRef}>
-          <View style={styles.verseContent}>
-            <Text style={styles.reference}>✦ {reference} ✦</Text>
-            <Text style={styles.verseText}>{text}</Text>
-          </View>
-          <Text style={styles.appTag}>Bible Wake</Text>
-        </LinearGradient>
+        {/* Outer View holds the ref used by captureRef for screenshot sharing */}
+        <View ref={cardRef} collapsable={false}>
+          {backgroundImageUrl ? (
+            <ImageBackground
+              source={{ uri: backgroundImageUrl }}
+              style={styles.gradient}
+              imageStyle={styles.backgroundImage}
+              resizeMode="cover"
+            >
+              <View style={styles.imageDimOverlay} />
+              {cardInner}
+            </ImageBackground>
+          ) : (
+            <LinearGradient colors={gradient} style={styles.gradient}>
+              {cardInner}
+            </LinearGradient>
+          )}
+        </View>
 
         <View style={styles.overlay} pointerEvents="box-none">
           <View style={styles.versionBadge}>
@@ -145,6 +171,18 @@ const styles = StyleSheet.create({
     gap: 28,
     minHeight: 320,
     justifyContent: "space-between",
+  },
+  backgroundImage: {
+    borderRadius: 24,
+  },
+  imageDimOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  cardInner: {
+    gap: 28,
+    justifyContent: "space-between",
+    flex: 1,
   },
   overlay: {
     position: "absolute",

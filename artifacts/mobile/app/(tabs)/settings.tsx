@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import {
   Alert,
+  ActivityIndicator,
   Linking,
   Platform,
   Pressable,
@@ -13,12 +14,18 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { useColors } from "@/hooks/useColors";
 import { useIsNativeTabs } from "@/hooks/useIsNativeTabs";
 import { useAuth } from "@/context/AuthContext";
 import { useSubscription } from "@/lib/revenuecat";
+import { supabase } from "@/lib/supabase";
 import TroubleshootSheet from "@/components/TroubleshootSheet";
+import BottomSheet from "@/components/BottomSheet";
+
+const TRANSLATION_OPTIONS = ["NIV", "ESV", "KJV", "NKJV", "NLT", "CSB", "AMP"];
+const TRANSLATION_STORAGE_KEY = "@bible_wake_preferred_translation";
 
 interface SettingsRowProps {
   icon: React.ReactNode;
@@ -29,6 +36,7 @@ interface SettingsRowProps {
   isLast?: boolean;
   onPress?: () => void;
   colors: ReturnType<typeof useColors>;
+  destructive?: boolean;
 }
 
 function SettingsRow({
@@ -40,6 +48,7 @@ function SettingsRow({
   isLast,
   onPress,
   colors,
+  destructive,
 }: SettingsRowProps) {
   const handlePress = () => {
     if (onPress) {
@@ -67,7 +76,7 @@ function SettingsRow({
       <View style={styles.rowLeft}>
         <View style={styles.iconWrap}>{icon}</View>
         <View style={styles.labelWrap}>
-          <Text style={[styles.rowLabel, { color: colors.foreground }]}>
+          <Text style={[styles.rowLabel, { color: destructive ? colors.destructive : colors.foreground }]}>
             {label}
           </Text>
           {subtitle ? (
@@ -105,15 +114,40 @@ function openSubscriptionManagement(managementURL: string | undefined | null) {
 
 export default function SettingsScreen() {
   const colors = useColors();
-  const { signOut } = useAuth();
+  const { signOut, profile, updateProfile, user } = useAuth();
   const { customerInfo } = useSubscription();
   const insets = useSafeAreaInsets();
   const isNativeTabs = useIsNativeTabs();
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [troubleshootVisible, setTroubleshootVisible] = useState(false);
+  const [translationSheetVisible, setTranslationSheetVisible] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const paddingTop = insets.top + (Platform.OS === "web" ? 67 : 16);
+
+  // Determine current translation: from profile if logged in, fallback to AsyncStorage default
+  const [localTranslation, setLocalTranslation] = useState<string | null>(null);
+  const currentTranslation = profile?.preferred_translation ?? localTranslation ?? "NIV";
+
+  // Load local translation for guest users on mount
+  React.useEffect(() => {
+    if (!user) {
+      AsyncStorage.getItem(TRANSLATION_STORAGE_KEY)
+        .then((val) => { if (val) setLocalTranslation(val); })
+        .catch(() => {});
+    }
+  }, [user]);
+
+  const handleSelectTranslation = async (translation: string) => {
+    setTranslationSheetVisible(false);
+    if (user) {
+      await updateProfile({ preferred_translation: translation });
+    } else {
+      setLocalTranslation(translation);
+      AsyncStorage.setItem(TRANSLATION_STORAGE_KEY, translation).catch(() => {});
+    }
+  };
 
   const openAppSettings = () => Linking.openURL("app-settings:");
   const openSupport = () =>
@@ -150,8 +184,66 @@ export default function SettingsScreen() {
     );
   };
 
+  const handleDeleteAccount = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    Alert.alert(
+      "Delete Account",
+      "Are you sure you want to delete your account?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete Account",
+          style: "destructive",
+          onPress: () => {
+            Alert.alert(
+              "This Cannot Be Undone",
+              "This will permanently delete all your data including alarms, wake history, verse stats, and streaks. This cannot be undone.",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Delete Forever",
+                  style: "destructive",
+                  onPress: performAccountDeletion,
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
+  const performAccountDeletion = async () => {
+    if (!user) {
+      Alert.alert("Not signed in", "You must be signed in to delete your account.");
+      return;
+    }
+    setDeletingAccount(true);
+    try {
+      // delete_user() RPC deletes all user rows + auth.users in one atomic server-side call
+      const { error } = await supabase.rpc("delete_user");
+      if (error) throw error;
+      await supabase.auth.signOut();
+    } catch (err) {
+      setDeletingAccount(false);
+      const message =
+        err instanceof Error ? err.message : "An unexpected error occurred.";
+      Alert.alert(
+        "Deletion Failed",
+        `Could not delete your account: ${message}\n\nPlease contact support@trybiblewake.com.`
+      );
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {deletingAccount && (
+        <View style={styles.deletingOverlay}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={styles.deletingText}>Deleting account…</Text>
+        </View>
+      )}
+
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
@@ -234,7 +326,6 @@ export default function SettingsScreen() {
           <SettingsRow
             colors={colors}
             isFirst
-            isLast
             icon={
               <Ionicons
                 name="notifications-outline"
@@ -257,6 +348,27 @@ export default function SettingsScreen() {
                 thumbColor="#fff"
               />
             }
+          />
+          <SettingsRow
+            colors={colors}
+            isLast
+            icon={
+              <Ionicons
+                name="book-outline"
+                size={20}
+                color={colors.foreground}
+              />
+            }
+            label="Bible Translation"
+            trailing={
+              <View style={styles.translationTrailing}>
+                <Text style={[styles.translationValue, { color: colors.mutedForeground }]}>
+                  {currentTranslation}
+                </Text>
+                <Ionicons name="chevron-forward" size={17} color={colors.mutedForeground} />
+              </View>
+            }
+            onPress={() => setTranslationSheetVisible(true)}
           />
         </View>
         {!notificationsEnabled && (
@@ -361,36 +473,32 @@ export default function SettingsScreen() {
           />
         </View>
 
-        {/* Delete Account */}
-        <Pressable
-          style={({ pressed }) => [
-            styles.deleteBtn,
-            { opacity: pressed ? 0.8 : 1 },
+        {/* Account */}
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+          Account
+        </Text>
+        <View
+          style={[
+            styles.group,
+            { backgroundColor: colors.card, shadowColor: colors.foreground },
           ]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            Alert.alert(
-              "Delete Account",
-              "This will permanently delete your account and all associated data. This action cannot be undone.",
-              [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Delete Account",
-                  style: "destructive",
-                  onPress: () => {
-                    Alert.alert(
-                      "Account Deletion",
-                      "Account deletion is not yet available. Please contact support@trybiblewake.com for assistance.",
-                      [{ text: "OK" }]
-                    );
-                  },
-                },
-              ]
-            );
-          }}
         >
-          <Text style={styles.deleteBtnText}>Delete Account</Text>
-        </Pressable>
+          <SettingsRow
+            colors={colors}
+            isFirst
+            isLast
+            destructive
+            icon={
+              <Ionicons
+                name="trash-outline"
+                size={20}
+                color={colors.destructive}
+              />
+            }
+            label="Delete Account"
+            onPress={handleDeleteAccount}
+          />
+        </View>
 
         <Pressable
           style={({ pressed }) => [
@@ -407,6 +515,41 @@ export default function SettingsScreen() {
         visible={troubleshootVisible}
         onClose={() => setTroubleshootVisible(false)}
       />
+
+      {/* Bible Translation Picker Sheet */}
+      <BottomSheet
+        visible={translationSheetVisible}
+        onClose={() => setTranslationSheetVisible(false)}
+        height="auto"
+        showCloseButton={false}
+      >
+        <View style={styles.translationSheet}>
+          <Text style={[styles.translationSheetTitle, { color: colors.foreground }]}>
+            Bible Translation
+          </Text>
+          {TRANSLATION_OPTIONS.map((option, idx) => (
+            <Pressable
+              key={option}
+              style={({ pressed }) => [
+                styles.translationOption,
+                {
+                  backgroundColor: pressed ? colors.secondary : "transparent",
+                  borderBottomWidth: idx < TRANSLATION_OPTIONS.length - 1 ? StyleSheet.hairlineWidth : 0,
+                  borderBottomColor: colors.border,
+                },
+              ]}
+              onPress={() => handleSelectTranslation(option)}
+            >
+              <Text style={[styles.translationOptionText, { color: colors.foreground }]}>
+                {option}
+              </Text>
+              {currentTranslation === option && (
+                <Ionicons name="checkmark" size={20} color={colors.accent} />
+              )}
+            </Pressable>
+          ))}
+        </View>
+      </BottomSheet>
     </View>
   );
 }
@@ -479,22 +622,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Inter_400Regular",
     color: "#FF3B30",
-    marginTop: 4,
+    marginTop: -16,
     marginBottom: 16,
     marginLeft: 4,
     lineHeight: 16,
   },
-  deleteBtn: {
-    backgroundColor: "#FF3B30",
-    borderRadius: 16,
-    paddingVertical: 16,
+  translationTrailing: {
+    flexDirection: "row",
     alignItems: "center",
-    marginTop: 8,
+    gap: 4,
   },
-  deleteBtnText: {
-    fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
-    color: "#FFFFFF",
+  translationValue: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
   },
   logoutBtn: {
     borderRadius: 16,
@@ -508,5 +648,44 @@ const styles = StyleSheet.create({
   logoutBtnText: {
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
+  },
+  deletingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 999,
+    gap: 16,
+  },
+  deletingText: {
+    color: "#fff",
+    fontSize: 16,
+    fontFamily: "Inter_500Medium",
+  },
+  translationSheet: {
+    paddingHorizontal: 20,
+    paddingTop: 4,
+    paddingBottom: 40,
+  },
+  translationSheetTitle: {
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: -0.3,
+    marginBottom: 16,
+  },
+  translationOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 14,
+    paddingHorizontal: 4,
+  },
+  translationOptionText: {
+    fontSize: 16,
+    fontFamily: "Inter_500Medium",
   },
 });

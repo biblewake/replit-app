@@ -6,7 +6,19 @@ function tokenize(text: string): string[] {
     .filter(Boolean);
 }
 
-export function checkVerseAccuracy(spoken: string, target: string): number {
+/**
+ * Check how accurately `spoken` matches `target`.
+ * Returns a 0–1 score based on word overlap.
+ *
+ * `translation` is reserved for future AI-backed validation where the
+ * scoring service needs to know which Bible translation to validate against.
+ */
+export function checkVerseAccuracy(
+  spoken: string,
+  target: string,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  translation?: string
+): number {
   const spokenTokens = tokenize(spoken);
   const targetTokens = tokenize(target);
   if (targetTokens.length === 0) return 0;
