@@ -1,3 +1,5 @@
+import { isSupabaseConfigured } from "../lib/supabase";
+
 export interface VersePassage {
   reference: string;
   text: string;
@@ -19,6 +21,11 @@ export async function fetchVerseByReference(
   reference: string,
   version = "NIV"
 ): Promise<VersePassage> {
+  if (!isSupabaseConfigured) {
+    throw new Error(
+      "[BibleWake] Supabase is not configured — set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to enable verse lookup."
+    );
+  }
   const res = await fetch(`${FUNCTIONS_BASE}/verses/by-reference`, {
     method: "POST",
     headers: functionsHeaders(),
@@ -29,6 +36,11 @@ export async function fetchVerseByReference(
 }
 
 export async function suggestVerse(theme?: string, version = "NIV"): Promise<VersePassage> {
+  if (!isSupabaseConfigured) {
+    throw new Error(
+      "[BibleWake] Supabase is not configured — set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to enable verse suggestions."
+    );
+  }
   const res = await fetch(`${FUNCTIONS_BASE}/verses/suggest`, {
     method: "POST",
     headers: functionsHeaders(),

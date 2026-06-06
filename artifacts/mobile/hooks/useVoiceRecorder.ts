@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Platform } from "react-native";
 import { Audio } from "expo-av";
+import { isSupabaseConfigured } from "../lib/supabase";
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "";
@@ -119,6 +120,14 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
     const uri = recording.getURI();
     if (!uri) {
       setError("No audio captured");
+      setState("error");
+      return null;
+    }
+
+    if (!isSupabaseConfigured) {
+      setError(
+        "[BibleWake] Transcription unavailable — set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to enable voice input."
+      );
       setState("error");
       return null;
     }
