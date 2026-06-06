@@ -29,9 +29,12 @@ import {
 const PROJECT_NAME = "Bible Wake";
 
 const ANNUAL_IDENTIFIER = "bible_wake_annual";
-const WEEKLY_IDENTIFIER = "bible_wake_weekly";
+const WEEKLY_IDENTIFIER = "bible_wake_weekly2";
 const PLAY_STORE_ANNUAL_IDENTIFIER = "bible_wake_annual:annual";
-const PLAY_STORE_WEEKLY_IDENTIFIER = "bible_wake_weekly:weekly";
+const PLAY_STORE_WEEKLY_IDENTIFIER = "bible_wake_weekly2:weekly";
+
+const ANNUAL_DISPLAY_NAME = "Annual Premium";
+const WEEKLY_DISPLAY_NAME = "Weekly Premium 2";
 
 const APP_STORE_APP_NAME = "Bible Wake iOS";
 const APP_STORE_BUNDLE_ID = "com.tinochiwara.biblewake";
@@ -178,7 +181,7 @@ async function seedRevenueCat() {
       path: { project_id: project.id },
       body,
     });
-    if (error) throw new Error(`Failed to create ${label} product`);
+    if (error) throw new Error(`Failed to create ${label} product: ${JSON.stringify(error)}`);
     console.log(`Created ${label} product:`, created.id);
     return created;
   };
@@ -187,7 +190,7 @@ async function seedRevenueCat() {
     testStoreApp,
     "Test Annual",
     ANNUAL_IDENTIFIER,
-    "Annual Premium",
+    ANNUAL_DISPLAY_NAME,
     "P1Y",
     true,
   );
@@ -195,7 +198,7 @@ async function seedRevenueCat() {
     testStoreApp,
     "Test Weekly",
     WEEKLY_IDENTIFIER,
-    "Weekly Premium",
+    WEEKLY_DISPLAY_NAME,
     "P1W",
     true,
   );
@@ -203,7 +206,7 @@ async function seedRevenueCat() {
     appStoreApp,
     "iOS Annual",
     ANNUAL_IDENTIFIER,
-    "Annual Premium",
+    ANNUAL_DISPLAY_NAME,
     "P1Y",
     false,
   );
@@ -211,7 +214,7 @@ async function seedRevenueCat() {
     appStoreApp,
     "iOS Weekly",
     WEEKLY_IDENTIFIER,
-    "Weekly Premium",
+    WEEKLY_DISPLAY_NAME,
     "P1W",
     false,
   );
@@ -219,7 +222,7 @@ async function seedRevenueCat() {
     playStoreApp,
     "Android Annual",
     PLAY_STORE_ANNUAL_IDENTIFIER,
-    "Annual Premium",
+    ANNUAL_DISPLAY_NAME,
     "P1Y",
     false,
   );
@@ -227,7 +230,7 @@ async function seedRevenueCat() {
     playStoreApp,
     "Android Weekly",
     PLAY_STORE_WEEKLY_IDENTIFIER,
-    "Weekly Premium",
+    WEEKLY_DISPLAY_NAME,
     "P1W",
     false,
   );
