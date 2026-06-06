@@ -59,22 +59,34 @@ supabase functions deploy transcribe
 
 The mobile app reads `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` (already required for auth) to construct the functions base URL — no additional env vars are needed in the app bundle. The local API server (`artifacts/api-server`) remains available for dev use.
 
-## EAS Build (TestFlight)
+## EAS Build (iOS & Android)
 
-The mobile app uses [Expo Application Services (EAS)](https://expo.dev/eas) for building and submitting to TestFlight and the App Store.
+The mobile app uses [Expo Application Services (EAS)](https://expo.dev/eas) for building and submitting to TestFlight, the App Store, and Google Play.
 
 ### Build profiles (`artifacts/mobile/eas.json`)
 
 | Profile | Distribution | Use case |
 |---|---|---|
-| `development` | Internal (simulator) | Local dev client builds |
-| `preview` | Internal | TestFlight / ad-hoc testing |
-| `production` | Store | App Store submission |
+| `development` | Internal (simulator/device) | Local dev client builds |
+| `preview` | Internal | TestFlight / ad-hoc Android APK testing |
+| `production` | Store | App Store + Google Play submission |
 
 **Trigger a TestFlight build:**
 ```
 cd artifacts/mobile
 eas build --profile preview --platform ios
+```
+
+**Trigger a signed Android AAB for Google Play:**
+```
+cd artifacts/mobile
+eas build --profile production --platform android
+```
+
+**Submit to Google Play:**
+```
+cd artifacts/mobile
+eas submit --profile production --platform android
 ```
 
 ### Required EAS secrets
@@ -87,6 +99,25 @@ eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <
 eas secret:create --scope project --name EXPO_PUBLIC_REVENUECAT_IOS_API_KEY --value <your-value>
 eas secret:create --scope project --name EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY --value <your-value>
 ```
+
+### Google Play setup (one-time, manual steps)
+
+Before `eas submit` can upload to Google Play, you need:
+
+1. **Google Play Console listing** — Create the app at [play.google.com/console](https://play.google.com/console):
+   - App name: **Bible Wake**
+   - Package name: `com.tinochiwara.biblewake`
+   - Fill in the store listing (description, screenshots, content rating, etc.)
+
+2. **Service account key** — Grant EAS permission to upload on your behalf:
+   - In Google Play Console → Setup → API access, link a Google Cloud project
+   - Create a service account with the **Release Manager** role
+   - Download the JSON key and save it to `artifacts/mobile/google-play-service-account.json`
+   - **Do not commit this file** — add it to `.gitignore`
+
+3. **Initial manual upload** — Google Play requires the very first AAB to be uploaded manually via the console before `eas submit` can automate subsequent ones. Build with `eas build --profile production --platform android`, download the AAB from the EAS dashboard, and upload it manually to the Internal Testing track in Play Console.
+
+The `eas.json` `submit.production.android` block is already configured to use `./google-play-service-account.json` and targets the `internal` track — change `track` to `"production"` when you are ready for the public release.
 
 ### OAuth scheme note
 
