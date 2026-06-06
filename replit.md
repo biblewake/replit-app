@@ -59,6 +59,39 @@ supabase functions deploy transcribe
 
 The mobile app reads `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` (already required for auth) to construct the functions base URL — no additional env vars are needed in the app bundle. The local API server (`artifacts/api-server`) remains available for dev use.
 
+## EAS Build (TestFlight)
+
+The mobile app uses [Expo Application Services (EAS)](https://expo.dev/eas) for building and submitting to TestFlight and the App Store.
+
+### Build profiles (`artifacts/mobile/eas.json`)
+
+| Profile | Distribution | Use case |
+|---|---|---|
+| `development` | Internal (simulator) | Local dev client builds |
+| `preview` | Internal | TestFlight / ad-hoc testing |
+| `production` | Store | App Store submission |
+
+**Trigger a TestFlight build:**
+```
+cd artifacts/mobile
+eas build --profile preview --platform ios
+```
+
+### Required EAS secrets
+
+These `EXPO_PUBLIC_*` vars are baked into the app bundle at build time — they must be added as EAS project secrets before running any `preview` or `production` build:
+
+```
+eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_URL --value <your-value>
+eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <your-value>
+eas secret:create --scope project --name EXPO_PUBLIC_REVENUECAT_IOS_API_KEY --value <your-value>
+eas secret:create --scope project --name EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY --value <your-value>
+```
+
+### OAuth scheme note
+
+`app.json` uses `scheme: "mobile"`, which means OAuth redirect URIs must be registered as `mobile://` in both the Google Cloud Console and Apple Service ID. The `associatedDomains` entry (`applinks:cmaysraaclfvofiynctl.supabase.co`) is for universal links (Supabase magic-link email auth) and should remain as-is. Verify your Google OAuth client has `mobile://` listed as an authorized redirect URI before a production build.
+
 ## Gotchas
 
 _Populate as you build — sharp edges, "always run X before Y" rules._
