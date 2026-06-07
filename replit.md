@@ -70,6 +70,22 @@ The mobile app reads `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_K
 
 Add them at **GitHub repo → Settings → Secrets and variables → Actions**.
 
+## App Store Connect (iOS)
+
+Bible Wake is listed on App Store Connect under:
+- **Apple ID**: apple@ievangelize.app
+- **Apple Team ID**: 29F6KUYJ5C
+- **App Store Connect App ID (ascAppId)**: 6777493727
+- **Bundle identifier**: com.tinochiwara.biblewake
+
+These credentials are already filled in `artifacts/mobile/eas.json` under `submit.production.ios`.
+
+**To submit a new build to the App Store:**
+1. Build: `cd artifacts/mobile && eas build --profile production --platform ios`
+2. Submit: `eas submit --profile production --platform ios`
+
+EAS will authenticate with your Apple ID, upload the build to App Store Connect, and mark it ready for review. Make sure the App Store Connect listing (description, screenshots, privacy policy URL) is complete before submitting for review.
+
 ## EAS Build (iOS & Android)
 
 The mobile app uses [Expo Application Services (EAS)](https://expo.dev/eas) for building and submitting to TestFlight, the App Store, and Google Play.

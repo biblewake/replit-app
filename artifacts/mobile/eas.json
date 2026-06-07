@@ -38,9 +38,9 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "",
-        "ascAppId": "",
-        "appleTeamId": ""
+        "appleId": "apple@ievangelize.app",
+        "ascAppId": "6777493727",
+        "appleTeamId": "29F6KUYJ5C"
       },
       "android": {
         "serviceAccountKeyPath": "./google-play-service-account.json",
