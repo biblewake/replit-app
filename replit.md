@@ -59,6 +59,17 @@ supabase functions deploy transcribe
 
 The mobile app reads `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` (already required for auth) to construct the functions base URL — no additional env vars are needed in the app bundle. The local API server (`artifacts/api-server`) remains available for dev use.
 
+### Automatic re-deployment (GitHub Actions)
+
+`.github/workflows/deploy-edge-functions.yml` watches `supabase/functions/**` and automatically runs `supabase functions deploy` for both functions on every push to `main`. Two repository secrets must be set for this to work:
+
+| Secret | Where to get it |
+|---|---|
+| `SUPABASE_ACCESS_TOKEN` | [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens) |
+| `SUPABASE_PROJECT_ID` | Settings → General → Reference ID in your Supabase project dashboard |
+
+Add them at **GitHub repo → Settings → Secrets and variables → Actions**.
+
 ## EAS Build (iOS & Android)
 
 The mobile app uses [Expo Application Services (EAS)](https://expo.dev/eas) for building and submitting to TestFlight, the App Store, and Google Play.
@@ -125,7 +136,7 @@ The `eas.json` `submit.production.android` block is already configured to use `.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- **Edge function changes require a re-deploy.** Code edits to `supabase/functions/verses/` or `supabase/functions/transcribe/` are NOT picked up automatically in production unless you push to `main` (which triggers the GitHub Action) or run `supabase functions deploy <name>` manually. Forgetting this step means the app silently uses stale function code.
 
 ## Pointers
 
