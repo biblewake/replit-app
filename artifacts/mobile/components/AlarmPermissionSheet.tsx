@@ -15,25 +15,50 @@ import {
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
+import * as IntentLauncher from "expo-intent-launcher";
 import { Ionicons } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
 
+export type AlarmPermissionType = "notification" | "exactAlarm";
+
 interface AlarmPermissionSheetProps {
   visible: boolean;
   onClose: () => void;
+  permissionType?: AlarmPermissionType;
 }
+
+const CONTENT: Record<
+  AlarmPermissionType,
+  { title: string; subtitle: string; buttonLabel: string }
+> = {
+  notification: {
+    title: "Alarm Access Denied",
+    subtitle:
+      "Bible Wake needs notification permission to ring your alarms. Without it, alarms you set will never fire.",
+    buttonLabel: "Open Settings",
+  },
+  exactAlarm: {
+    title: "Exact Alarms Disabled",
+    subtitle:
+      'Bible Wake needs permission to schedule exact alarms. Without it, your alarms may fire late or not at all. Tap below to open "Alarms & reminders" and enable it for Bible Wake.',
+    buttonLabel: "Open Alarm Settings",
+  },
+};
 
 export default function AlarmPermissionSheet({
   visible,
   onClose,
+  permissionType = "notification",
 }: AlarmPermissionSheetProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
+
+  const { title, subtitle, buttonLabel } = CONTENT[permissionType];
 
   useEffect(() => {
     if (visible) {
@@ -69,9 +94,19 @@ export default function AlarmPermissionSheet({
     }
   }, [visible]);
 
-  const handleOpenSettings = () => {
+  const handleOpenSettings = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Linking.openSettings();
+    if (permissionType === "exactAlarm" && Platform.OS === "android") {
+      try {
+        await IntentLauncher.startActivityAsync(
+          "android.settings.REQUEST_SCHEDULE_EXACT_ALARM"
+        );
+      } catch {
+        Linking.openSettings();
+      }
+    } else {
+      Linking.openSettings();
+    }
   };
 
   const handleMaybeLater = () => {
@@ -79,7 +114,7 @@ export default function AlarmPermissionSheet({
     onClose();
   };
 
-  const sheetHeight = 420 + insets.bottom;
+  const sheetHeight = permissionType === "exactAlarm" ? 460 + insets.bottom : 420 + insets.bottom;
 
   return (
     <Modal
@@ -131,11 +166,11 @@ export default function AlarmPermissionSheet({
             </View>
 
             <Text style={[styles.title, { color: colors.foreground }]}>
-              Alarm Access Denied
+              {title}
             </Text>
 
             <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-              Bible Wake needs notification permission to ring your alarms. Without it, alarms you set will never fire.
+              {subtitle}
             </Text>
 
             <Pressable
@@ -146,7 +181,7 @@ export default function AlarmPermissionSheet({
               onPress={handleOpenSettings}
             >
               <Ionicons name="settings-outline" size={18} color="#fff" />
-              <Text style={styles.settingsBtnText}>Open Settings</Text>
+              <Text style={styles.settingsBtnText}>{buttonLabel}</Text>
             </Pressable>
 
             <Pressable

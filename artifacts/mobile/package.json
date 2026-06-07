@@ -64,6 +64,7 @@
     "expo-background-fetch": "^56.0.17",
     "expo-camera": "~17.0.10",
     "expo-crypto": "^56.0.4",
+    "expo-intent-launcher": "~13.0.8",
     "expo-notifications": "^56.0.14",
     "expo-secure-store": "^56.0.4",
     "expo-sharing": "^56.0.15",

@@ -31,12 +31,16 @@ export default function AlarmsScreen() {
   const isNativeTabs = useIsNativeTabs();
   const router = useRouter();
   const { alarms, addAlarm, updateAlarm, deleteAlarm, toggleAlarm } = useAlarms();
-  const { hasPermission } = useAlarmPermission();
+  const { hasPermission, hasExactAlarmPermission } = useAlarmPermission();
+  const allPermissionsGranted = hasPermission && hasExactAlarmPermission;
   const [editingAlarm, setEditingAlarm] = useState<Alarm | null>(null);
   const [showNewAlarm, setShowNewAlarm] = useState(false);
   const [newAlarmType, setNewAlarmType] = useState<"verse" | "normal">("verse");
   const [fabOpen, setFabOpen] = useState(false);
   const [showPermissionSheet, setShowPermissionSheet] = useState(false);
+  const permissionSheetType = !hasPermission ? "notification" as const : "exactAlarm" as const;
+
+  const openPermissionSheet = () => setShowPermissionSheet(true);
 
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const pill1TranslateY = useRef(new Animated.Value(40)).current;
@@ -51,7 +55,7 @@ export default function AlarmsScreen() {
   const openFab = () => {
     if (fabOpen) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (!hasPermission) {
+    if (!allPermissionsGranted) {
       setShowPermissionSheet(true);
       return;
     }
@@ -168,7 +172,7 @@ export default function AlarmsScreen() {
 
   const handlePickAlarmType = (type: "verse" | "normal") => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (!hasPermission) {
+    if (!allPermissionsGranted) {
       closeFab(() => setShowPermissionSheet(true));
       return;
     }
@@ -271,7 +275,7 @@ export default function AlarmsScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               setEditingAlarm(item);
             }}
-            onPermissionDenied={!hasPermission ? () => setShowPermissionSheet(true) : undefined}
+            onPermissionDenied={!allPermissionsGranted ? openPermissionSheet : undefined}
           />
         )}
       />
@@ -368,6 +372,7 @@ export default function AlarmsScreen() {
       <AlarmPermissionSheet
         visible={showPermissionSheet}
         onClose={() => setShowPermissionSheet(false)}
+        permissionType={permissionSheetType}
       />
     </View>
   );

@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
-import { AppState, AppStateStatus } from "react-native";
+import { AppState, AppStateStatus, PermissionsAndroid, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 
-export function useAlarmPermission(): { hasPermission: boolean } {
+export function useAlarmPermission(): {
+  hasPermission: boolean;
+  hasExactAlarmPermission: boolean;
+} {
   const [hasPermission, setHasPermission] = useState(true);
+  const [hasExactAlarmPermission, setHasExactAlarmPermission] = useState(true);
 
   const checkPermission = async () => {
     try {
@@ -12,6 +16,17 @@ export function useAlarmPermission(): { hasPermission: boolean } {
       setHasPermission(status !== false);
     } catch {
       setHasPermission(true);
+    }
+
+    if (Platform.OS === "android" && Number(Platform.Version) >= 31) {
+      try {
+        const granted = await PermissionsAndroid.check(
+          "android.permission.SCHEDULE_EXACT_ALARM" as Parameters<typeof PermissionsAndroid.check>[0]
+        );
+        setHasExactAlarmPermission(granted);
+      } catch {
+        setHasExactAlarmPermission(true);
+      }
     }
   };
 
@@ -27,5 +42,5 @@ export function useAlarmPermission(): { hasPermission: boolean } {
     return () => sub.remove();
   }, []);
 
-  return { hasPermission };
+  return { hasPermission, hasExactAlarmPermission };
 }

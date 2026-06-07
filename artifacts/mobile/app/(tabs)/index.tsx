@@ -69,7 +69,9 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const isNativeTabs = useIsNativeTabs();
   const { alarms, toggleAlarm, addAlarm, updateAlarm, streak, getNextAlarm } = useAlarms();
-  const { hasPermission } = useAlarmPermission();
+  const { hasPermission, hasExactAlarmPermission } = useAlarmPermission();
+  const allPermissionsGranted = hasPermission && hasExactAlarmPermission;
+  const permissionSheetType = !hasPermission ? "notification" as const : "exactAlarm" as const;
   const { user, profile } = useAuth();
   const [showAddAlarm, setShowAddAlarm] = useState(false);
   const [editingAlarm, setEditingAlarm] = useState<import("@/context/AlarmContext").Alarm | null>(null);
@@ -197,7 +199,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Permission Warning Banner */}
-        {!hasPermission && (
+        {!allPermissionsGranted && (
           <Pressable
             style={[styles.permBanner, { backgroundColor: "#FF3B3012", borderColor: "#FF3B3030" }]}
             onPress={() => setShowPermissionSheet(true)}
@@ -211,7 +213,7 @@ export default function HomeScreen() {
             </View>
             <View style={styles.permBannerText}>
               <Text style={[styles.permBannerTitle, { color: "#FF3B30" }]}>
-                Alarm Access Denied
+                {!hasPermission ? "Alarm Access Denied" : "Exact Alarms Disabled"}
               </Text>
               <Text style={[styles.permBannerSub, { color: colors.mutedForeground }]}>
                 Tap to grant permission and enable alarms
@@ -249,7 +251,7 @@ export default function HomeScreen() {
                 <Switch
                   value={nextAlarm.enabled}
                   onValueChange={() => {
-                    if (!hasPermission) {
+                    if (!allPermissionsGranted) {
                       setShowPermissionSheet(true);
                       return;
                     }
@@ -364,7 +366,7 @@ export default function HomeScreen() {
               style={styles.emptyAddBtn}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                if (!hasPermission) {
+                if (!allPermissionsGranted) {
                   setShowPermissionSheet(true);
                   return;
                 }
@@ -445,6 +447,7 @@ export default function HomeScreen() {
       <AlarmPermissionSheet
         visible={showPermissionSheet}
         onClose={() => setShowPermissionSheet(false)}
+        permissionType={permissionSheetType}
       />
     </View>
   );
