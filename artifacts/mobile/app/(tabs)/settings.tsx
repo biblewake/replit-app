@@ -21,6 +21,7 @@ import { useIsNativeTabs } from "@/hooks/useIsNativeTabs";
 import { useAuth } from "@/context/AuthContext";
 import { useSubscription } from "@/lib/revenuecat";
 import { supabase } from "@/lib/supabase";
+import { requestBatteryOptimizationExemption } from "@/lib/batteryOptimization";
 import TroubleshootSheet from "@/components/TroubleshootSheet";
 import BottomSheet from "@/components/BottomSheet";
 
@@ -152,6 +153,11 @@ export default function SettingsScreen() {
   const openAppSettings = () => Linking.openURL("app-settings:");
   const openSupport = () =>
     Linking.openURL("mailto:support@trybiblewake.com");
+
+  const handleBatteryOptimization = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    requestBatteryOptimizationExemption();
+  };
 
   const handleSignOut = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -298,6 +304,21 @@ export default function SettingsScreen() {
             label="Alarm not working?"
             onPress={() => setTroubleshootVisible(true)}
           />
+          {Platform.OS === "android" && (
+            <SettingsRow
+              colors={colors}
+              icon={
+                <Ionicons
+                  name="battery-charging-outline"
+                  size={20}
+                  color="#34C759"
+                />
+              }
+              label="Allow Background Activity"
+              subtitle="Prevents Samsung, Xiaomi & other OEMs from killing alarms when you swipe the app away"
+              onPress={handleBatteryOptimization}
+            />
+          )}
           <SettingsRow
             colors={colors}
             isLast
@@ -312,6 +333,11 @@ export default function SettingsScreen() {
             onPress={openSupport}
           />
         </View>
+        {Platform.OS === "android" && (
+          <Text style={[styles.androidBatteryNote, { color: colors.mutedForeground }]}>
+            On Samsung, Xiaomi, OnePlus, and Huawei devices, swiping Bible Wake from recents can cancel scheduled alarms. Tap "Allow Background Activity" above to prevent this.
+          </Text>
+        )}
 
         {/* Preferences */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
@@ -622,6 +648,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Inter_400Regular",
     color: "#FF3B30",
+    marginTop: -16,
+    marginBottom: 16,
+    marginLeft: 4,
+    lineHeight: 16,
+  },
+  androidBatteryNote: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
     marginTop: -16,
     marginBottom: 16,
     marginLeft: 4,

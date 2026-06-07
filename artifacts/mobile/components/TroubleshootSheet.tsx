@@ -1,6 +1,7 @@
 import React from "react";
 import {
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,6 +14,7 @@ import * as Haptics from "expo-haptics";
 
 import BottomSheet from "@/components/BottomSheet";
 import { useColors } from "@/hooks/useColors";
+import { requestBatteryOptimizationExemption } from "@/lib/batteryOptimization";
 
 interface TroubleshootSheetProps {
   visible: boolean;
@@ -116,6 +118,11 @@ export default function TroubleshootSheet({
   const openSupport = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Linking.openURL("mailto:support@trybiblewake.com");
+  };
+
+  const handleBatteryOptimization = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    requestBatteryOptimizationExemption();
   };
 
   return (
@@ -249,6 +256,51 @@ export default function TroubleshootSheet({
             colors={colors}
           />
         </Card>
+
+        {Platform.OS === "android" && (
+          <Card colors={colors}>
+            <CardTitle
+              icon="battery-charging-outline"
+              label="Background Activity (Android)"
+              iconColor="#34C759"
+              colors={colors}
+            />
+            <Text style={[styles.cardBody, { color: colors.mutedForeground }]}>
+              Samsung, Xiaomi, OnePlus, Huawei, and other Android manufacturers aggressively kill background apps when you swipe them from the recent-apps list — including Bible Wake's scheduled alarms.
+            </Text>
+            <BulletRow
+              text='Tap "Allow Background Activity" below to open the system dialog and exempt Bible Wake from battery optimisation.'
+              colors={colors}
+            />
+            <BulletRow
+              text={`On some devices you can also go to Settings → Battery → Battery optimisation → All apps → Bible Wake → "Don't optimise" or "Unrestricted".`}
+              colors={colors}
+            />
+            <BulletRow
+              text="This setting persists across reboots and keeps your alarms firing even when the app is closed."
+              colors={colors}
+            />
+            <Pressable
+              onPress={handleBatteryOptimization}
+              style={({ pressed }) => [
+                styles.settingsBtn,
+                {
+                  backgroundColor: pressed ? "#34C75922" : "#34C75915",
+                  borderColor: "#34C75944",
+                },
+              ]}
+            >
+              <Ionicons
+                name="battery-charging-outline"
+                size={16}
+                color="#34C759"
+              />
+              <Text style={[styles.settingsBtnText, { color: "#34C759" }]}>
+                Allow Background Activity
+              </Text>
+            </Pressable>
+          </Card>
+        )}
 
         <Card colors={colors}>
           <CardTitle
