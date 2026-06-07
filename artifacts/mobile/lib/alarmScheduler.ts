@@ -7,6 +7,15 @@
  *
  * Notification IDs are persisted to AsyncStorage so they survive app restarts
  * and can be reliably cancelled.
+ *
+ * Android specifics:
+ *  - A max-importance "alarm" channel is created once; max importance is required
+ *    for USE_FULL_SCREEN_INTENT to work (lock-screen alarm overlay).
+ *  - All notifications are posted to that channel so they bypass Doze mode and
+ *    appear as full-screen intents on the lock screen.
+ *  - WAKE_LOCK (declared in app.json) is required so the OS grants the CPU
+ *    wakelock that expo-av acquires internally via staysActiveInBackground; see
+ *    alarm-ringing.tsx where Audio.setAudioModeAsync actually activates this.
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -14,6 +23,29 @@ import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
 import { Alarm } from "@/context/AlarmContext";
+
+const ANDROID_ALARM_CHANNEL_ID = "bible_wake_alarms";
+
+/**
+ * Create (or no-op if already exists) a high-importance Android notification
+ * channel that enables full-screen intents and bypasses Doze.
+ * Must be called before scheduling any notifications on Android.
+ */
+export async function ensureAndroidAlarmChannel(): Promise<void> {
+  if (Platform.OS !== "android") return;
+  await Notifications.setNotificationChannelAsync(ANDROID_ALARM_CHANNEL_ID, {
+    name: "Alarms",
+    description: "Bible Wake morning alarms",
+    importance: Notifications.AndroidImportance.MAX,
+    sound: "default",
+    vibrationPattern: [0, 500, 200, 500],
+    enableVibrate: true,
+    showBadge: true,
+    lockscreenVisibility:
+      Notifications.AndroidNotificationVisibility.PUBLIC,
+    bypassDnd: true,
+  });
+}
 
 const NOTIF_IDS_KEY = "@bible_wake_notif_ids";
 
@@ -65,6 +97,9 @@ export async function scheduleAlarmNotifications(alarm: Alarm): Promise<void> {
     ? 0
     : alarm.hour;
 
+  // Ensure the Android alarm channel exists before scheduling.
+  await ensureAndroidAlarmChannel();
+
   const content: Notifications.NotificationContentInput = {
     title: alarm.name || "Bible Wake",
     body: alarm.verseRef
@@ -79,6 +114,12 @@ export async function scheduleAlarmNotifications(alarm: Alarm): Promise<void> {
     sound: "defaultCritical",
     // interruptionLevel "critical" also lights the screen and bypasses Focus modes.
     interruptionLevel: "critical",
+    // Android: post to the max-importance alarm channel so the notification is
+    // eligible for full-screen intent (lock-screen alarm overlay) and bypasses Doze.
+    ...(Platform.OS === "android" && {
+      categoryIdentifier: "alarm",
+      channelId: ANDROID_ALARM_CHANNEL_ID,
+    }),
   };
 
   const scheduledIds: string[] = [];

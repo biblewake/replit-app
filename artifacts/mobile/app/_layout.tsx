@@ -19,6 +19,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AlarmProvider } from "@/context/AlarmContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { ensureAndroidAlarmChannel } from "@/lib/alarmScheduler";
 import { registerBackgroundAlarmTask } from "@/lib/backgroundAlarmCheck";
 import {
   initializeRevenueCat,
@@ -44,6 +45,12 @@ if (Platform.OS !== "web") {
 // definition is present before any JS suspension (required by TaskManager).
 if (Platform.OS !== "web") {
   registerBackgroundAlarmTask().catch(() => {});
+}
+
+// Create (or verify) the max-importance Android notification channel that
+// enables USE_FULL_SCREEN_INTENT and lock-screen alarm overlays. No-ops on iOS/web.
+if (Platform.OS === "android") {
+  ensureAndroidAlarmChannel().catch(() => {});
 }
 
 // Force the app to always run in light mode regardless of system preference.

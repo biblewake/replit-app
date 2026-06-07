@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Audio } from "expo-av";
+import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from "expo-av";
 import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -76,7 +76,20 @@ export default function AlarmRingingScreen() {
     let mounted = true;
     const playAlarm = async () => {
       try {
-        await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+        // Configure the audio session before playback.
+        // staysActiveInBackground + DoNotMix causes expo-av to acquire an
+        // Android AudioFocus (which internally holds a CPU partial wake lock
+        // backed by the WAKE_LOCK permission in app.json), keeping audio alive
+        // through Doze mode. playsInSilentModeIOS + DoNotMix handles the iOS
+        // mute-switch / Focus-mode bypass on the other side.
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: true,
+          interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+          staysActiveInBackground: true,
+          interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+          shouldDuckAndroid: false,
+          playThroughEarpieceAndroid: false,
+        });
         const soundId = alarm?.soundId;
         const soundMeta = soundId ? getSoundById(soundId) : null;
         const source = soundMeta
@@ -159,7 +172,14 @@ export default function AlarmRingingScreen() {
     thumbX.setValue(0);
     trackOpacity.setValue(1);
     try {
-      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+      await Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,
+        interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+        staysActiveInBackground: true,
+        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+        shouldDuckAndroid: false,
+        playThroughEarpieceAndroid: false,
+      });
       const soundId = alarm?.soundId;
       const soundMeta = soundId ? getSoundById(soundId) : null;
       const source = soundMeta
