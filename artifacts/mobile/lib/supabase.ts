@@ -140,6 +140,7 @@ export const supabase: SupabaseClient = isSupabaseConfigured
         }),
         signOut: async () => ({ error: null }),
         signInWithOAuth: async () => ({ data: { url: null }, error: null }),
+        signInAnonymously: async () => ({ data: { session: null, user: null }, error: null }),
         setSession: async () => ({ data: { session: null }, error: null }),
       },
       from: () => ({

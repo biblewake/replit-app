@@ -53,6 +53,7 @@ interface AuthContextType {
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
+  signInAnonymously: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -66,6 +67,7 @@ const AuthContext = createContext<AuthContextType>({
   updateProfile: async () => {},
   signInWithGoogle: async () => {},
   signInWithApple: async () => {},
+  signInAnonymously: async () => {},
   signOut: async () => {},
 });
 
@@ -375,6 +377,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const signInAnonymously = useCallback(async () => {
+    try {
+      const { error } = await supabase.auth.signInAnonymously();
+      if (error) throw error;
+    } catch (error) {
+      console.error("[BibleWake] Anonymous sign-in error:", error);
+      Alert.alert(
+        "Sign-in failed",
+        "Could not continue anonymously. Please try again."
+      );
+    }
+  }, []);
+
   const updateProfile = useCallback(async (updates: Partial<UserProfile>) => {
     if (!user) return;
     // Optimistic local update
@@ -406,6 +421,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         updateProfile,
         signInWithGoogle,
         signInWithApple,
+        signInAnonymously,
         signOut,
       }}
     >

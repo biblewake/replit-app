@@ -141,8 +141,8 @@ export function AnalysisScreen({ onDone }: { onDone: () => void }) {
  * AccountScreen — step 29. Apple first, Google white with colored "G".
  * ────────────────────────────────────────────────────────────────────────── */
 export function AccountScreen({ onContinue }: { onContinue: () => void }) {
-  const { signInWithGoogle, signInWithApple, session } = useAuth();
-  const [busy, setBusy] = useState<null | "google" | "apple">(null);
+  const { signInWithGoogle, signInWithApple, signInAnonymously, session } = useAuth();
+  const [busy, setBusy] = useState<null | "google" | "apple" | "anon">(null);
 
   useEffect(() => {
     if (session) onContinue();
@@ -155,6 +155,18 @@ export function AccountScreen({ onContinue }: { onContinue: () => void }) {
     try {
       if (provider === "google") await signInWithGoogle();
       else await signInWithApple();
+    } catch {
+      // surfaced by AuthContext
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const runAnon = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setBusy("anon");
+    try {
+      await signInAnonymously();
     } catch {
       // surfaced by AuthContext
     } finally {
@@ -220,6 +232,20 @@ export function AccountScreen({ onContinue }: { onContinue: () => void }) {
           )}
         </Pressable>
       </View>
+
+      {/* Anonymous skip link */}
+      <Pressable
+        disabled={busy !== null}
+        onPress={() => { void runAnon(); }}
+        hitSlop={10}
+        style={({ pressed }) => [styles.anonLink, { opacity: pressed ? 0.6 : 1 }]}
+      >
+        {busy === "anon" ? (
+          <ActivityIndicator size="small" color={OL.mutedForeground} />
+        ) : (
+          <Text style={styles.anonLinkText}>Continue without an account</Text>
+        )}
+      </Pressable>
 
     </View>
   );
@@ -639,6 +665,18 @@ const styles = StyleSheet.create({
   authBtnText: {
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
+  },
+  anonLink: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 4,
+    minHeight: 28,
+  },
+  anonLinkText: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: OL.mutedForeground,
+    textDecorationLine: "underline",
   },
   /* Paywall shared */
   paywallWrap: {
