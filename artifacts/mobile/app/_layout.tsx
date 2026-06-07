@@ -9,8 +9,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as Notifications from "expo-notifications";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
-import { Appearance, Platform } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { AppState, AppStateStatus, Appearance, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -20,7 +20,10 @@ import { AlarmProvider } from "@/context/AlarmContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { ensureAndroidAlarmChannel } from "@/lib/alarmScheduler";
-import { registerBackgroundAlarmTask } from "@/lib/backgroundAlarmCheck";
+import {
+  registerBackgroundAlarmTask,
+  rescheduleAllAlarms,
+} from "@/lib/backgroundAlarmCheck";
 import {
   initializeRevenueCat,
   SubscriptionProvider,
@@ -108,6 +111,36 @@ function RootLayoutNav() {
       router.replace("/(tabs)");
     }
   }, [onboardingComplete, isSubscribed, subscriptionLoading, segments, router]);
+
+  // ── iOS: reschedule alarms on every foreground transition ────────────────
+  // iOS cancels all local notifications on device reboot and has no
+  // BOOT_COMPLETED equivalent. Rescheduling whenever the app becomes active
+  // ensures alarms are restored the first time the user opens the app after a
+  // reboot (or after any other OS-level notification purge).
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  useEffect(() => {
+    if (Platform.OS !== "ios") return;
+
+    // Reschedule immediately on cold launch in case the device was rebooted
+    // while the app was not running.
+    rescheduleAllAlarms().catch(() => {});
+
+    const subscription = AppState.addEventListener(
+      "change",
+      (nextState: AppStateStatus) => {
+        const prev = appStateRef.current;
+        appStateRef.current = nextState;
+        // Only act when transitioning into active from background/inactive.
+        if (
+          nextState === "active" &&
+          (prev === "background" || prev === "inactive")
+        ) {
+          rescheduleAllAlarms().catch(() => {});
+        }
+      }
+    );
+    return () => subscription.remove();
+  }, []); // run once on mount
 
   // ── Cold-launch: app opened by tapping an alarm notification ─────────────
   useEffect(() => {

@@ -8,6 +8,17 @@
  * module level for TaskManager.defineTask to register before any JS
  * suspension. Import this file at app startup (e.g. in _layout.tsx) so
  * the task definition is always present.
+ *
+ * iOS post-reboot strategy:
+ * iOS cancels all scheduled local notifications on device reboot and offers
+ * no BOOT_COMPLETED equivalent. Instead we rely on two layers:
+ *  1. BGAppRefreshTask — expo-background-fetch registers this automatically
+ *     when UIBackgroundModes: fetch is present in app.json. iOS fires it
+ *     opportunistically, which eventually catches a post-reboot state.
+ *  2. AppState "active" listener (wired in _layout.tsx) — calls
+ *     rescheduleAllAlarms() on every foreground transition, so the first
+ *     time the user opens the app after a reboot the alarms are immediately
+ *     restored. This is the primary guarantee on iOS.
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -20,17 +31,25 @@ import { scheduleAlarmNotifications } from "./alarmScheduler";
 
 export const BACKGROUND_ALARM_TASK = "BACKGROUND_ALARM_CHECK";
 
+/**
+ * Re-schedule notifications for every enabled alarm stored in AsyncStorage.
+ * Called from both the background task and the foreground AppState listener
+ * (iOS) so alarms are restored after an OS-level notification purge (e.g.
+ * device reboot).
+ */
+export async function rescheduleAllAlarms(): Promise<void> {
+  const raw = await AsyncStorage.getItem(ALARM_CACHE_KEY);
+  const alarms: Alarm[] = raw ? JSON.parse(raw) : [];
+  await Promise.all(
+    alarms
+      .filter((a) => a.enabled)
+      .map((a) => scheduleAlarmNotifications(a))
+  );
+}
+
 TaskManager.defineTask(BACKGROUND_ALARM_TASK, async () => {
   try {
-    // ALARM_CACHE_KEY is written for both guest and authenticated users.
-    // This avoids the stale-data problem of reading the guest-only STORAGE_KEY.
-    const raw = await AsyncStorage.getItem(ALARM_CACHE_KEY);
-    const alarms: Alarm[] = raw ? JSON.parse(raw) : [];
-    await Promise.all(
-      alarms
-        .filter((a) => a.enabled)
-        .map((a) => scheduleAlarmNotifications(a))
-    );
+    await rescheduleAllAlarms();
     return BackgroundFetch.BackgroundFetchResult.NewData;
   } catch {
     return BackgroundFetch.BackgroundFetchResult.Failed;
