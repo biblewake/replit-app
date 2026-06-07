@@ -13,7 +13,7 @@
 
 const {
   withAndroidManifest,
-  withDangerousMods,
+  withDangerousMod,
 } = require("expo/config-plugins");
 const path = require("path");
 const fs = require("fs");
@@ -64,23 +64,22 @@ function addReceiverToManifest(config) {
 
 /** Write the BootReceiver.kt Kotlin source file into the Android project. */
 function addKotlinSource(config) {
-  return withDangerousMods(config, [
-    [
-      "android",
-      async (cfg) => {
-        const packageDir = PACKAGE_NAME.replace(/\./g, "/");
-        const sourceDir = path.join(
-          cfg.modRequest.platformProjectRoot,
-          "app",
-          "src",
-          "main",
-          "java",
-          packageDir
-        );
-        fs.mkdirSync(sourceDir, { recursive: true });
+  return withDangerousMod(config, [
+    "android",
+    async (cfg) => {
+      const packageDir = PACKAGE_NAME.replace(/\./g, "/");
+      const sourceDir = path.join(
+        cfg.modRequest.platformProjectRoot,
+        "app",
+        "src",
+        "main",
+        "java",
+        packageDir
+      );
+      fs.mkdirSync(sourceDir, { recursive: true });
 
-        const filePath = path.join(sourceDir, "BootReceiver.kt");
-        const contents = `package ${PACKAGE_NAME}
+      const filePath = path.join(sourceDir, "BootReceiver.kt");
+      const contents = `package ${PACKAGE_NAME}
 
 import android.content.BroadcastReceiver
 import android.content.ComponentName
@@ -143,10 +142,9 @@ class BootReceiver : BroadcastReceiver() {
 }
 `;
 
-        fs.writeFileSync(filePath, contents, "utf8");
-        return cfg;
-      },
-    ],
+      fs.writeFileSync(filePath, contents, "utf8");
+      return cfg;
+    },
   ]);
 }
 
