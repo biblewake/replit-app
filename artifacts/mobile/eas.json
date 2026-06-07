@@ -18,7 +18,8 @@
       "distribution": "internal",
       "ios": {
         "simulator": false,
-        "autoIncrement": true
+        "autoIncrement": true,
+        "image": "macos-sequoia-15.2-xcode-16.2"
       },
       "android": {
         "buildType": "apk",
@@ -28,7 +29,8 @@
     "production": {
       "distribution": "store",
       "ios": {
-        "autoIncrement": true
+        "autoIncrement": true,
+        "image": "macos-sequoia-15.2-xcode-16.2"
       },
       "android": {
         "autoIncrement": true
