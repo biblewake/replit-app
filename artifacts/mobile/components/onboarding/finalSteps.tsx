@@ -141,13 +141,13 @@ export function AnalysisScreen({ onDone }: { onDone: () => void }) {
  * AccountScreen — step 29. Apple first, Google white with colored "G".
  * ────────────────────────────────────────────────────────────────────────── */
 export function AccountScreen({ onContinue }: { onContinue: () => void }) {
-  const { signInWithGoogle, signInWithApple, signInAnonymously, session } = useAuth();
+  const { signInWithGoogle, signInWithApple, signInAnonymously, session, isGuest } = useAuth();
   const [busy, setBusy] = useState<null | "google" | "apple" | "anon">(null);
 
   useEffect(() => {
-    if (session) onContinue();
+    if (session || isGuest) onContinue();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session]);
+  }, [session, isGuest]);
 
   const run = async (provider: "google" | "apple") => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

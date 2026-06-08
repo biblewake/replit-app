@@ -26,7 +26,7 @@ import { Session, User } from "@supabase/supabase-js";
 import * as WebBrowser from "expo-web-browser";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { syncOnboardingAnswers } from "@/services/onboardingSync";
 
 // Required for OAuth on native — allows the browser to close and return to the app
@@ -47,6 +47,12 @@ interface AuthContextType {
   isLoading: boolean;
   /** True once onboarding has been completed (AsyncStorage `onboarding_complete`). null while loading. */
   onboardingComplete: boolean | null;
+  /**
+   * True when the user chose "Continue without an account" in a non-Supabase
+   * environment (e.g. Expo Go). In production Supabase creates a real anonymous
+   * session instead, so this flag stays false.
+   */
+  isGuest: boolean;
   /** Mark onboarding done — persists the flag and flips the gate. */
   completeOnboarding: () => Promise<void>;
   /** Update a subset of the user's profile (persists to Supabase and updates local state). */
@@ -63,6 +69,7 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   isLoading: true,
   onboardingComplete: null,
+  isGuest: false,
   completeOnboarding: async () => {},
   updateProfile: async () => {},
   signInWithGoogle: async () => {},
@@ -196,6 +203,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isGuest, setIsGuest] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(
     null
   );
@@ -378,6 +386,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signInAnonymously = useCallback(async () => {
+    // When Supabase is not configured (e.g. Expo Go without secrets), skip the
+    // network call entirely. The stub client would return { error: null } but
+    // never fire onAuthStateChange, so the AccountScreen would hang forever.
+    // Instead, set the in-memory guest flag — AccountScreen watches it to advance.
+    if (!isSupabaseConfigured) {
+      setIsGuest(true);
+      return;
+    }
+
     try {
       const { error } = await supabase.auth.signInAnonymously();
       if (error) throw error;
@@ -416,6 +433,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         profile,
         isLoading,
+        isGuest,
         onboardingComplete,
         completeOnboarding,
         updateProfile,
