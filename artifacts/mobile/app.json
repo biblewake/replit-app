@@ -17,9 +17,6 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.tinochiwara.biblewake",
       "buildNumber": "1",
-      "entitlements": {
-        "com.apple.developer.usernotifications.critical-alerts": true
-      },
       "infoPlist": {
         "UIBackgroundModes": [
           "audio",

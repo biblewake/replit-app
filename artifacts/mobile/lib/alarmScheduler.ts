@@ -109,11 +109,10 @@ export async function scheduleAlarmNotifications(alarm: Alarm): Promise<void> {
       alarmId: alarm.id,
       type: alarm.wakeUpCheck ? "wakeup" : "verse",
     },
-    // "defaultCritical" requires the critical-alerts entitlement (declared in
-    // app.json) and bypasses the iOS mute switch at full volume.
-    sound: "defaultCritical",
-    // interruptionLevel "critical" also lights the screen and bypasses Focus modes.
-    interruptionLevel: "critical",
+    // "default" plays the standard notification sound. "timeSensitive" interrupts
+    // most Focus modes (Sleep, Work, etc.) without special Apple entitlements.
+    sound: "default",
+    interruptionLevel: "timeSensitive",
     // Android: post to the max-importance alarm channel so the notification is
     // eligible for full-screen intent (lock-screen alarm overlay) and bypasses Doze.
     ...(Platform.OS === "android" && {
