@@ -569,7 +569,7 @@ export function SoundPickerInline({
           return (
             <Pressable
               key={item.id}
-              onPress={() => preview(item.source, item.id)}
+              onPress={() => preview(item.getSource(), item.id)}
               style={[
                 styles.soundRow,
                 { backgroundColor: OL.card, borderColor: selected ? ONBOARDING_ORANGE : OL.border },

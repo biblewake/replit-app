@@ -93,7 +93,7 @@ export default function AlarmRingingScreen() {
         const soundId = alarm?.soundId;
         const soundMeta = soundId ? getSoundById(soundId) : null;
         const source = soundMeta
-          ? soundMeta.source
+          ? soundMeta.getSource()
           : require("@/assets/sounds/bright/chirps.mp3");
         const { sound } = await Audio.Sound.createAsync(source, {
           isLooping: true,
@@ -183,7 +183,7 @@ export default function AlarmRingingScreen() {
       const soundId = alarm?.soundId;
       const soundMeta = soundId ? getSoundById(soundId) : null;
       const source = soundMeta
-        ? soundMeta.source
+        ? soundMeta.getSource()
         : require("@/assets/sounds/bright/chirps.mp3");
       const { sound } = await Audio.Sound.createAsync(source, {
         isLooping: true,

@@ -938,7 +938,7 @@ export default function AlarmEditSheet({
                       setPlayingSoundId(item.id);
                       setSelectedSoundId(item.id);
                       try {
-                        const { sound } = await Audio.Sound.createAsync(item.source);
+                        const { sound } = await Audio.Sound.createAsync(item.getSource());
                         soundRef.current = sound;
                         await sound.playAsync();
                         sound.setOnPlaybackStatusUpdate((status) => {
