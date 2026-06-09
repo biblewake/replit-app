@@ -1,0 +1,147 @@
+Yes — this is **essentially the same crash**, and the new log actually strengthens the original diagnosis.
+
+### What changed?
+
+This is **Build 9**, the build that supposedly contained the RevenueCat fixes:
+
+```
+Version: 1.0.0 (9)
+```
+
+Yet the crash signature is still there.
+
+### The smoking gun
+
+The crashing stack is:
+
+```text
+Thread 2 Crashed
+
+hermes::vm::HadesGC::writeBarrierSlow
+JSObject::addOwnPropertyImpl
+HermesRuntimeImpl::setPropertyValue
+
+TurboModuleConvertUtils::convertNSExceptionToJSError
+RCTTurboModule.mm:221
+
+ObjCTurboModule::performVoidMethodInvocation
+RCTTurboModule.mm:438
+```
+
+This is almost identical to the previous pattern:
+
+1. Native code throws an **NSException**
+2. React Native catches it
+3. `convertNSExceptionToJSError()` tries to create a JS Error object
+4. Hermes heap gets touched from the wrong context/thread
+5. `EXC_BAD_ACCESS`
+
+The crash is happening **inside `convertNSExceptionToJSError()` again**.
+
+---
+
+## What this means
+
+One of two things is true:
+
+### Option A (most likely)
+
+RevenueCat is still throwing an exception.
+
+Possible reasons:
+
+* The guard wasn't implemented correctly
+* `Purchases.isConfigured` isn't preventing the code path
+* Another RevenueCat method is throwing
+* RevenueCat is being initialized from two places
+
+### Option B
+
+RevenueCat was innocent.
+
+Some other TurboModule is throwing an Objective-C exception during startup, and React Native is crashing while converting it to JS.
+
+The log proves:
+
+> A native TurboModule is throwing an NSException.
+
+The log does **not** prove which module.
+
+---
+
+## What I would tell Replit
+
+I would send them:
+
+> Build 9 still crashes with the same signature.
+>
+> The crash is again occurring in:
+>
+> `facebook::react::TurboModuleConvertUtils::convertNSExceptionToJSError`
+>
+> after an Objective-C exception is thrown from a TurboModule void invocation.
+>
+> This suggests the RevenueCat mitigation did not eliminate the underlying exception, or another TurboModule is throwing during startup.
+>
+> Please identify which TurboModule is throwing the NSException rather than assuming RevenueCat.
+
+---
+
+## How to find the actual module
+
+The fastest test:
+
+### Completely disable RevenueCat
+
+Comment out:
+
+```ts
+initializeRevenueCat();
+```
+
+or whatever startup hook calls it.
+
+Build 10.
+
+Results:
+
+| Result           | Conclusion                         |
+| ---------------- | ---------------------------------- |
+| Crash disappears | RevenueCat is the trigger          |
+| Crash remains    | Another TurboModule is responsible |
+
+This is the highest-signal test you can run.
+
+---
+
+## Another clue
+
+The app crashes only:
+
+```text
+Launch Time: 13:49:45.070
+Crash Time: 13:49:45.937
+```
+
+That's **less than one second after launch**.
+
+So the culprit is almost certainly something happening during startup:
+
+* RevenueCat
+* Notifications
+* Analytics
+* Firebase
+* AppsFlyer
+* Branch
+* Purchases
+* Expo native module initialization
+
+—not something user-triggered.
+
+### My confidence
+
+* Same crash mechanism: **95%**
+* RevenueCat specifically: **50–60%**
+* Startup TurboModule throwing an NSException: **99%**
+
+At this point I would stop guessing which module it is and ask Replit to instrument startup or produce a build with RevenueCat completely disabled. That will tell you more in one build than another round of speculative fixes.
