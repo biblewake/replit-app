@@ -70,18 +70,6 @@ waitForPort = 8081
 PORT = "8081"
 BASE_PATH = "/__mockup"
 
-[[workflows.workflow]]
-name = "EAS Init"
-mode = "sequential"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd artifacts/mobile && pnpm dlx eas-cli init"
-
-[workflows.workflow.metadata]
-outputType = "console"
-
 [agent]
 stack = "PNPM_WORKSPACE"
 expertMode = true

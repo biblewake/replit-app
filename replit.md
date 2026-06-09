@@ -90,19 +90,42 @@ EAS will authenticate with your Apple ID, upload the build to App Store Connect,
 
 The mobile app uses [Expo Application Services (EAS)](https://expo.dev/eas) for building and submitting to TestFlight, the App Store, and Google Play.
 
+### EAS project
+
+The mobile app is linked to the Expo project **@tinochiwara/mobile** (project ID `30b74531-c0f4-4727-8408-ffff4055f89c`). This ID lives in `app.json` under `expo.extra.eas.projectId` and in `expo.owner`.
+
 ### Build profiles (`artifacts/mobile/eas.json`)
 
 | Profile | Distribution | Use case |
 |---|---|---|
 | `development` | Internal (simulator/device) | Local dev client builds |
-| `preview` | Internal | TestFlight / ad-hoc Android APK testing |
-| `production` | Store | App Store + Google Play submission |
+| `preview` | Internal (ad-hoc) | Direct-download device testing (not TestFlight) |
+| `production` | Store | TestFlight + App Store submission |
 
-**Trigger a TestFlight build:**
+> **Note:** `preview` uses `distribution: "internal"` (ad-hoc direct download), not TestFlight. To deliver to TestFlight, use the `production` profile.
+
+**Trigger an ad-hoc preview build (direct install, not TestFlight):**
 ```
 cd artifacts/mobile
 eas build --profile preview --platform ios
 ```
+
+**Trigger a TestFlight / App Store build:**
+```
+cd artifacts/mobile
+eas build --profile production --platform ios
+```
+
+### One-time iOS credential setup (required before first build)
+
+EAS needs an iOS distribution certificate and provisioning profile. This must be done interactively once from a real terminal (not Replit shell):
+
+```
+cd artifacts/mobile
+EXPO_TOKEN=<your-token> eas credentials
+```
+
+Choose **iOS → Distribution certificate** and let EAS create/manage them automatically via Expo's credential service. After this runs once, subsequent `eas build` calls (including from CI) will use the stored credentials non-interactively.
 
 **Trigger a signed Android AAB for Google Play:**
 ```

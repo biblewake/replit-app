@@ -16,13 +16,13 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.tinochiwara.biblewake",
-      "buildNumber": "1",
       "infoPlist": {
         "UIBackgroundModes": [
           "audio",
           "fetch"
         ],
-        "NSMicrophoneUsageDescription": "Bible Wake uses the microphone so you can recite your scripture verse aloud during your morning alarm."
+        "NSMicrophoneUsageDescription": "Bible Wake uses the microphone so you can recite your scripture verse aloud during your morning alarm.",
+        "ITSAppUsesNonExemptEncryption": false
       },
       "associatedDomains": [
         "applinks:cmaysraaclfvofiynctl.supabase.co"
@@ -42,7 +42,10 @@
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
         "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
+        "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+        "com.google.android.gms.permission.AD_ID",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -91,6 +94,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "30b74531-c0f4-4727-8408-ffff4055f89c"
+      }
+    },
+    "owner": "tinochiwara"
   }
 }

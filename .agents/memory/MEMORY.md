@@ -2,3 +2,4 @@
 - [FAB Animation Management](fab-animation-management.md) — always stop current animation and reset Animated.Values before starting a new sequence; use a ref to track the active CompositeAnimation.
 - [Expo web native-module crash](expo-web-native-modules.md) — native-only Expo modules (e.g. expo-tracking-transparency) throw at import on web and kill the route; import them lazily + platform-guarded.
 - [RevenueCat Proxy Bridge](revenuecat-proxy-bridge.md) — SDK passes Request object (not URL string) to custom fetch; RC returns 201 not 200; both must be fixed in proxyFetch or all writes silently GET instead.
+- [EAS Build pnpm lockfile sync](eas-pnpm-lockfile.md) — EAS runs pnpm install --frozen-lockfile from workspace root; any package.json edit without a matching lockfile regeneration kills the build instantly.
