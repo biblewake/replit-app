@@ -214,13 +214,35 @@ export default function RootLayout() {
     if (Platform.OS !== "web") {
       Appearance.setColorScheme?.("light");
     }
-    try {
-      initializeRevenueCat();
-    } catch (err: unknown) {
-      if (__DEV__) {
-        console.warn("[RevenueCat] Initialization failed:", err);
+
+    // Wait for the app to be "active" before touching the StoreKit bridge.
+    // On cold launch the JS thread can start before the app finishes its
+    // UIApplicationDidBecomeActiveNotification cycle; initialising RevenueCat
+    // before that point (while AppState is still "background" / "inactive")
+    // gives Hermes no chance to fully warm up and raises the SIGSEGV race.
+    const tryInit = () => {
+      try {
+        initializeRevenueCat();
+      } catch (err: unknown) {
+        if (__DEV__) {
+          console.warn("[RevenueCat] Initialization failed:", err);
+        }
       }
+    };
+
+    if (AppState.currentState === "active") {
+      tryInit();
+      return;
     }
+
+    // Not active yet — wait for the first "active" transition then remove the listener.
+    const sub = AppState.addEventListener("change", (state: AppStateStatus) => {
+      if (state === "active") {
+        sub.remove();
+        tryInit();
+      }
+    });
+    return () => sub.remove();
   }, []);
 
   useEffect(() => {

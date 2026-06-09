@@ -27,6 +27,14 @@ function getRevenueCatApiKey(): string | null {
 }
 
 export function initializeRevenueCat() {
+  // Guard against double-init: Purchases.configure() on iOS 26 / StoreKit2
+  // throws an NSException when called a second time, which then gets
+  // marshalled onto the Hermes heap from a background GCD queue and races
+  // with a JS Set iteration — causing EXC_BAD_ACCESS (SIGSEGV).
+  // rcInitialized is set to true on first successful configure(), so any
+  // subsequent call (e.g. from a re-mounted provider) is a safe no-op.
+  if (rcInitialized) return;
+
   const apiKey = getRevenueCatApiKey();
   if (!apiKey) {
     if (__DEV__) {
