@@ -56,20 +56,7 @@ if (Platform.OS === "android") {
   ensureAndroidAlarmChannel().catch(() => {});
 }
 
-// Force the app to always run in light mode regardless of system preference.
-// This prevents React Navigation and native components from auto-switching to dark.
-Appearance.setColorScheme?.("light");
-
 SplashScreen.preventAutoHideAsync();
-
-// Initialize RevenueCat once at module load time. Failures degrade gracefully.
-try {
-  initializeRevenueCat();
-} catch (err: unknown) {
-  if (__DEV__) {
-    console.warn("[RevenueCat] Initialization failed:", err);
-  }
-}
 
 const queryClient = new QueryClient();
 
@@ -218,6 +205,23 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
+
+  // Defer native-bridge calls until after React + Hermes are fully initialized.
+  // Calling Appearance.setColorScheme or Purchases.configure at module scope on
+  // iOS 26 triggers a native round-trip before the runtime is stable and causes
+  // a cold-launch crash (DictPropertyMap / HiddenClass in the Hermes GC).
+  useEffect(() => {
+    if (Platform.OS !== "web") {
+      Appearance.setColorScheme?.("light");
+    }
+    try {
+      initializeRevenueCat();
+    } catch (err: unknown) {
+      if (__DEV__) {
+        console.warn("[RevenueCat] Initialization failed:", err);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
