@@ -1,5 +1,4 @@
 import { Platform } from "react-native";
-import { isLiquidGlassAvailable } from "expo-glass-effect";
 
 /**
  * Returns true when running under NativeTabs (Liquid Glass) on iOS 26+.
@@ -7,5 +6,5 @@ import { isLiquidGlassAvailable } from "expo-glass-effect";
  * screens must NOT add insets.top manually or content will be double-padded.
  */
 export function useIsNativeTabs(): boolean {
-  return Platform.OS === "ios" && isLiquidGlassAvailable();
+  return Platform.OS === "ios" && parseInt(Platform.Version as string, 10) >= 26;
 }
