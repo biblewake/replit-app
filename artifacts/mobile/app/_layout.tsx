@@ -9,10 +9,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as Notifications from "expo-notifications";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import Constants from "expo-constants";
 import React, { useEffect, useRef } from "react";
-import { AppState, AppStateStatus, Appearance, Platform } from "react-native";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { KeyboardProvider } from "react-native-keyboard-controller";
+import { AppState, AppStateStatus, Appearance, Platform, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -58,6 +57,42 @@ if (Platform.OS === "android") {
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
+
+/**
+ * Expo Go SDK 53 forces New Architecture on, which crashes the gesture-handler
+ * TurboModule at import time when newArchEnabled is false in app.json. Lazy-
+ * require GestureHandlerRootView so the module is never evaluated in Expo Go,
+ * falling back to a plain View (gestures still work via JS-driven fallbacks).
+ */
+const isExpoGo = Constants.executionEnvironment === "storeClient";
+
+/**
+ * Expo Go SDK 53 forces New Architecture on, which crashes the gesture-handler
+ * TurboModule at import time when newArchEnabled is false in app.json. Lazy-
+ * require GestureHandlerRootView so the module is never evaluated in Expo Go,
+ * falling back to a plain View (gestures still work via JS-driven fallbacks).
+ */
+function GestureWrapper({ children }: { children: React.ReactNode }) {
+  if (isExpoGo || Platform.OS === "web") {
+    return <View style={{ flex: 1 }}>{children}</View>;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { GestureHandlerRootView } = require("react-native-gesture-handler") as typeof import("react-native-gesture-handler");
+  return <GestureHandlerRootView style={{ flex: 1 }}>{children}</GestureHandlerRootView>;
+}
+
+/**
+ * Same issue: react-native-keyboard-controller uses a TurboModule that crashes
+ * at import time in Expo Go SDK 53. Lazy-require and skip in Expo Go / web.
+ */
+function KeyboardWrapper({ children }: { children: React.ReactNode }) {
+  if (isExpoGo || Platform.OS === "web") {
+    return <>{children}</>;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { KeyboardProvider } = require("react-native-keyboard-controller") as typeof import("react-native-keyboard-controller");
+  return <KeyboardProvider>{children}</KeyboardProvider>;
+}
 
 function RootLayoutNav() {
   const { onboardingComplete } = useAuth();
@@ -224,8 +259,8 @@ export default function RootLayout() {
       <ErrorBoundary>
         <ThemeProvider>
           <QueryClientProvider client={queryClient}>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              <KeyboardProvider>
+            <GestureWrapper>
+              <KeyboardWrapper>
                 <AuthProvider>
                   <SubscriptionProvider>
                     <AlarmProvider>
@@ -233,8 +268,8 @@ export default function RootLayout() {
                     </AlarmProvider>
                   </SubscriptionProvider>
                 </AuthProvider>
-              </KeyboardProvider>
-            </GestureHandlerRootView>
+              </KeyboardWrapper>
+            </GestureWrapper>
           </QueryClientProvider>
         </ThemeProvider>
       </ErrorBoundary>

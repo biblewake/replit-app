@@ -98,11 +98,30 @@ The mobile app is linked to the Expo project **@tinochiwara/mobile** (project ID
 
 | Profile | Distribution | Use case |
 |---|---|---|
-| `development` | Internal (simulator/device) | Local dev client builds |
+| `development` | Internal (simulator/device) | Local dev client — replaces Expo Go |
 | `preview` | Internal (ad-hoc) | Direct-download device testing (not TestFlight) |
 | `production` | Store | TestFlight + App Store submission |
 
 > **Note:** `preview` uses `distribution: "internal"` (ad-hoc direct download), not TestFlight. To deliver to TestFlight, use the `production` profile.
+
+### Development build (replaces Expo Go)
+
+Bible Wake uses `"newArchEnabled": false`, which conflicts with Expo Go SDK 53 (New Architecture always on) and causes a crash at startup. Use a **development build** instead — it respects `app.json` exactly and matches the production configuration.
+
+**One-time: build the dev client (iOS simulator)**
+```
+cd artifacts/mobile
+eas build --profile development --platform ios
+```
+EAS will compile the native binary and make it available for download. For a simulator build, it installs automatically. For a physical device, you will receive a QR code / install link.
+
+**Daily dev workflow (after the dev client is installed)**
+```
+pnpm --filter @workspace/mobile run start
+```
+Open the dev client app on your simulator or device, scan the QR code (or tap the local URL), and Metro connects. Hot reload and fast refresh work normally.
+
+> **Rebuilding the dev client is only needed when native code changes** (adding/removing Expo modules, updating `expo` version, changing `app.json` plugins). Pure JS/TS changes never require a rebuild — just restart Metro.
 
 **Trigger an ad-hoc preview build (direct install, not TestFlight):**
 ```

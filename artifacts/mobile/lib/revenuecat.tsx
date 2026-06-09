@@ -204,6 +204,15 @@ function NativeSubscriptionProvider({ children }: { children: React.ReactNode })
 
 export function useSubscription() {
   const ctx = useContext(Context);
-  if (!ctx) throw new Error("useSubscription must be used within a SubscriptionProvider");
+  if (!ctx) {
+    if (__DEV__) {
+      console.warn(
+        "[RevenueCat] useSubscription called outside SubscriptionProvider — returning stub. " +
+        "This usually means the root layout crashed before SubscriptionProvider mounted."
+      );
+      return WEB_STUB;
+    }
+    throw new Error("useSubscription must be used within a SubscriptionProvider");
+  }
   return ctx;
 }
