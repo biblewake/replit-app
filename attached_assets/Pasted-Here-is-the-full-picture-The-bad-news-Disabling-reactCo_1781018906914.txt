@@ -1,0 +1,30 @@
+Here is the full picture:
+
+---
+
+**The bad news:**
+Disabling `reactCompiler` did not fix it. The crash is still happening in the same place — Hermes JS engine on Thread 10, during the React runtime scheduler startup. This is build version 7, so the fix was deployed but the crash persists.
+
+**What is different this time:**
+The crash signature shifted slightly. Previously it was `JSObject::putNamedWithReceiver_RJS` (writing a property). Now it is `DictPropertyMap::findOrAdd` → `HiddenClass::initializeMissingPropertyMap` → `JSObject::getNamedWithReceiver_RJS` (reading a property). Same family of crash, different operation — something is trying to **read** a property off a null or garbage-collected object during startup.
+
+**The Hermes framework UUID is identical** (`80d5528f2c783b90b90f747e89a9f880`) in both crash logs — meaning the Hermes binary has not changed between builds. This strongly points to a **JavaScript code issue**, not a native/framework issue.
+
+---
+
+**What to tell Replit next:**
+
+The crash is happening during the React RuntimeScheduler startup cycle, which means something is executing at module load time — before any component mounts — and accessing a property on something that is null or undefined.
+
+The next suspects in order are:
+
+**1. `Appearance.setColorScheme?.("light")`** — Replit flagged this earlier. If it is still being called at module load time outside a `useEffect`, move it inside one immediately. This is the most likely remaining culprit.
+
+**2. Any store or context initialisation** — If you are using Zustand, Redux, or any global state that initialises at module load time and reads from AsyncStorage or a null default, that could cause this exact crash pattern.
+
+**3. RevenueCat initialisation** — If Purchases SDK is being called at the top level of a file rather than inside a component or effect, it can cause this on cold launch.
+
+**Ask Replit to:**
+- Search the entire codebase for any code running **outside** a component, `useEffect`, or event handler that touches device APIs
+- Specifically move `Appearance.setColorScheme` inside a `useEffect` if it has not been done yet
+- Check where RevenueCat's `Purchases.configure()` is being called and ensure it is inside a component lifecycle, not at module root level
