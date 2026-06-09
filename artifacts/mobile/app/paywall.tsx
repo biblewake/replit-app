@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -7,7 +8,7 @@ import type { PurchasesPackage } from "react-native-purchases";
 
 import { OL, ONBOARDING_ORANGE } from "@/components/onboarding/primitives";
 import { PaywallBottom } from "@/components/PaywallBottom";
-import { useSubscription } from "@/lib/revenuecat";
+import { initializeRevenueCat, useSubscription } from "@/lib/revenuecat";
 
 const FEATURES = [
   {
@@ -25,6 +26,19 @@ const FEATURES = [
 ];
 
 export default function PaywallScreen() {
+  const queryClient = useQueryClient();
+
+  // Lazy init: only call Purchases.configure() when the user actually reaches
+  // the paywall, not during cold-launch startup. The rcInitialized guard in
+  // initializeRevenueCat() makes this safe to call on every mount.
+  //
+  // After init, immediately invalidate the RC queries so that any cached null
+  // values (from the pre-init fetch) are refetched now that the SDK is ready.
+  useEffect(() => {
+    initializeRevenueCat();
+    void queryClient.invalidateQueries({ queryKey: ["revenuecat"] });
+  }, [queryClient]);
+
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { offerings, purchasePackage, restore, isPurchasing, isRestoring } =

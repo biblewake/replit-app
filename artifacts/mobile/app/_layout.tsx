@@ -25,7 +25,6 @@ import {
   rescheduleAllAlarms,
 } from "@/lib/backgroundAlarmCheck";
 import {
-  initializeRevenueCat,
   SubscriptionProvider,
   useSubscription,
 } from "@/lib/revenuecat";
@@ -206,43 +205,10 @@ export default function RootLayout() {
     Inter_700Bold,
   });
 
-  // Defer native-bridge calls until after React + Hermes are fully initialized.
-  // Calling Appearance.setColorScheme or Purchases.configure at module scope on
-  // iOS 26 triggers a native round-trip before the runtime is stable and causes
-  // a cold-launch crash (DictPropertyMap / HiddenClass in the Hermes GC).
   useEffect(() => {
     if (Platform.OS !== "web") {
       Appearance.setColorScheme?.("light");
     }
-
-    // Wait for the app to be "active" before touching the StoreKit bridge.
-    // On cold launch the JS thread can start before the app finishes its
-    // UIApplicationDidBecomeActiveNotification cycle; initialising RevenueCat
-    // before that point (while AppState is still "background" / "inactive")
-    // gives Hermes no chance to fully warm up and raises the SIGSEGV race.
-    const tryInit = () => {
-      try {
-        initializeRevenueCat();
-      } catch (err: unknown) {
-        if (__DEV__) {
-          console.warn("[RevenueCat] Initialization failed:", err);
-        }
-      }
-    };
-
-    if (AppState.currentState === "active") {
-      tryInit();
-      return;
-    }
-
-    // Not active yet — wait for the first "active" transition then remove the listener.
-    const sub = AppState.addEventListener("change", (state: AppStateStatus) => {
-      if (state === "active") {
-        sub.remove();
-        tryInit();
-      }
-    });
-    return () => sub.remove();
   }, []);
 
   useEffect(() => {
