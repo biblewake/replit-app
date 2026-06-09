@@ -1,4 +1,5 @@
 import { BlurView } from "expo-blur";
+import Constants from "expo-constants";
 import { Tabs } from "expo-router";
 import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
 import { SymbolView } from "expo-symbols";
@@ -123,7 +124,8 @@ function ClassicTabLayout() {
 }
 
 export default function TabLayout() {
-  if (Platform.OS === "ios" && parseInt(Platform.Version as string, 10) >= 26) {
+  const isExpoGo = Constants.executionEnvironment === "storeClient";
+  if (Platform.OS === "ios" && !isExpoGo && parseInt(Platform.Version as string, 10) >= 26) {
     return <NativeTabLayout />;
   }
   return <ClassicTabLayout />;
