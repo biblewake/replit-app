@@ -91,7 +91,8 @@
           "cameraPermission": "Bible Wake uses the camera so you can verify you're awake during your morning alarm."
         }
       ],
-      "./plugins/withBootReceiver"
+      "./plugins/withBootReceiver",
+      "@sentry/react-native/expo"
     ],
     "experiments": {
       "typedRoutes": true,

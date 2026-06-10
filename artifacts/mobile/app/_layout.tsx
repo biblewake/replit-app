@@ -12,6 +12,7 @@ import * as SplashScreen from "expo-splash-screen";
 import Constants from "expo-constants";
 import React, { useEffect, useRef } from "react";
 import { AppState, AppStateStatus, Appearance, Platform, View } from "react-native";
+import * as Sentry from "@sentry/react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -27,6 +28,16 @@ import {
   SubscriptionProvider,
   useSubscription,
 } from "@/lib/revenuecat";
+
+// ── Sentry crash reporting ────────────────────────────────────────────────────
+// Must be initialized before any providers, hooks, or error handlers.
+if (Platform.OS !== "web") {
+  Sentry.init({
+    dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+    environment: __DEV__ ? "development" : "production",
+    enableNativeNagger: false,
+  });
+}
 
 // ── Global notification handler ───────────────────────────────────────────────
 // Must be set before any notification fires. Controls foreground presentation.
@@ -50,18 +61,18 @@ if (Platform.OS !== "web") {
 
 // ── Global JS error handler ───────────────────────────────────────────────────
 // Catches any unhandled JS exception (including void-fired async rejections)
-// before they reach RCTFatal and abort the process with SIGABRT.
-// Non-fatal errors are logged; fatal errors are re-raised so the native crash
-// reporter can still capture them.
+// and reports them to Sentry. Fatal errors are forwarded to the default RN
+// fatal handler so the process terminates naturally (no re-throw via setTimeout
+// which causes SIGABRT via RCTFatal).
 if (Platform.OS !== "web" && typeof ErrorUtils !== "undefined") {
+  const defaultFatalHandler = ErrorUtils.getGlobalHandler();
   ErrorUtils.setGlobalHandler((error: Error, isFatal?: boolean) => {
     if (__DEV__) {
       console.error("[GlobalHandler]", isFatal ? "FATAL" : "non-fatal", error);
     }
-    if (isFatal) {
-      // Re-throw fatal errors so the native crash reporter sees them,
-      // but wrap in setTimeout to avoid a synchronous throw inside the handler.
-      setTimeout(() => { throw error; }, 0);
+    Sentry.captureException(error, { level: isFatal ? "fatal" : "error" });
+    if (isFatal && defaultFatalHandler) {
+      defaultFatalHandler(error, isFatal);
     }
   });
 }
@@ -238,7 +249,7 @@ function RootLayoutNav() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -280,3 +291,5 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
+
+export default Platform.OS !== "web" ? Sentry.wrap(RootLayout) : RootLayout;

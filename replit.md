@@ -167,6 +167,7 @@ eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_URL --value <your-
 eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <your-value>
 eas secret:create --scope project --name EXPO_PUBLIC_REVENUECAT_IOS_API_KEY --value <your-value>
 eas secret:create --scope project --name EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY --value <your-value>
+eas secret:create --scope project --name EXPO_PUBLIC_SENTRY_DSN --value <your-dsn>
 ```
 
 ### Google Play setup (one-time, manual steps)
