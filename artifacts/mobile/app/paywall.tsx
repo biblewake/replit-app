@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { Alert, Platform, StyleSheet, Text, View } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -52,16 +52,28 @@ export default function PaywallScreen() {
   );
 
   const handlePurchase = async (pkg: PurchasesPackage) => {
-    await purchasePackage(pkg);
-    router.replace("/(tabs)");
+    try {
+      const info = await purchasePackage(pkg);
+      if (info) router.replace("/(tabs)");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Something went wrong.";
+      Alert.alert("Purchase Failed", msg);
+    }
   };
 
   const handleRestore = async () => {
-    const info = await restore();
-    const hasEntitlement =
-      info?.entitlements.active?.["premium"] !== undefined;
-    if (hasEntitlement) {
-      router.replace("/(tabs)");
+    try {
+      const info = await restore();
+      const hasEntitlement =
+        info?.entitlements.active?.["premium"] !== undefined;
+      if (hasEntitlement) {
+        router.replace("/(tabs)");
+      } else if (info !== null) {
+        Alert.alert("No Purchases Found", "We couldn't find any previous purchases to restore.");
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Something went wrong.";
+      Alert.alert("Restore Failed", msg);
     }
   };
 

@@ -48,6 +48,24 @@ if (Platform.OS !== "web") {
   registerBackgroundAlarmTask().catch(() => {});
 }
 
+// ── Global JS error handler ───────────────────────────────────────────────────
+// Catches any unhandled JS exception (including void-fired async rejections)
+// before they reach RCTFatal and abort the process with SIGABRT.
+// Non-fatal errors are logged; fatal errors are re-raised so the native crash
+// reporter can still capture them.
+if (Platform.OS !== "web" && typeof ErrorUtils !== "undefined") {
+  ErrorUtils.setGlobalHandler((error: Error, isFatal?: boolean) => {
+    if (__DEV__) {
+      console.error("[GlobalHandler]", isFatal ? "FATAL" : "non-fatal", error);
+    }
+    if (isFatal) {
+      // Re-throw fatal errors so the native crash reporter sees them,
+      // but wrap in setTimeout to avoid a synchronous throw inside the handler.
+      setTimeout(() => { throw error; }, 0);
+    }
+  });
+}
+
 // Create (or verify) the max-importance Android notification channel that
 // enables USE_FULL_SCREEN_INTENT and lock-screen alarm overlays. No-ops on iOS/web.
 if (Platform.OS === "android") {

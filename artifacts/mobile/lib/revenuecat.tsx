@@ -109,21 +109,33 @@ function useSubscriptionContext() {
   });
 
   const purchaseMutation = useMutation({
-    mutationFn: async (packageToPurchase: PurchasesPackage) => {
+    mutationFn: async (packageToPurchase: PurchasesPackage): Promise<CustomerInfo | null> => {
       if (!rcInitialized) throw new Error("RevenueCat is not initialized");
       const Purchases = getPurchases();
       if (!Purchases) throw new Error("RevenueCat is not available on this platform");
-      const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
-      return customerInfo;
+      try {
+        const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
+        return customerInfo;
+      } catch (err) {
+        const rcErr = err as { userCancelled?: boolean };
+        if (rcErr?.userCancelled) return null;
+        throw err;
+      }
     },
   });
 
   const restoreMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<CustomerInfo | null> => {
       if (!rcInitialized) throw new Error("RevenueCat is not initialized");
       const Purchases = getPurchases();
       if (!Purchases) throw new Error("RevenueCat is not available on this platform");
-      return Purchases.restorePurchases();
+      try {
+        return await Purchases.restorePurchases();
+      } catch (err) {
+        const rcErr = err as { userCancelled?: boolean };
+        if (rcErr?.userCancelled) return null;
+        throw err;
+      }
     },
   });
 
@@ -143,15 +155,15 @@ function useSubscriptionContext() {
   const isSubscribed =
     customerInfoQuery.data?.entitlements.active?.[REVENUECAT_ENTITLEMENT_IDENTIFIER] !== undefined;
 
-  const purchasePackage = async (pkg: PurchasesPackage): Promise<CustomerInfo> => {
+  const purchasePackage = async (pkg: PurchasesPackage): Promise<CustomerInfo | null> => {
     const info = await purchaseMutation.mutateAsync(pkg);
-    await customerInfoQuery.refetch();
+    if (info) await customerInfoQuery.refetch();
     return info;
   };
 
-  const restore = async (): Promise<CustomerInfo> => {
+  const restore = async (): Promise<CustomerInfo | null> => {
     const info = await restoreMutation.mutateAsync();
-    await customerInfoQuery.refetch();
+    if (info) await customerInfoQuery.refetch();
     return info;
   };
 
@@ -178,10 +190,10 @@ const WEB_STUB: SubscriptionContextValue = {
   offerings: null,
   isSubscribed: false,
   isLoading: false,
-  purchasePackage: async () => {
+  purchasePackage: async (): Promise<CustomerInfo | null> => {
     throw new Error("In-app purchases are not available on web");
   },
-  restore: async () => {
+  restore: async (): Promise<CustomerInfo | null> => {
     throw new Error("Restore purchases is not available on web");
   },
   isPurchasing: false,

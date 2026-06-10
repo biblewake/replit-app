@@ -100,19 +100,19 @@ export function PaywallBottom({
       setPendingPkg(pkg);
       setConfirmVisible(true);
     } else {
-      void onPurchase(pkg);
+      onPurchase(pkg).catch(() => {});
     }
   };
 
   const confirmPurchase = async () => {
     if (!pendingPkg) return;
     setConfirmVisible(false);
-    await onPurchase(pendingPkg);
+    await onPurchase(pendingPkg).catch(() => {});
   };
 
   const handleRestore = async () => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await onRestore();
+    await onRestore().catch(() => {});
   };
 
   const isBusy = isPurchasing || isRestoring;
