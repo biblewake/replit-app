@@ -70,6 +70,19 @@ waitForPort = 8081
 PORT = "8081"
 BASE_PATH = "/__mockup"
 
+[[workflows.workflow]]
+name = "Sentry"
+mode = "sequential"
+author = 59918954
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd artifacts/mobile"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "eas env:create --scope project --name EXPO_PUBLIC_SENTRY_DSN --value https://e7a992aea17135255db530c816a5bd8a@o4511542532636672.ingest.de.sentry.io/4511542546071632"
+
 [agent]
 stack = "PNPM_WORKSPACE"
 expertMode = true
