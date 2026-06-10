@@ -99,18 +99,6 @@ function GestureWrapper({ children }: { children: React.ReactNode }) {
   return <GestureHandlerRootView style={{ flex: 1 }}>{children}</GestureHandlerRootView>;
 }
 
-/**
- * Same issue: react-native-keyboard-controller uses a TurboModule that crashes
- * at import time in Expo Go SDK 53. Lazy-require and skip in Expo Go / web.
- */
-function KeyboardWrapper({ children }: { children: React.ReactNode }) {
-  if (isExpoGo || Platform.OS === "web") {
-    return <>{children}</>;
-  }
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { KeyboardProvider } = require("react-native-keyboard-controller") as typeof import("react-native-keyboard-controller");
-  return <KeyboardProvider>{children}</KeyboardProvider>;
-}
 
 function RootLayoutNav() {
   const { onboardingComplete } = useAuth();
@@ -278,15 +266,13 @@ export default function RootLayout() {
         <ThemeProvider>
           <QueryClientProvider client={queryClient}>
             <GestureWrapper>
-              <KeyboardWrapper>
-                <AuthProvider>
-                  <SubscriptionProvider>
-                    <AlarmProvider>
-                      <RootLayoutNav />
-                    </AlarmProvider>
-                  </SubscriptionProvider>
-                </AuthProvider>
-              </KeyboardWrapper>
+              <AuthProvider>
+                <SubscriptionProvider>
+                  <AlarmProvider>
+                    <RootLayoutNav />
+                  </AlarmProvider>
+                </SubscriptionProvider>
+              </AuthProvider>
             </GestureWrapper>
           </QueryClientProvider>
         </ThemeProvider>
