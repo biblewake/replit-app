@@ -1,0 +1,187 @@
+Incident Identifier: 4237E650-BB87-43F4-ADE6-AB6FF313BAFE
+Distributor ID:      com.apple.TestFlight
+Hardware Model:      iPhone15,4
+Process:             BibleWake [88275]
+Path:                /private/var/containers/Bundle/Application/0B995B52-3342-4B71-8632-C3FC3BC19DDE/BibleWake.app/BibleWake
+Identifier:          com.tinochiwara.biblewake
+Version:             1.0.0 (12)
+AppStoreTools:       17F41
+AppVariant:          1:iPhone15,4:26
+Beta:                YES
+Code Type:           ARM-64 (Native)
+Role:                Foreground
+Parent Process:      launchd [1]
+Coalition:           com.tinochiwara.biblewake [6244]
+
+Date/Time:           2026-06-09 17:26:26.8292 -0500
+Launch Time:         2026-06-09 17:26:26.2049 -0500
+OS Version:          iPhone OS 26.4.2 (23E261)
+Release Type:        User
+Baseband Version:    3.50.07
+Report Version:      104
+
+Exception Type:  EXC_CRASH (SIGABRT)
+Exception Codes: 0x0000000000000000, 0x0000000000000000
+Termination Reason: SIGNAL 6 Abort trap: 6
+Terminating Process: BibleWake [88275]
+
+Triggered by Thread:  8
+
+Last Exception Backtrace:
+0   CoreFoundation                	0x199d6bc70 __exceptionPreprocess + 164 (NSException.m:249)
+1   libobjc.A.dylib               	0x196841224 objc_exception_throw + 88 (objc-exception.mm:356)
+2   BibleWake                     	0x102f99988 RCTFatal + 568 (RCTAssert.m:147)
+3   BibleWake                     	0x103009c68 -[RCTExceptionsManager reportFatal:stack:exceptionId:extraDataAsJSON:] + 484 (RCTExceptionsManager.mm:82)
+4   BibleWake                     	0x10300a6a4 -[RCTExceptionsManager reportException:] + 2292 (RCTExceptionsManager.mm:159)
+5   CoreFoundation                	0x199cba454 __invoking___ + 148 (:-1)
+6   CoreFoundation                	0x199cba2d8 -[NSInvocation invoke] + 424 (NSForwarding.m:3416)
+7   CoreFoundation                	0x199ccfe5c -[NSInvocation invokeWithTarget:] + 64 (NSForwarding.m:3513)
+8   BibleWake                     	0x102fcaba4 -[RCTModuleMethod invokeWithBridge:module:arguments:] + 376 (RCTModuleMethod.mm:585)
+9   BibleWake                     	0x102fccce8 facebook::react::invokeInner(RCTBridge*, RCTModuleData*, unsigned int, folly::dynamic const&, int, (anonymous namespace)::SchedulingContext) + 452 (RCTNativeModule.mm:198)
+10  BibleWake                     	0x102fcc94c facebook::react::RCTNativeModule::invoke(unsigned int, folly::dynamic&&, int)::$_0::operator()() const + 56 (RCTNativeModule.mm:106)
+11  BibleWake                     	0x102fcc94c invocation function for block in facebook::react::RCTNativeModule::invoke(unsigned int, folly::dynamic&&, int) + 108
+12  libdispatch.dylib             	0x1d3ea09a8 _dispatch_call_block_and_release + 32 (init.c:1597)
+13  libdispatch.dylib             	0x1d3eba1e4 _dispatch_client_callout + 16 (client_callout.mm:85)
+14  libdispatch.dylib             	0x1d3ea8fb0 _dispatch_lane_serial_drain + 740 (queue.c:4033)
+15  libdispatch.dylib             	0x1d3ea9aac _dispatch_lane_invoke + 392 (queue.c:4124)
+16  libdispatch.dylib             	0x1d3eb3dac _dispatch_root_queue_drain_deferred_wlh + 284 (queue.c:7329)
+17  libdispatch.dylib             	0x1d3eb36ac _dispatch_workloop_worker_thread + 720 (queue.c:6923)
+18  libsystem_pthread.dylib       	0x1f8aa03b0 _pthread_wqthread + 292 (pthread.c:2696)
+19  libsystem_pthread.dylib       	0x1f8a9f8c0 start_wqthread + 8 (:-1)
+
+Thread 0 name:
+Thread 0:
+0   libsystem_kernel.dylib        	0x0000000248734cd4 mach_msg2_trap + 8 (:-1)
+1   libsystem_kernel.dylib        	0x000000024873830c mach_msg2_internal + 76 (mach_msg.c:201)
+2   libsystem_kernel.dylib        	0x000000024873822c mach_msg_overwrite + 424 (mach_msg.c:0)
+3   libsystem_kernel.dylib        	0x0000000248738078 mach_msg + 24 (mach_msg.c:323)
+4   CoreFoundation                	0x0000000199cbbea4 __CFRunLoopServiceMachPort + 160 (CFRunLoop.c:2650)
+5   CoreFoundation                	0x0000000199c85f94 __CFRunLoopRun + 1188 (CFRunLoop.c:3035)
+6   CoreFoundation                	0x0000000199c851d0 _CFRunLoopRunSpecificWithOptions + 532 (CFRunLoop.c:3462)
+7   GraphicsServices              	0x000000023f1bf498 GSEventRunModal + 120 (GSEvent.c:2049)
+8   UIKitCore                     	0x000000019f9492c4 -[UIApplication _run] + 796 (UIApplication.m:3904)
+9   UIKitCore                     	0x000000019f8b4158 UIApplicationMain + 332 (UIApplication.m:5586)
+10  BibleWake                     	0x0000000102d69620 main + 64 (AppDelegate.swift:6)
+11  dyld                          	0x000000010420cc1c start + 6928 (:-1)
+
+Thread 1:
+
+Thread 2:
+
+Thread 3:
+
+Thread 4:
+
+Thread 5:
+
+Thread 6:
+
+Thread 7 name:
+Thread 7:
+0   libsystem_kernel.dylib        	0x0000000248734cd4 mach_msg2_trap + 8 (:-1)
+1   libsystem_kernel.dylib        	0x000000024873830c mach_msg2_internal + 76 (mach_msg.c:201)
+2   libsystem_kernel.dylib        	0x000000024873822c mach_msg_overwrite + 424 (mach_msg.c:0)
+3   libsystem_kernel.dylib        	0x0000000248738078 mach_msg + 24 (mach_msg.c:323)
+4   CoreFoundation                	0x0000000199cbbea4 __CFRunLoopServiceMachPort + 160 (CFRunLoop.c:2650)
+5   CoreFoundation                	0x0000000199c85f94 __CFRunLoopRun + 1188 (CFRunLoop.c:3035)
+6   CoreFoundation                	0x0000000199c851d0 _CFRunLoopRunSpecificWithOptions + 532 (CFRunLoop.c:3462)
+7   Foundation                    	0x0000000196ef8cf0 -[NSRunLoop(NSRunLoop) runMode:beforeDate:] + 212 (NSRunLoop.m:375)
+8   Foundation                    	0x0000000196ef8bd8 -[NSRunLoop(NSRunLoop) runUntilDate:] + 64 (NSRunLoop.m:422)
+9   UIKitCore                     	0x000000019f90eafc -[UIEventFetcher threadMain] + 420 (UIEventFetcher.m:1333)
+10  Foundation                    	0x0000000196f7c804 __NSThread__start__ + 732 (NSThread.m:1004)
+11  libsystem_pthread.dylib       	0x00000001f8aa3438 _pthread_start + 136 (pthread.c:931)
+12  libsystem_pthread.dylib       	0x00000001f8a9f8cc thread_start + 8 (:-1)
+
+Thread 8 name:
+Thread 8 Crashed:
+0   libsystem_kernel.dylib        	0x000000024873f1d0 __pthread_kill + 8 (:-1)
+1   libsystem_pthread.dylib       	0x00000001f8aa67dc pthread_kill + 268 (pthread.c:1721)
+2   libsystem_c.dylib             	0x00000001a57d0de4 abort + 148 (abort.c:122)
+3   libc++abi.dylib               	0x0000000196941fd4 __abort_message + 132 (abort_message.cpp:66)
+4   libc++abi.dylib               	0x0000000196943b90 demangling_terminate_handler() + 296 (cxa_default_handlers.cpp:77)
+5   libobjc.A.dylib               	0x0000000196843868 _objc_terminate() + 156 (objc-exception.mm:496)
+6   libc++abi.dylib               	0x000000019694e1f8 std::__terminate(void (*)()) + 16 (cxa_handlers.cpp:59)
+7   libc++abi.dylib               	0x0000000196941dcc __cxa_rethrow + 188 (cxa_exception.cpp:658)
+8   libobjc.A.dylib               	0x000000019684fb58 objc_exception_rethrow + 44 (objc-exception.mm:399)
+9   BibleWake                     	0x0000000102fccf30 facebook::react::invokeInner(RCTBridge*, RCTModuleData*, unsigned int, folly::dynamic const&, int, (anonymous namespace)::SchedulingContext) + 1036 (RCTNativeModule.mm:234)
+10  BibleWake                     	0x0000000102fcc94c facebook::react::RCTNativeModule::invoke(unsigned int, folly::dynamic&&, int)::$_0::operator()() const + 56 (RCTNativeModule.mm:106)
+11  BibleWake                     	0x0000000102fcc94c invocation function for block in facebook::react::RCTNativeModule::invoke(unsigned int, folly::dynamic&&, int) + 108
+12  libdispatch.dylib             	0x00000001d3ea09a8 _dispatch_call_block_and_release + 32 (init.c:1597)
+13  libdispatch.dylib             	0x00000001d3eba1e4 _dispatch_client_callout + 16 (client_callout.mm:85)
+14  libdispatch.dylib             	0x00000001d3ea8fb0 _dispatch_lane_serial_drain + 740 (queue.c:4033)
+15  libdispatch.dylib             	0x00000001d3ea9aac _dispatch_lane_invoke + 392 (queue.c:4124)
+16  libdispatch.dylib             	0x00000001d3eb3dac _dispatch_root_queue_drain_deferred_wlh + 284 (queue.c:7329)
+17  libdispatch.dylib             	0x00000001d3eb36ac _dispatch_workloop_worker_thread + 720 (queue.c:6923)
+18  libsystem_pthread.dylib       	0x00000001f8aa03b0 _pthread_wqthread + 292 (pthread.c:2696)
+19  libsystem_pthread.dylib       	0x00000001f8a9f8c0 start_wqthread + 8 (:-1)
+
+Thread 9 name:
+Thread 9:
+0   libsystem_kernel.dylib        	0x0000000248734cd4 mach_msg2_trap + 8 (:-1)
+1   libsystem_kernel.dylib        	0x000000024873830c mach_msg2_internal + 76 (mach_msg.c:201)
+2   libsystem_kernel.dylib        	0x000000024873822c mach_msg_overwrite + 424 (mach_msg.c:0)
+3   libsystem_kernel.dylib        	0x0000000248738078 mach_msg + 24 (mach_msg.c:323)
+4   CoreFoundation                	0x0000000199cbbea4 __CFRunLoopServiceMachPort + 160 (CFRunLoop.c:2650)
+5   CoreFoundation                	0x0000000199c85f94 __CFRunLoopRun + 1188 (CFRunLoop.c:3035)
+6   CoreFoundation                	0x0000000199c851d0 _CFRunLoopRunSpecificWithOptions + 532 (CFRunLoop.c:3462)
+7   BibleWake                     	0x0000000102fad700 +[RCTCxxBridge runRunLoop] + 212 (RCTCxxBridge.mm:378)
+8   Foundation                    	0x0000000196f7c804 __NSThread__start__ + 732 (NSThread.m:1004)
+9   libsystem_pthread.dylib       	0x00000001f8aa3438 _pthread_start + 136 (pthread.c:931)
+10  libsystem_pthread.dylib       	0x00000001f8a9f8cc thread_start + 8 (:-1)
+
+Thread 10 name:
+Thread 10:
+0   libsystem_kernel.dylib        	0x000000024873a5e8 __psynch_cvwait + 8 (:-1)
+1   libsystem_pthread.dylib       	0x00000001f8aa1b48 _pthread_cond_wait + 980 (pthread_cond.c:862)
+2   libc++.1.dylib                	0x00000001a934abcc std::__1::condition_variable::wait(std::__1::unique_lock<std::__1::mutex>&) + 32 (condition_variable.cpp:36)
+3   hermes                        	0x00000001048bf9c4 void std::__1::condition_variable::wait<hermes::vm::HadesGC::Executor::worker()::'lambda'()>(std::__1::unique_lock<std::__1::mutex>&, hermes::vm::HadesGC::Executor::worker()::'lambda'()) + 28 (condition_variable.h:146)
+4   hermes                        	0x00000001048bf9c4 hermes::vm::HadesGC::Executor::worker() + 116 (HadesGC.cpp:1062)
+5   hermes                        	0x00000001048bf92c hermes::vm::HadesGC::Executor::Executor()::'lambda'()::operator()() const + 4 (HadesGC.cpp:1033)
+6   hermes                        	0x00000001048bf92c decltype(std::declval<hermes::vm::HadesGC::Executor::Executor()::'lambda'()>()()) std::__1::__invoke[abi:nn180100]<hermes::vm::HadesGC::Executor::Executor()::'lambda'()>(hermes::vm::HadesGC::Execut... + 4 (invoke.h:344)
+7   hermes                        	0x00000001048bf92c void std::__1::__thread_execute[abi:nn180100]<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, hermes::vm::HadesGC::Executor::Executor()::'lambd... + 4 (thread.h:199)
+8   hermes                        	0x00000001048bf92c void* std::__1::__thread_proxy[abi:nn180100]<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, hermes::vm::HadesGC::Executor::Exe... + 44 (thread.h:208)
+9   libsystem_pthread.dylib       	0x00000001f8aa3438 _pthread_start + 136 (pthread.c:931)
+10  libsystem_pthread.dylib       	0x00000001f8a9f8cc thread_start + 8 (:-1)
+
+Thread 11 name:
+Thread 11:
+0   libsystem_kernel.dylib        	0x0000000248734c68 semaphore_timedwait_trap + 8 (:-1)
+1   libdispatch.dylib             	0x00000001d3ed57d8 _dispatch_sema4_timedwait + 64 (lock.c:154)
+2   libdispatch.dylib             	0x00000001d3ea2a68 _dispatch_semaphore_wait_slow + 76 (semaphore.c:116)
+3   libdispatch.dylib             	0x00000001d3eb26fc _dispatch_worker_thread + 324 (queue.c:7663)
+4   libsystem_pthread.dylib       	0x00000001f8aa3438 _pthread_start + 136 (pthread.c:931)
+5   libsystem_pthread.dylib       	0x00000001f8a9f8cc thread_start + 8 (:-1)
+
+
+Thread 8 crashed with ARM Thread State (64-bit):
+    x0: 0x0000000000000000   x1: 0x0000000000000000   x2: 0x0000000000000000   x3: 0x0000000000000000
+    x4: 0x0000000196950cd3   x5: 0x000000016d4f66f0   x6: 0x000000000000006e   x7: 0xfffff0003ffff800
+    x8: 0x59325aec5a6e465d   x9: 0x59325aed3721365d  x10: 0x0000000000000002  x11: 0x00000000fffffffd
+   x12: 0x0000000000000000  x13: 0x0000000000000000  x14: 0x0000000000000000  x15: 0x0000000000000000
+   x16: 0x0000000000000148  x17: 0x000000016d4f7000  x18: 0x0000000000000000  x19: 0x0000000000000006
+   x20: 0x0000000000004703  x21: 0x000000016d4f70e0  x22: 0x434c4e47432b2b00  x23: 0x00000001099f7090
+   x24: 0x0000000000000001  x25: 0x0000000109852dc0  x26: 0x000000010ece4b51  x27: 0x0000000109855100
+   x28: 0x000000010ece5661   fp: 0x000000016d4f6660   lr: 0x00000001f8aa67dc
+    sp: 0x000000016d4f6640   pc: 0x000000024873f1d0 cpsr: 0x40001000
+   esr: 0x56000080 (Syscall)
+
+
+Binary Images:
+        0x102d64000 -         0x103babfff BibleWake arm64  <a2292439a0d533918ac30f503b8a205b> /private/var/containers/Bundle/Application/0B995B52-3342-4B71-8632-C3FC3BC19DDE/BibleWake.app/BibleWake
+        0x104194000 -         0x10419ffff libobjc-trampolines.dylib arm64e  <e51a481b92f532ba9e8bfcecda3b8431> /private/preboot/Cryptexes/OS/usr/lib/libobjc-trampolines.dylib
+        0x104208000 -         0x1042affff dyld arm64e  <80dd1800f68d354f81068cb5ea621aca> /usr/lib/dyld
+        0x1047f0000 -         0x1049f3fff hermes arm64  <80d5528f2c783b90b90f747e89a9f880> /private/var/containers/Bundle/Application/0B995B52-3342-4B71-8632-C3FC3BC19DDE/BibleWake.app/Frameworks/hermes.framework/hermes
+        0x196810000 -         0x19686147f libobjc.A.dylib arm64e  <dbe3f13eefc431c5b7623455cee83e7f> /usr/lib/libobjc.A.dylib
+        0x19693a000 -         0x19695459f libc++abi.dylib arm64e  <e7bd32f9ab56392d8e79857cde598da1> /usr/lib/libc++abi.dylib
+        0x196eee000 -         0x197d7645f Foundation arm64e  <66bf417c1d003457a302196bbaec23d0> /System/Library/Frameworks/Foundation.framework/Foundation
+        0x199c57000 -         0x19a1f30ff CoreFoundation arm64e  <11f13078e01b343ba0208d60bae7bbb6> /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation
+        0x19f828000 -         0x1a1d673bf UIKitCore arm64e  <32c1b300a6013e148b533419a2d2f234> /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore
+        0x1a575a000 -         0x1a57d930f libsystem_c.dylib arm64e  <08196a2fb3fa3d0bb151ad50a6d0a0b4> /usr/lib/system/libsystem_c.dylib
+        0x1a933e000 -         0x1a93cea7b libc++.1.dylib arm64e  <c3f6d9de52273c4cbec3bd43bfb08435> /usr/lib/libc++.1.dylib
+        0x1c99f2000 -         0x1c9ca26bf MediaExperience arm64e  <023c73aa4a3a365293d76c150e518b24> /System/Library/PrivateFrameworks/MediaExperience.framework/MediaExperience
+        0x1d3e9f000 -         0x1d3ee55ff libdispatch.dylib arm64e  <5fcac52f01e93bf08aac42c442c53560> /usr/lib/system/libdispatch.dylib
+        0x1f8a9f000 -         0x1f8aab4ef libsystem_pthread.dylib arm64e  <6c9bcde9819d345d9d71b60ad47e5159> /usr/lib/system/libsystem_pthread.dylib
+        0x23f1be000 -         0x23f1c67bf GraphicsServices arm64e  <4e01d837d3923b40abd3ff5755b93327> /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices
+        0x248734000 -         0x24876fac7 libsystem_kernel.dylib arm64e  <5f4e68e1021c3a8fa6f62c4c077d0676> /usr/lib/system/libsystem_kernel.dylib
+
+EOF
