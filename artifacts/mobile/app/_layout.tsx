@@ -37,6 +37,11 @@ if (Platform.OS !== "web") {
     environment: __DEV__ ? "development" : "production",
     enableNativeNagger: false,
   });
+
+  // Verification ping — remove once Sentry is confirmed working.
+  // Shows up in Sentry → your project → Issues (or the "Logs" tab).
+  // If you never see this event, the DSN is not in the build.
+  Sentry.captureMessage("Bible Wake: app launched", "info");
 }
 
 // ── Global notification handler ───────────────────────────────────────────────
