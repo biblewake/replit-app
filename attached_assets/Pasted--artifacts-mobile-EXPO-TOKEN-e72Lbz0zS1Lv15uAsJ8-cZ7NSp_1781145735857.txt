@@ -1,0 +1,25 @@
+~/.../artifacts/mobile$ EXPO_TOKEN=e72Lbz0zS1Lv15uAsJ8_cZ7NSp8nrW-xkwQdtOO9 eas build --profile production --platform ios
+Unable to resolve a valid config plugin for ./plugins/withSentryPodfix.
+• No "app.plugin.js" file found in ./plugins/withSentryPodfix: config plugins are typically exported from an "app.plugin.js" file in the package root.
+• main export of ./plugins/withSentryPodfix does not appear to be a config plugin: the following error was thrown when importing /home/runner/workspace/artifacts/mobile/plugins/withSentryPodfix.js: Cannot find module '@expo/config-plugins'
+Require stack:
+- /home/runner/workspace/artifacts/mobile/plugins/withSentryPodfix.js
+- /home/runner/workspace/.config/npm/node_global/lib/node_modules/eas-cli/node_modules/@expo/config-plugins/build/utils/plugin-resolver.js
+- /home/runner/workspace/.config/npm/node_global/lib/node_modules/eas-cli/node_modules/@expo/config-plugins/build/plugins/withStaticPlugin.js
+- /home/runner/workspace/.config/npm/node_global/lib/node_modules/eas-cli/node_modules/@expo/config-plugins/build/plugins/withPlugins.js
+- /home/runner/workspace/.config/npm/node_global/lib/node_modules/eas-cli/node_modules/@expo/config-plugins/build/index.js
+- /home/runner/workspace/.config/npm/node_global/lib/node_modules/eas-cli/build/build/android/syncProjectConfiguration.js
+- /home/runner/workspace/.config/npm/node_global/lib/node_modules/eas-cli/build/build/android/build.js
+- /home/runner/workspace/.config/npm/node_global/lib/node_modules/eas-cli/build/build/runBuildAndSubmit.js
+- /home/runner/workspace/.config/npm/node_global/lib/node_modules/eas-cli/build/commands/build/index.js
+- /home/runner/workspace/.config/npm/node_global/lib/node_modules/eas-cli/node_modules/@oclif/core/lib/module-loader.js
+- /home/runner/workspace/.config/npm/node_global/lib/node_modules/eas-cli/node_modules/@oclif/core/lib/help/index.js
+- /home/runner/workspace/.config/npm/node_global/lib/node_modules/eas-cli/node_modules/@oclif/core/lib/errors/handle.js
+- /home/runner/workspace/.config/npm/node_global/lib/node_modules/eas-cli/node_modules/@oclif/core/lib/errors/index.js
+- /home/runner/workspace/.config/npm/node_global/lib/node_modules/eas-cli/node_modules/@oclif/core/lib/config/config.js
+- /home/runner/workspace/.config/npm/node_global/lib/node_modules/eas-cli/node_modules/@oclif/core/lib/config/index.js
+- /home/runner/workspace/.config/npm/node_global/lib/node_modules/eas-cli/node_modules/@oclif/core/lib/command.js
+- /home/runner/workspace/.config/npm/node_global/lib/node_modules/eas-cli/node_modules/@oclif/core/lib/index.js
+- /home/runner/workspace/.config/npm/node_global/lib/node_modules/eas-cli/bin/run MODULE_NOT_FOUND
+Verify that ./plugins/withSentryPodfix includes a config plugin. If it does not, then remove the entry from plugins in your app config file. Learn more: https://docs.expo.dev/guides/config-plugins/
+    Error: build command failed.
