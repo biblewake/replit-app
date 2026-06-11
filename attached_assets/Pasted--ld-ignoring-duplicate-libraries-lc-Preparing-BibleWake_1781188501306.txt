@@ -1,0 +1,51 @@
+⚠️  ld: ignoring duplicate libraries: '-lc++'
+› Preparing BibleWake » Info.plist
+› Generating debug BibleWake » BibleWake.app.dSYM
+› Executing BibleWake » Bundle React Native code and images
+
+❌  error: sentry-cli -   INFO    2026-06-11 07:01:01.100529 -07:00 Loaded file referenced by SENTRY_PROPERTIES (sentry.properties)
+
+
+❌  error: sentry-cli - error: An organization ID or slug is required (provide with --org)
+
+
+❌  error: sentry-cli - 
+
+
+❌  error: sentry-cli - Add --log-level=[info|debug] or export SENTRY_LOG_LEVEL=[info|debug] to see more output.
+
+
+❌  error: sentry-cli - Please attach the full debug log to all bug reports.
+
+
+❌  error: sentry-cli - To disable source maps auto upload, set SENTRY_DISABLE_AUTO_UPLOAD=true in your environment variables. Or to allow failing upload, set SENTRY_ALLOW_FAILURE=true
+
+⚠️  Script has ambiguous dependencies causing it to run on every build.
+   To fix, go to: Xcode » BibleWake/BibleWake » Build Phases » 'Upload Debug Symbols to Sentry'
+   Either: Uncheck "Based on dependency analysis", or select output files to trigger the script
+⚠️  Pods/react-native-view-shot-RNViewShotPrivacyInfo: iOS@9.0 deployment version mismatch, expected >= 2.0 <= 26.0.99
+⚠️  Pods/SDWebImage-SDWebImage: iOS@9.0 deployment version mismatch, expected >= 2.0 <= 26.0.99
+⚠️  Pods/RNCAsyncStorage-RNCAsyncStorage_resources: iOS@9.0 deployment version mismatch, expected >= 2.0 <= 26.0.99
+▸ ** ARCHIVE FAILED **
+▸ The following build commands failed:
+▸ 	PhaseScriptExecution Bundle\ React\ Native\ code\ and\ images /Users/expo/workingdir/build/artifacts/mobile/ios/build/Build/Intermediates.noindex/ArchiveIntermediates/BibleWake/IntermediateBuildFilesPath/BibleWake.build/Release-iphoneos/BibleWake.build/Script-00DD1BFF1BD5951E006B06BC.sh (in target 'BibleWake' from project 'BibleWake')
+▸ 	Archiving workspace BibleWake with scheme BibleWake
+▸ (2 failures)
+Exit status: 65
++---------------------------------------+
+|           Build environment           |
++-------------+-------------------------+
+| xcode_path  | /Applications/Xcode.app |
+| gym_version | 2.228.0                 |
+| sdk         | iPhoneOS26.0.sdk        |
++-------------+-------------------------+
+Looks like fastlane ran into a build/archive error with your project
+It's hard to tell what's causing the error, so we wrote some guides on how
+to troubleshoot build and signing issues: https://docs.fastlane.tools/codesigning/getting-started/
+Before submitting an issue on GitHub, please follow the guide above and make
+sure your project is set up correctly.
+fastlane uses `xcodebuild` commands to generate your binary, you can see the
+the full commands printed out in yellow in the above log.
+Make sure to inspect the output above, as usually you'll find more error information there
+[!] Error building the application - see the log above
+fastlane gym exited with non-zero code: 1
