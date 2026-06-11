@@ -92,6 +92,7 @@
         }
       ],
       "./plugins/withBootReceiver",
+      "./plugins/withSentryPodfix",
       "@sentry/react-native/expo"
     ],
     "experiments": {
