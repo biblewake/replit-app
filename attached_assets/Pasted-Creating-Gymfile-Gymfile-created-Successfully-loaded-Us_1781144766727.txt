@@ -1,0 +1,354 @@
+Creating Gymfile
+Gymfile created
+Successfully loaded '/Users/expo/workingdir/build/artifacts/mobile/ios/Gymfile' 📄
++---------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|                                                                  Detected Values from './Gymfile'                                                                   |
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| suppress_xcode_output | true                                                                                                                                        |
+| clean                 | false                                                                                                                                       |
+| scheme                | BibleWake                                                                                                                                   |
+| configuration         | Release                                                                                                                                     |
+| export_options        |                                                                                                                                             |
+| export_xcargs         | OTHER_CODE_SIGN_FLAGS="--keychain /var/folders/m1/8_w9962s3b79dqm00nnlm85m0000gn/T/eas-build-b6b3ebaf-6358-41ad-a73e-0e20ec88a0ba.keychain" |
+| disable_xcpretty      | true                                                                                                                                        |
+| buildlog_path         | /Users/expo/workingdir/logs                                                                                                                 |
+| derived_data_path     | ./build                                                                                                                                     |
+| result_bundle         | true                                                                                                                                        |
+| result_bundle_path    | /var/folders/m1/8_w9962s3b79dqm00nnlm85m0000gn/T/result-bundle-1781143357128.xcresult                                                       |
+| output_directory      | ./build                                                                                                                                     |
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+Resolving Swift Package Manager dependencies...
+$ xcodebuild -resolvePackageDependencies -workspace ./BibleWake.xcworkspace -scheme BibleWake -configuration Release -derivedDataPath ./build
+▸ Command line invocation:
+▸     /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -resolvePackageDependencies -workspace ./BibleWake.xcworkspace -scheme BibleWake -configuration Release -derivedDataPath ./build
+▸ User defaults from command line:
+▸     IDEDerivedDataPathOverride = /Users/expo/workingdir/build/artifacts/mobile/ios/build
+▸     IDEPackageSupportUseBuiltinSCM = YES
+▸ resolved source packages:
+$ xcodebuild -showBuildSettings -workspace ./BibleWake.xcworkspace -scheme BibleWake -configuration Release -derivedDataPath ./build 2>&1
+Detected provisioning profile mapping: {:"com.tinochiwara.biblewake"=>"e222eca0-a676-4e61-ae24-0f1544f6ac80"}
+
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|                                                                                           Summary for gym 2.226.0                                                                                           |
++---------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| workspace                                                     | ./BibleWake.xcworkspace                                                                                                                     |
+| scheme                                                        | BibleWake                                                                                                                                   |
+| clean                                                         | false                                                                                                                                       |
+| output_directory                                              | ./build                                                                                                                                     |
+| output_name                                                   | BibleWake                                                                                                                                   |
+| configuration                                                 | Release                                                                                                                                     |
+| silent                                                        | false                                                                                                                                       |
+| skip_package_ipa                                              | false                                                                                                                                       |
+| skip_package_pkg                                              | false                                                                                                                                       |
+| export_options.method                                         | app-store                                                                                                                                   |
+| export_options.provisioningProfiles.com.tinochiwara.biblewake | e222eca0-a676-4e61-ae24-0f1544f6ac80                                                                                                        |
+| export_xcargs                                                 | OTHER_CODE_SIGN_FLAGS="--keychain /var/folders/m1/8_w9962s3b79dqm00nnlm85m0000gn/T/eas-build-b6b3ebaf-6358-41ad-a73e-0e20ec88a0ba.keychain" |
+| build_path                                                    | /Users/expo/Library/Developer/Xcode/Archives/2026-06-10                                                                                     |
+| derived_data_path                                             | ./build                                                                                                                                     |
+| result_bundle                                                 | true                                                                                                                                        |
+| result_bundle_path                                            | /var/folders/m1/8_w9962s3b79dqm00nnlm85m0000gn/T/result-bundle-1781143357128.xcresult                                                       |
+| buildlog_path                                                 | /Users/expo/workingdir/logs                                                                                                                 |
+| destination                                                   | generic/platform=iOS                                                                                                                        |
+| suppress_xcode_output                                         | true                                                                                                                                        |
+| xcodebuild_formatter                                          | xcpretty                                                                                                                                    |
+| build_timing_summary                                          | false                                                                                                                                       |
+| disable_xcpretty                                              | true                                                                                                                                        |
+| skip_profile_detection                                        | false                                                                                                                                       |
+| xcodebuild_command                                            | xcodebuild                                                                                                                                  |
+| skip_package_dependencies_resolution                          | false                                                                                                                                       |
+| disable_package_automatic_updates                             | false                                                                                                                                       |
+| use_system_scm                                                | false                                                                                                                                       |
+| xcode_path                                                    | /Applications/Xcode.app                                                                                                                     |
++---------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+$ set -o pipefail && xcodebuild -workspace ./BibleWake.xcworkspace -scheme BibleWake -configuration Release -derivedDataPath ./build -destination 'generic/platform=iOS' -archivePath /Users/expo/Library/Developer/Xcode/Archives/2026-06-10/BibleWake\ 2026-06-10\ 19.02.42.xcarchive -resultBundlePath '/var/folders/m1/8_w9962s3b79dqm00nnlm85m0000gn/T/result-bundle-1781143357128.xcresult' archive | tee /Users/expo/workingdir/logs/BibleWake-BibleWake.log > /dev/null
+› Executing react-native Pods/hermes-engine » [CP-User] [Hermes] Replace Hermes for the right configuration, if needed
+› Executing react-native Pods/hermes-engine » [CP] Copy XCFrameworks
+› Preparing Pods/glog-glog_privacy » ResourceBundle-glog_privacy-glog-Info.plist
+› Preparing Pods/expo-dev-menu-EXDevMenu » ResourceBundle-EXDevMenu-expo-dev-menu-Info.plist
+› Preparing Pods/react-native-view-shot-RNViewShotPrivacyInfo » ResourceBundle-RNViewShotPrivacyInfo-react-native-view-shot-Info.plist
+› Copying   ios/build/Build/Intermediates.noindex/ArchiveIntermediates/BibleWake/IntermediateBuildFilesPath/UninstalledProducts/iphoneos/RNViewShotPrivacyInfo.bundle/PrivacyInfo.xcprivacy ➜ ../../../Users/expo/workingdir/build/node_modules/.pnpm/react-native-view-shot@5.1.0_react-native@0.81.5_@babel+core@7.29.0_@types+react@19.1.17_react@19.1.0__react@19.1.0/node_modules/react-native-view-shot/ios/PrivacyInfo.xcprivacy
+› Preparing Pods/lottie-react-native-Lottie_React_Native_Privacy » ResourceBundle-Lottie_React_Native_Privacy-lottie-react-native-Info.plist
+› Copying   ios/build/Build/Intermediates.noindex/ArchiveIntermediates/BibleWake/IntermediateBuildFilesPath/UninstalledProducts/iphoneos/Lottie_React_Native_Privacy.bundle/PrivacyInfo.xcprivacy ➜ ../../../Users/expo/workingdir/build/node_modules/.pnpm/lottie-react-native@7.3.8_react-native@0.81.5_@babel+core@7.29.0_@types+react@19.1.17_react@19.1.0__react@19.1.0/node_modules/lottie-react-native/ios/PrivacyInfo.xcprivacy
+› Preparing Pods/lottie-ios-LottiePrivacyInfo » ResourceBundle-LottiePrivacyInfo-lottie-ios-Info.plist
+› Copying   ios/build/Build/Intermediates.noindex/ArchiveIntermediates/BibleWake/IntermediateBuildFilesPath/UninstalledProducts/iphoneos/LottiePrivacyInfo.bundle/PrivacyInfo.xcprivacy ➜ ../../../Users/expo/workingdir/build/artifacts/mobile/ios/Pods/lottie-ios/Sources/PrivacyInfo.xcprivacy
+› Creating  Pods/react-native-view-shot-RNViewShotPrivacyInfo » RNViewShotPrivacyInfo.bundle
+› Creating  Pods/lottie-react-native-Lottie_React_Native_Privacy » Lottie_React_Native_Privacy.bundle
+› Creating  LottiePrivacyInfo.bundle
+› Preparing Pods/boost-boost_privacy » ResourceBundle-boost_privacy-boost-Info.plist
+› Creating  Pods/glog-glog_privacy » glog_privacy.bundle
+› Creating  Pods/boost-boost_privacy » boost_privacy.bundle
+› Preparing @sentry/react-native Pods/Sentry-Sentry » ResourceBundle-Sentry-Sentry-Info.plist
+› Copying   @sentry/react-native ios/build/Build/Intermediates.noindex/ArchiveIntermediates/BibleWake/IntermediateBuildFilesPath/UninstalledProducts/iphoneos/Sentry.bundle/PrivacyInfo.xcprivacy ➜ ../../../Users/expo/workingdir/build/artifacts/mobile/ios/Pods/Sentry/Sources/Resources/PrivacyInfo.xcprivacy
+› Preparing expo-image Pods/SDWebImage-SDWebImage » ResourceBundle-SDWebImage-SDWebImage-Info.plist
+› Copying   expo-image ios/build/Build/Intermediates.noindex/ArchiveIntermediates/BibleWake/IntermediateBuildFilesPath/UninstalledProducts/iphoneos/SDWebImage.bundle/PrivacyInfo.xcprivacy ➜ ../../../Users/expo/workingdir/build/artifacts/mobile/ios/Pods/SDWebImage/WebImage/PrivacyInfo.xcprivacy
+› Preparing react-native-purchases Pods/RevenueCat-RevenueCat » ResourceBundle-RevenueCat-RevenueCat-Info.plist
+› Copying   react-native-purchases ios/build/Build/Intermediates.noindex/ArchiveIntermediates/BibleWake/IntermediateBuildFilesPath/UninstalledProducts/iphoneos/RevenueCat.bundle/PrivacyInfo.xcprivacy ➜ ../../../Users/expo/workingdir/build/artifacts/mobile/ios/Pods/RevenueCat/Sources/PrivacyInfo.xcprivacy
+› Creating  @sentry/react-native Pods/Sentry-Sentry » Sentry.bundle
+› Creating  Pods/expo-dev-menu-EXDevMenu » EXDevMenu.bundle
+› Creating  expo-image Pods/SDWebImage-SDWebImage » SDWebImage.bundle
+› Creating  react-native-purchases Pods/RevenueCat-RevenueCat » RevenueCat.bundle
+› Preparing Pods/React-cxxreact-React-cxxreact_privacy » ResourceBundle-React-cxxreact_privacy-React-cxxreact-Info.plist
+› Copying   ios/build/Build/Intermediates.noindex/ArchiveIntermediates/BibleWake/IntermediateBuildFilesPath/UninstalledProducts/iphoneos/React-cxxreact_privacy.bundle/PrivacyInfo.xcprivacy ➜ ../../../Users/expo/workingdir/build/node_modules/.pnpm/react-native@0.81.5_@babel+core@7.29.0_@types+react@19.1.17_react@19.1.0/node_modules/react-native/ReactCommon/cxxreact/PrivacyInfo.xcprivacy
+› Preparing Pods/React-Core-React-Core_privacy » ResourceBundle-React-Core_privacy-React-Core-Info.plist
+› Copying   ios/build/Build/Intermediates.noindex/ArchiveIntermediates/BibleWake/IntermediateBuildFilesPath/UninstalledProducts/iphoneos/React-Core_privacy.bundle/PrivacyInfo.xcprivacy ➜ ../../../Users/expo/workingdir/build/node_modules/.pnpm/react-native@0.81.5_@babel+core@7.29.0_@types+react@19.1.17_react@19.1.0/node_modules/react-native/React/Resources/PrivacyInfo.xcprivacy
+› Preparing Pods/RNSVG-RNSVGFilters » ResourceBundle-RNSVGFilters-RNSVG-Info.plist
+› Copying   ios/build/Build/Intermediates.noindex/ArchiveIntermediates/BibleWake/IntermediateBuildFilesPath/UninstalledProducts/iphoneos/RNSVGFilters.bundle/RNSVGCompositeXor.iphoneos.metallib ➜ ../../../Users/expo/workingdir/build/node_modules/.pnpm/react-native-svg@15.12.1_react-native@0.81.5_@babel+core@7.29.0_@types+react@19.1.17_react@19.1.0__react@19.1.0/node_modules/react-native-svg/apple/Filters/MetalCI/RNSVGCompositeXor.iphoneos.metallib
+› Copying   ios/build/Build/Intermediates.noindex/ArchiveIntermediates/BibleWake/IntermediateBuildFilesPath/UninstalledProducts/iphoneos/RNSVGFilters.bundle/RNSVGArithmeticFilter.iphoneos.metallib ➜ ../../../Users/expo/workingdir/build/node_modules/.pnpm/react-native-svg@15.12.1_react-native@0.81.5_@babel+core@7.29.0_@types+react@19.1.17_react@19.1.0__react@19.1.0/node_modules/react-native-svg/apple/Filters/MetalCI/RNSVGArithmeticFilter.iphoneos.metallib
+› Preparing Pods/RNCAsyncStorage-RNCAsyncStorage_resources » ResourceBundle-RNCAsyncStorage_resources-RNCAsyncStorage-Info.plist
+› Copying   ios/build/Build/Intermediates.noindex/ArchiveIntermediates/BibleWake/IntermediateBuildFilesPath/UninstalledProducts/iphoneos/RNCAsyncStorage_resources.bundle/PrivacyInfo.xcprivacy ➜ ../../../Users/expo/workingdir/build/node_modules/.pnpm/@react-native-async-storage+async-storage@2.2.0_react-native@0.81.5_@babel+core@7.29.0__088e8303e028f6e6ca5c16cc3d46621a/node_modules/@react-native-async-storage/async-storage/ios/PrivacyInfo.xcprivacy
+› Creating  Pods/React-cxxreact-React-cxxreact_privacy » React-cxxreact_privacy.bundle
+› Creating  Pods/React-Core-React-Core_privacy » React-Core_privacy.bundle
+› Preparing Pods/RCT-Folly-RCT-Folly_privacy » ResourceBundle-RCT-Folly_privacy-RCT-Folly-Info.plist
+› Creating  Pods/RNSVG-RNSVGFilters » RNSVGFilters.bundle
+› Preparing react-native-purchases Pods/PurchasesHybridCommon-PurchasesHybridCommon » ResourceBundle-PurchasesHybridCommon-PurchasesHybridCommon-Info.plist
+› Copying   react-native-purchases ios/build/Build/Intermediates.noindex/ArchiveIntermediates/BibleWake/IntermediateBuildFilesPath/UninstalledProducts/iphoneos/PurchasesHybridCommon.bundle/PrivacyInfo.xcprivacy ➜ ../../../Users/expo/workingdir/build/artifacts/mobile/ios/Pods/PurchasesHybridCommon/ios/PurchasesHybridCommon/PurchasesHybridCommon/PrivacyInfo.xcprivacy
+› Creating  Pods/RNCAsyncStorage-RNCAsyncStorage_resources » RNCAsyncStorage_resources.bundle
+› Compiling react-native Pods/glog » utilities.cc
+› Compiling react-native Pods/glog » symbolize.cc
+› Compiling react-native Pods/glog » signalhandler.cc
+› Compiling react-native Pods/glog » raw_logging.cc
+› Compiling react-native Pods/glog » logging.cc
+› Compiling react-native Pods/fmt » format.cc
+› Compiling react-native Pods/Yoga » event.cpp
+› Compiling react-native Pods/Yoga » YGValue.cpp
+› Compiling react-native Pods/Yoga » YGPixelGrid.cpp
+› Compiling react-native Pods/Yoga » YGNodeStyle.cpp
+› Compiling react-native Pods/Yoga » YGNodeLayout.cpp
+› Compiling react-native Pods/Yoga » YGNode.cpp
+› Compiling react-native Pods/Yoga » YGEnums.cpp
+› Compiling react-native Pods/Yoga » YGConfig.cpp
+› Compiling react-native Pods/Yoga » PixelGrid.cpp
+› Compiling react-native Pods/Yoga » Node.cpp
+› Compiling react-native Pods/Yoga » Log.cpp
+› Compiling react-native Pods/Yoga » LayoutResults.cpp
+› Compiling react-native Pods/Yoga » FlexLine.cpp
+› Compiling react-native Pods/Yoga » Config.cpp
+› Compiling react-native Pods/Yoga » CalculateLayout.cpp
+› Compiling react-native Pods/Yoga » Baseline.cpp
+› Compiling react-native Pods/Yoga » AssertFatal.cpp
+› Compiling react-native Pods/Yoga » AbsoluteLayout.cpp
+› Compiling react-native Pods/React-rendererdebug » DebugStringConvertibleItem.cpp
+› Compiling react-native Pods/React-rendererdebug » DebugStringConvertible.cpp
+› Compiling react-native Pods/React-rendererconsistency » ShadowTreeRevisionConsistencyManager.cpp
+› Compiling react-native Pods/React-performancetimeline » PerformanceObserverRegistry.cpp
+› Compiling react-native Pods/React-performancetimeline » PerformanceObserver.cpp
+› Compiling react-native Pods/React-performancetimeline » PerformanceEntryReporter.cpp
+› Compiling react-native Pods/React-performancetimeline » PerformanceEntryKeyedBuffer.cpp
+› Compiling react-native Pods/React-performancetimeline » PerformanceEntryCircularBuffer.cpp
+› Compiling react-native Pods/React-perflogger » ReactPerfettoLogger.cpp
+› Compiling react-native Pods/React-perflogger » ReactPerfettoCategories.cpp
+› Compiling react-native Pods/React-perflogger » ReactPerfetto.cpp
+› Compiling react-native Pods/React-perflogger » HermesPerfettoDataSource.cpp
+› Compiling react-native Pods/React-perflogger » FuseboxTracer.cpp
+› Compiling react-native Pods/React-perflogger » FuseboxPerfettoDataSource.cpp
+› Compiling react-native BridgeNativeModulePerfLogger.cpp
+› Compiling react-native Pods/React-oscompat » OSCompatWindows.cpp
+› Compiling react-native Pods/React-oscompat » OSCompatPosix.cpp
+› Compiling react-native Pods/React-logger » react_native_log.cpp
+› Compiling react-native Pods/React-jsinspectortracing » RuntimeSamplingProfileTraceEventSerializer.cpp
+› Compiling react-native Pods/React-jsinspectortracing » PerformanceTracer.cpp
+› Compiling react-native Pods/React-jsinspectortracing » EventLoopReporter.cpp
+› Compiling react-native Pods/React-jsinspectornetwork » NetworkReporter.cpp
+› Compiling react-native Pods/React-jsinspectornetwork » HttpUtils.cpp
+› Compiling react-native Pods/React-jsinspectornetwork » CdpNetwork.cpp
+› Compiling react-native Pods/React-jsinspectornetwork » BoundedRequestBuffer.cpp
+› Compiling react-native Pods/React-jsinspectorcdp » CdpJson.cpp
+› Compiling react-native Pods/React-featureflags » ReactNativeFeatureFlags.cpp
+› Compiling react-native Pods/React-Mapbuffer » MapBufferBuilder.cpp
+› Compiling react-native MapBuffer.cpp
+› Compiling react-native Pods/RCT-Folly » json_pointer.cpp
+› Compiling react-native Pods/RCT-Folly » json.cpp
+› Compiling react-native Pods/RCT-Folly » dynamic.cpp
+› Compiling react-native Pods/RCT-Folly » UniqueInstance.cpp
+› Compiling react-native Pods/RCT-Folly » Unicode.cpp
+› Compiling react-native Pods/RCT-Folly » ToAscii.cpp
+› Compiling react-native Pods/RCT-Folly » ThreadId.cpp
+› Compiling react-native Pods/RCT-Folly » SysUio.cpp
+› Compiling react-native Pods/RCT-Folly » String.cpp
+› Compiling react-native Pods/RCT-Folly » StaticSingletonManager.cpp
+› Compiling react-native Pods/RCT-Folly » SpookyHashV2.cpp
+› Compiling react-native Pods/RCT-Folly » SplitStringSimd.cpp
+› Compiling react-native Pods/RCT-Folly » SharedMutex.cpp
+› Compiling react-native Pods/RCT-Folly » ScopeGuard.cpp
+› Compiling react-native Pods/RCT-Folly » SanitizeThread.cpp
+› Compiling react-native Pods/RCT-Folly » SafeAssert.cpp
+› Compiling react-native Pods/RCT-Folly » ReentrantAllocator.cpp
+› Compiling react-native Pods/RCT-Folly » ParkingLot.cpp
+› Compiling react-native Pods/RCT-Folly » NetOps.cpp
+› Compiling react-native Pods/RCT-Folly » MallocImpl.cpp
+› Compiling react-native Pods/RCT-Folly » Futex.cpp
+› Compiling react-native Pods/RCT-Folly » Format.cpp
+› Compiling react-native Pods/RCT-Folly » FileUtilDetail.cpp
+› Compiling react-native Pods/RCT-Folly » FileUtil.cpp
+› Compiling react-native Pods/RCT-Folly » F14Table.cpp
+› Compiling react-native Pods/RCT-Folly » Demangle.cpp
+› Compiling react-native Pods/RCT-Folly » Conv.cpp
+› Compiling react-native Pods/RCT-Folly » CacheLocality.cpp
+› Compiling react-native Pods/RCT-Folly » CString.cpp
+› Compiling react-native Pods/RCT-Folly » AtFork.cpp
+› Compiling expo-image Pods/libwebp » yuv_sse41.c
+› Compiling expo-image Pods/libwebp » yuv_sse2.c
+› Compiling expo-image Pods/libwebp » yuv_mips_dsp_r2.c
+› Compiling expo-image Pods/libwebp » yuv_mips32.c
+› Compiling expo-image Pods/libwebp » upsampling_sse41.c
+› Compiling expo-image Pods/libwebp » upsampling_sse2.c
+› Compiling expo-image Pods/libwebp » upsampling_neon.c
+› Compiling expo-image Pods/libwebp » yuv_neon.c
+› Compiling expo-image Pods/libwebp » yuv.c
+› Compiling expo-image Pods/libwebp » webp_enc.c
+› Compiling expo-image Pods/libwebp » webp_dec.c
+› Compiling expo-image Pods/libwebp » vp8l_enc.c
+› Compiling expo-image Pods/libwebp » vp8l_dec.c
+› Compiling expo-image Pods/libwebp » vp8_dec.c
+› Compiling expo-image Pods/libwebp » utils.c
+› Compiling expo-image Pods/libwebp » upsampling_msa.c
+› Compiling expo-image Pods/libwebp » upsampling_mips_dsp_r2.c
+› Compiling expo-image Pods/libwebp » upsampling.c
+› Compiling expo-image Pods/libwebp » tree_enc.c
+› Compiling expo-image Pods/libwebp » tree_dec.c
+› Compiling expo-image Pods/libwebp » token_enc.c
+› Compiling expo-image Pods/libwebp » thread_utils.c
+› Compiling expo-image Pods/libwebp » syntax_enc.c
+› Compiling expo-image Pods/libwebp » ssim_sse2.c
+› Compiling expo-image Pods/libwebp » ssim.c
+› Compiling expo-image Pods/libwebp » sharpyuv_sse2.c
+› Compiling expo-image Pods/libwebp » sharpyuv_neon.c
+› Compiling expo-image Pods/libwebp » sharpyuv_dsp.c
+› Compiling expo-image Pods/libwebp » sharpyuv_csp.c
+› Compiling expo-image Pods/libwebp » sharpyuv_cpu.c
+› Compiling expo-image Pods/libwebp » sharpyuv_gamma.c
+› Compiling expo-image Pods/libwebp » rescaler_sse2.c
+› Compiling expo-image Pods/libwebp » rescaler_neon.c
+› Compiling expo-image Pods/libwebp » sharpyuv.c
+› Compiling expo-image Pods/libwebp » rescaler_utils.c
+› Compiling expo-image Pods/libwebp » rescaler_msa.c
+› Compiling expo-image Pods/libwebp » rescaler_mips_dsp_r2.c
+› Compiling expo-image Pods/libwebp » rescaler_mips32.c
+› Compiling expo-image Pods/libwebp » rescaler.c
+› Compiling expo-image Pods/libwebp » random_utils.c
+› Compiling expo-image Pods/libwebp » quant_levels_utils.c
+› Compiling expo-image Pods/libwebp » quant_levels_dec_utils.c
+› Compiling expo-image Pods/libwebp » quant_dec.c
+› Compiling expo-image Pods/libwebp » quant_enc.c
+› Compiling expo-image Pods/libwebp » predictor_enc.c
+› Compiling expo-image Pods/libwebp » picture_tools_enc.c
+› Compiling expo-image Pods/libwebp » picture_rescale_enc.c
+› Compiling expo-image Pods/libwebp » picture_psnr_enc.c
+› Compiling expo-image Pods/libwebp » picture_enc.c
+› Compiling expo-image Pods/libwebp » picture_csp_enc.c
+› Compiling expo-image Pods/libwebp » palette.c
+▸ ** ARCHIVE FAILED **
+▸ The following build commands failed:
+▸ 	ScanDependencies /Users/expo/workingdir/build/artifacts/mobile/ios/build/Build/Intermediates.noindex/ArchiveIntermediates/BibleWake/IntermediateBuildFilesPath/Pods.build/Release-iphoneos/Sentry.build/Objects-normal/arm64/SentryViewHierarchyProviderHelper.o /Users/expo/workingdir/build/artifacts/mobile/ios/Pods/Sentry/Sources/Sentry/SentryViewHierarchyProviderHelper.m normal arm64 objective-c com.apple.compilers.llvm.clang.1_0.compiler (in target 'Sentry' from project 'Pods')
+› Compiling expo-image Pods/libwebp » near_lossless_enc.c
+› Compiling expo-image Pods/libwebp » muxread.c
+› Compiling expo-image Pods/libwebp » muxinternal.c
+› Compiling expo-image Pods/libwebp » muxedit.c
+› Compiling expo-image Pods/libwebp » lossless_sse41.c
+› Compiling expo-image Pods/libwebp » lossless_sse2.c
+› Compiling expo-image Pods/libwebp » lossless_msa.c
+› Compiling expo-image Pods/libwebp » lossless_neon.c
+› Compiling expo-image Pods/libwebp » lossless_mips_dsp_r2.c
+› Compiling expo-image Pods/libwebp » lossless_enc_sse41.c
+› Compiling expo-image Pods/libwebp » lossless_enc_sse2.c
+› Compiling expo-image Pods/libwebp » lossless_enc_neon.c
+› Compiling expo-image Pods/libwebp » lossless_enc_msa.c
+› Compiling expo-image Pods/libwebp » lossless_enc_mips_dsp_r2.c
+› Compiling expo-image Pods/libwebp » lossless_enc_mips32.c
+› Compiling expo-image Pods/libwebp » lossless_enc.c
+› Compiling expo-image Pods/libwebp » lossless.c
+› Compiling expo-image Pods/libwebp » iterator_enc.c
+› Compiling expo-image Pods/libwebp » io_dec.c
+› Compiling expo-image Pods/libwebp » idec_dec.c
+› Compiling expo-image Pods/libwebp » huffman_utils.c
+› Compiling expo-image Pods/libwebp » huffman_encode_utils.c
+› Compiling expo-image Pods/libwebp » histogram_enc.c
+› Compiling expo-image Pods/libwebp » frame_enc.c
+› Compiling expo-image Pods/libwebp » frame_dec.c
+› Compiling expo-image Pods/libwebp » filters_utils.c
+› Compiling expo-image Pods/libwebp » filters_sse2.c
+› Compiling expo-image Pods/libwebp » filters_neon.c
+› Compiling expo-image Pods/libwebp » filters_msa.c
+› Compiling expo-image Pods/libwebp » filters_mips_dsp_r2.c
+› Compiling expo-image Pods/libwebp » filters.c
+› Compiling expo-image Pods/libwebp » filter_enc.c
+› Compiling expo-image Pods/libwebp » enc_sse41.c
+› Compiling expo-image Pods/libwebp » enc_sse2.c
+› Compiling expo-image Pods/libwebp » enc_neon.c
+› Compiling expo-image Pods/libwebp » enc_msa.c
+› Compiling expo-image Pods/libwebp » enc_mips_dsp_r2.c
+› Compiling expo-image Pods/libwebp » enc_mips32.c
+▸ 	Archiving workspace BibleWake with scheme BibleWake
+▸ (2 failures)
+› Compiling expo-image Pods/libwebp » enc.c
+› Compiling expo-image Pods/libwebp » demux.c
+› Compiling expo-image Pods/libwebp » dec_sse41.c
+› Compiling expo-image Pods/libwebp » dec_sse2.c
+› Compiling expo-image Pods/libwebp » dec_neon.c
+› Compiling expo-image Pods/libwebp » dec_msa.c
+› Compiling expo-image Pods/libwebp » dec_mips_dsp_r2.c
+› Compiling dec_mips32.c
+› Compiling expo-image Pods/libwebp » dec_clip_tables.c
+› Compiling expo-image Pods/libwebp » dec.c
+› Compiling expo-image Pods/libwebp » cpu.c
+› Compiling expo-image Pods/libwebp » cost_sse2.c
+› Compiling expo-image Pods/libwebp » cost_neon.c
+› Compiling expo-image Pods/libwebp » cost_mips_dsp_r2.c
+› Compiling expo-image Pods/libwebp » cost_mips32.c
+› Compiling expo-image Pods/libwebp » cost_enc.c
+› Compiling expo-image Pods/libwebp » cost.c
+› Compiling expo-image Pods/libwebp » config_enc.c
+› Compiling expo-image Pods/libwebp » color_cache_utils.c
+› Compiling expo-image Pods/libwebp » buffer_dec.c
+› Compiling expo-image Pods/libwebp » bit_writer_utils.c
+› Compiling expo-image Pods/libwebp » bit_reader_utils.c
+› Compiling expo-image Pods/libwebp » backward_references_enc.c
+› Compiling expo-image Pods/libwebp » backward_references_cost_enc.c
+› Compiling expo-image Pods/libwebp » anim_encode.c
+› Compiling expo-image Pods/libwebp » anim_decode.c
+› Compiling expo-image Pods/libwebp » analysis_enc.c
+› Compiling expo-image Pods/libwebp » alpha_processing_sse41.c
+› Compiling expo-image Pods/libwebp » alpha_processing_sse2.c
+› Compiling expo-image Pods/libwebp » alpha_processing_neon.c
+› Compiling expo-image Pods/libwebp » alpha_processing_mips_dsp_r2.c
+› Compiling expo-image Pods/libwebp » alpha_processing.c
+› Compiling expo-image Pods/libwebp » alpha_enc.c
+› Compiling expo-image Pods/libwebp » alpha_dec.c
+› Compiling expo-image Pods/libdav1d » tables.c
+› Compiling expo-image Pods/libdav1d » wedge.c
+** ARCHIVE FAILED **
+
+
+The following build commands failed:
+	ScanDependencies /Users/expo/workingdir/build/artifacts/mobile/ios/build/Build/Intermediates.noindex/ArchiveIntermediates/BibleWake/IntermediateBuildFilesPath/Pods.build/Release-iphoneos/Sentry.build/Objects-normal/arm64/SentryViewHierarchyProviderHelper.o /Users/expo/workingdir/build/artifacts/mobile/ios/Pods/Sentry/Sources/Sentry/SentryViewHierarchyProviderHelper.m normal arm64 objective-c com.apple.compilers.llvm.clang.1_0.compiler (in target 'Sentry' from project 'Pods')
+	Archiving workspace BibleWake with scheme BibleWake
+(2 failures)
+Exit status: 65
+› Compiling expo-image Pods/libdav1d » warpmv.c
+› Compiling expo-image Pods/libdav1d » thread_task.c
+› Compiling expo-image Pods/libdav1d » refmvs.c
+› Compiling expo-image Pods/libdav1d » ref.c
+› Compiling expo-image Pods/libdav1d » recon_tmpl_16.c
+› Compiling expo-image Pods/libdav1d » recon_tmpl.c
+› Compiling expo-image Pods/libdav1d » qm.c
++---------------------------------------+
+|           Build environment           |
++-------------+-------------------------+
+| xcode_path  | /Applications/Xcode.app |
+| gym_version | 2.226.0                 |
+| sdk         | iPhoneOS18.2.sdk        |
++-------------+-------------------------+
+
+
+Looks like fastlane ran into a build/archive error with your project
+It's hard to tell what's causing the error, so we wrote some guides on how
+to troubleshoot build and signing issues: https://docs.fastlane.tools/codesigning/getting-started/
+Before submitting an issue on GitHub, please follow the guide above and make
+sure your project is set up correctly.
+fastlane uses `xcodebuild` commands to generate your binary, you can see the
+the full commands printed out in yellow in the above log.
+Make sure to inspect the output above, as usually you'll find more error information there
+[!] Error building the application - see the log above
+Error: The "Run fastlane" step failed because of an error in the Xcode build process. We automatically detected following errors in your Xcode build logs:
+- Module '_SentryPrivate' not found (in target 'Sentry' from project 'Pods')
+Refer to "Xcode Logs" below for additional, more detailed logs.
