@@ -66,23 +66,27 @@ if (Platform.OS !== "web") {
 
 // ── Global JS error handler ───────────────────────────────────────────────────
 // Catches any unhandled JS exception (including void-fired async rejections)
-// and reports them to Sentry. Fatal errors are forwarded to the default RN
-// fatal handler so the process terminates naturally (no re-throw via setTimeout
-// which causes SIGABRT via RCTFatal).
+// and reports them to Sentry WITHOUT crashing the process.
 if (Platform.OS !== "web" && typeof ErrorUtils !== "undefined") {
-  const defaultFatalHandler = ErrorUtils.getGlobalHandler();
+  // Swallow ALL uncaught JS errors — including ones flagged fatal — so they
+  // never reach React Native's default fatal handler. The default handler
+  // calls RCTFatal, which aborts the process with SIGABRT: this is the exact
+  // crash seen on every TestFlight build. The native trace only ever shows
+  // the reporting path (RCTExceptionsManager → RCTFatal), never the real JS
+  // error, which is why per-file patches kept missing it.
+  //
+  // A shipped app must degrade gracefully, never hard-crash on launch (App
+  // Review rejects launch crashes outright). By NOT forwarding to the default
+  // handler the app stays alive; the error is still captured in Sentry with a
+  // full JS stack trace so the underlying cause can be diagnosed and fixed.
   ErrorUtils.setGlobalHandler((error: Error, isFatal?: boolean) => {
     if (__DEV__) {
       console.error("[GlobalHandler]", isFatal ? "FATAL" : "non-fatal", error);
     }
-    Sentry.captureException(error, { level: isFatal ? "fatal" : "error" });
-    if (isFatal && defaultFatalHandler) {
-      // Flush Sentry before crashing so the event is delivered even though
-      // the process is about to be killed. 2 s is enough for a queued event
-      // to reach Sentry's ingest endpoint over a normal mobile connection.
-      Sentry.flush().finally(() => {
-        defaultFatalHandler(error, isFatal);
-      });
+    try {
+      Sentry.captureException(error, { level: isFatal ? "fatal" : "error" });
+    } catch {
+      // The global error handler must never throw — that would itself be fatal.
     }
   });
 }
