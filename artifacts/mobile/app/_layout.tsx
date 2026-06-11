@@ -72,7 +72,12 @@ if (Platform.OS !== "web" && typeof ErrorUtils !== "undefined") {
     }
     Sentry.captureException(error, { level: isFatal ? "fatal" : "error" });
     if (isFatal && defaultFatalHandler) {
-      defaultFatalHandler(error, isFatal);
+      // Flush Sentry before crashing so the event is delivered even though
+      // the process is about to be killed. 2 s is enough for a queued event
+      // to reach Sentry's ingest endpoint over a normal mobile connection.
+      Sentry.flush().finally(() => {
+        defaultFatalHandler(error, isFatal);
+      });
     }
   });
 }

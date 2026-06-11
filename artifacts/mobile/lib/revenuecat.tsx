@@ -217,14 +217,18 @@ function NativeSubscriptionProvider({ children }: { children: React.ReactNode })
 export function useSubscription() {
   const ctx = useContext(Context);
   if (!ctx) {
+    // Always return the safe stub rather than throwing — a throw here in
+    // production would propagate through the RN bridge as a fatal exception
+    // and crash the app with no visible stack trace (Sentry sees it only
+    // after DSN is configured). Returning the stub keeps the app alive and
+    // surfaces a warning in dev.
     if (__DEV__) {
       console.warn(
         "[RevenueCat] useSubscription called outside SubscriptionProvider — returning stub. " +
         "This usually means the root layout crashed before SubscriptionProvider mounted."
       );
-      return WEB_STUB;
     }
-    throw new Error("useSubscription must be used within a SubscriptionProvider");
+    return WEB_STUB;
   }
   return ctx;
 }
