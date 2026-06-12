@@ -1,0 +1,96 @@
+okay i like what you're saying But remember task #110 because:
+The TestFlight build crashes immediately on launch. The crash log (Thread 11, KERN_INVALID_ADDRESS / possible pointer authentication failure) points to the React Native New Architecture TurboModules bridge (RCTTurboModule.mm). One or more native modules in the app — most likely react-native-purchases (RevenueCat) or react-native-keyboard-controller — is not fully TurboModule-compatible. The New Arch bridge corrupts a pointer when interoping with it, causing a SIGSEGV on the first JS execution tick.
+
+Then on task #111 we re-enabled it again because:
+Task #110 (disabling New Architecture) was based on a misdiagnosis of the TestFlight crash. The actual crash (Thread 11 in the crash log) is inside the Hermes JS engine — not the TurboModule bridge. The original diagnosis was confused by Thread 2, which was doing stack trace symbolication in the background and just happened to include RCTTurboModule.mm.
+
+Disabling New Architecture has now broken the EAS build entirely: react-native-reanimated@4.x hard-requires New Architecture and refuses to install when newArchEnabled: false. Re-enabling it is not optional.
+
+The actual JS crash (JSObject::putNamedWithReceiver_RJS on Thread 11, triggered during the React RuntimeScheduler startup cycle) is most likely caused by the experimental reactCompiler: true flag in app.json. The React Compiler transforms component code around object mutability and can introduce code that writes to a null/undefined object during cold-launch initialization.
+
+then in task #115 we dis-abled it again because:
+Build 9 still crashes with the same signature as before: a TurboModule void method throws an NSException, React Native's convertNSExceptionToJSError tries to write to the Hermes heap from a background GCD thread, and the GC corrupts memory. The JS try/catch guards added in Build 9 can never catch this — native Objective-C NSExceptions don't cross the C++/JS boundary through the catch path; they go through React Native's own exception-to-JS-error converter, which is what crashes.
+
+Task #110 already proved the fix: disabling New Architecture eliminates this entire crash path. Task #111 re-enabled it, which is what brought the crash back. The solution is to revert to the approach that is known to work.
+
+
+So how is this going to be different? Yes, we have removed sentry and revenuecat. But we have gone back and fort on new architecture. When new architecture was there, what caused the crash then? Remember we faced New architecture cannot be disabled as react-native-reanimated 4.x calls assert_new_architecture_enabled() at build time. Full crash logs available on request.
+
+Other users online have been having issues i
+
+
+### What i also found in research:
+### Links, go and read these (tell me if you cant)
+- https://www.ditto.com/blog/the-state-of-react-native-in-2026
+- https://github.com/RevenueCat/react-native-purchases/issues/1776
+- https://github.com/revenuecat/react-native-purchases/issues/1712
+
+### 
+🛠️ Step-by-Step Fixes to Migrate and Build Successfully1. Resolve Xcode 26 / Clang C++ Compilation ErrorsIf your build fails inside native modules like fmt or Yoga due to consteval or constexpr syntax errors, you need to update your build flags. Add a post-install hook to your ios/Podfile to enforce compatible C++ standards for the strict Xcode 26 compiler:rubypost_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      # Force C++20 compliance to satisfy Xcode 26 Clang requirements
+      config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
+    end
+  end
+end
+Use code with caution.2. Flip the New Architecture FlagsBecause the Old Architecture bridge is no longer viable, you must migrate your application to utilize Fabric and TurboModules.For Bare React Native CLI:Open ios/Podfile and ensure that the New Architecture flag is explicitly active during pod resolution. Run your installation command with the environment flag enabled:bashRCT_NEW_ARCH_ENABLED=1 bundle exec pod install
+Use code with caution.For Expo Users:If you are using Expo, you must upgrade your project to Expo SDK 54 or newer. Update your app.json configuration to enforce the architecture transition:json{
+  "expo": {
+    "newArchEnabled": true
+  }
+}
+Use code with caution.3. Audit and Nuke Legacy DependenciesOlder versions of high-profile libraries (such as react-native-reanimated, react-native-screens, and Sentry) trigger duplicate runtime crashes on iOS 26.Review your package.json and forcefully upgrade packages to their latest versions.Execute a complete cache purge to ensure no old architecture bridge code artifacts remain:bashrm -rf node_modules ios/Pods ios/Podfile.lock
+npm install
+cd ios && bundle exec pod deintegrate && bundle exec pod install
+npx react-native start --reset-cache
+Use code with caution.
+
+## more research:
+Question: iosApp crashes on launch with iOS 26 React Native new architecture (TurboModule ObjC exception)
+Diagnosis: The root cause of this crash is an incompatibility between iOS 26's strict runtime thread/memory validation and how React Native's New Architecture (ObjCTurboModule) handles void native methods. When a native module method with a void return signature throws an NSException, React Native attempts to catch and route it through Hermes using convertNSExceptionToJSError. On iOS 26, this memory conversion corrupts the Hermes thread heap or conflicts with strict hardware pointer authentication (PAC) on newer Apple Silicon chips, causing an uncatchable native SIGABRT / EXC_CRASH before JavaScript even bootstraps.
+
+## some gemini answers:
+When using the Replit App Builder, you do not have direct access to the Mac console or Xcode build settings to modify the native iOS project files. Since Replit compiles React Native apps in a cloud-managed container, your solution must be applied purely through JavaScript code modifications, environment variable configurations, or dependency shifts in your package.json.
+Here is how you can resolve the iOS 26 TurboModule crash within the Replit environment:
+## 1. Disable Native Screen Optimizations (Immediate Fix)
+The most common trigger for this specific New Architecture exception on launch is the layout breakdown between react-native-screens and iOS 26. Because you cannot change native code in Replit, you must disable the native layout optimization. This forces React Native to use standard, stable UI containers.
+
+* Open your primary entry file in Replit (usually App.js, App.tsx, or index.js).
+* Add the following lines at the very top of the file, before any other imports or component declarations:
+
+import { enableScreens } from 'react-native-screens';
+// Disables the native iOS 26 navigation bridging that triggers the ObjC exception
+enableScreens(false);
+
+## 2. Force Expo/React Native to Stable Architecture
+If the crash persists, it means the Replit App Builder environment has automatically enabled the experimental New Architecture / TurboModules for your bundle. You can force the project back to the highly stable Paper/Old Architecture by editing your configuration file.
+
+* Locate your app.json file in the Replit file tree.
+* Look for the expo or react-native configuration object.
+* Explicitly set newArchEnabled to false: [1] 
+
+{
+  "expo": {
+    "name": "YourAppName",
+    "slug": "your-app-name",
+    "version": "1.0.0",
+    "newArchEnabled": false
+  }
+}
+
+
+* Once saved, trigger a clean rebuild using the Replit App Builder interface to clear out the faulty TurboModule native hooks.
+
+## 3. Identify and Remove the Offending Package
+If a specific third-party library is throwing the hidden void method exception during startup, you must swap it out. Because Replit logs JavaScript exceptions but might miss the raw Objective-C crash dump, look for packages related to:
+
+* Secure Storage / Keychain access
+* In-App Purchases (e.g., RevenueCat)
+* Native Maps or Push Notifications
+
+Try commenting out the initialization code for these packages inside App.js or temporarily removing them from your package.json to see if the app successfully launches past the splash screen.
+------------------------------
+Which navigation library are you using in your project (e.g., @react-navigation/native or expo-router), and what dependencies are currently listed in your package.json? If you paste your package list here, I can tell you exactly which package is causing the TurboModule crash.
+
+[1] [https://stackoverflow.com](https://stackoverflow.com/questions/79774115/libreact-featureflagsjni-so-not-found-react-native-app-crashes-on-startup)
