@@ -92,8 +92,7 @@
         }
       ],
       "./plugins/withBootReceiver",
-      "./plugins/withSentryPodfix",
-      "@sentry/react-native/expo"
+      "./plugins/withSentryPodfix"
     ],
     "experiments": {
       "typedRoutes": true,
