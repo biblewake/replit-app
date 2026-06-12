@@ -1,1 +1,1 @@
-- [Bible Wake launch crash](biblewake-launch-crash.md) — TestFlight SIGABRT: global JS error handler must swallow fatals (never forward to RCTFatal); Sentry was removed because Sentry.wrap() re-installs its own fatal forwarder, undoing the fix.
+- [Bible Wake launch crash](biblewake-launch-crash.md) — TestFlight SIGABRT: global JS error handler must swallow fatals (never forward to RCTFatal); Sentry and RevenueCat fully stripped as of this task.
