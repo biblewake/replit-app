@@ -6,7 +6,11 @@
   "build": {
     "base": {
       "node": "22.0.0",
-      "pnpm": "10.26.1"
+      "pnpm": "10.26.1",
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true",
+        "SENTRY_ALLOW_FAILURE": "true"
+      }
     },
     "development": {
       "extends": "base",
@@ -44,9 +48,6 @@
     "production": {
       "extends": "base",
       "distribution": "store",
-      "env": {
-        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
-      },
       "ios": {
         "autoIncrement": true,
         "image": "macos-sequoia-15.6-xcode-26.2"
