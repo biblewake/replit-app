@@ -44,6 +44,9 @@
     "production": {
       "extends": "base",
       "distribution": "store",
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      },
       "ios": {
         "autoIncrement": true,
         "image": "macos-sequoia-15.6-xcode-26.2"

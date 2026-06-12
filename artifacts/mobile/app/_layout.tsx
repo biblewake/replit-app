@@ -12,6 +12,7 @@ import * as SplashScreen from "expo-splash-screen";
 import Constants from "expo-constants";
 import React, { useEffect, useRef } from "react";
 import { AppState, AppStateStatus, Appearance, Platform, View } from "react-native";
+import * as Sentry from "@sentry/react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -27,6 +28,23 @@ import {
   SubscriptionProvider,
   useSubscription,
 } from "@/lib/revenuecat";
+
+// ── Sentry crash reporting ────────────────────────────────────────────────────
+// Initialized first so native crash handlers are in place before anything else.
+//
+// IMPORTANT — we do NOT export Sentry.wrap(RootLayout) as the default export.
+// Sentry.wrap() re-installs Sentry's JS error handler at every React tree
+// render, which overwrites our custom ErrorUtils.setGlobalHandler below and
+// re-enables the RCTFatal crash path (the cause of the build 12/14/18/19
+// SIGABRT chain). Instead we call Sentry.init() for native crash capture, then
+// our handler below manually calls Sentry.captureException() for JS errors.
+if (Platform.OS !== "web") {
+  Sentry.init({
+    dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+    environment: __DEV__ ? "development" : "production",
+    enableNativeNagger: false,
+  });
+}
 
 // ── Global notification handler ───────────────────────────────────────────────
 // Must be set before any notification fires. Controls foreground presentation.
@@ -73,6 +91,11 @@ if (Platform.OS !== "web" && typeof ErrorUtils !== "undefined") {
   ErrorUtils.setGlobalHandler((error: Error, isFatal?: boolean) => {
     if (__DEV__) {
       console.error("[GlobalHandler]", isFatal ? "FATAL" : "non-fatal", error);
+    }
+    try {
+      Sentry.captureException(error, { level: isFatal ? "fatal" : "error" });
+    } catch {
+      // The global error handler must never throw — that would itself be fatal.
     }
   });
 }
