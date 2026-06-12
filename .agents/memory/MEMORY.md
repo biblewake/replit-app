@@ -1,1 +1,2 @@
 - [Bible Wake launch crash](biblewake-launch-crash.md) — TestFlight SIGABRT: global JS error handler must swallow fatals (never forward to RCTFatal); Sentry and RevenueCat fully stripped as of this task.
+- [New Architecture enabled](new-arch-enabled.md) — newArchEnabled flipped to true; iOS 26 drops Old Arch bridge entirely; RevenueCat removal was the prerequisite.
