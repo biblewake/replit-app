@@ -219,9 +219,8 @@ export function useSubscription() {
   if (!ctx) {
     // Always return the safe stub rather than throwing — a throw here in
     // production would propagate through the RN bridge as a fatal exception
-    // and crash the app with no visible stack trace (Sentry sees it only
-    // after DSN is configured). Returning the stub keeps the app alive and
-    // surfaces a warning in dev.
+    // and crash the app with no visible stack trace. Returning the stub keeps
+    // the app alive and surfaces a warning in dev.
     if (__DEV__) {
       console.warn(
         "[RevenueCat] useSubscription called outside SubscriptionProvider — returning stub. " +

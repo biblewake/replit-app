@@ -1,36 +1,21 @@
 ---
-name: Bible Wake TestFlight launch crash (RCTFatal SIGABRT)
-description: Why every TestFlight build crashed on launch and the decision to swallow fatal JS errors
+name: Bible Wake launch crash
+description: Root cause and fix for the recurring TestFlight SIGABRT on launch; why Sentry was removed.
 ---
 
-# Bible Wake launch crash: the global handler was the crash
+# Bible Wake Launch Crash (SIGABRT)
 
-Every iOS TestFlight build (through build 18) crashed ~575ms after launch with
-`EXC_CRASH (SIGABRT)` → `RCTFatal` → `RCTExceptionsManager.reportException` on a
-background GCD queue. The native trace ONLY shows the error-**reporting** path,
-never the source JS error — so per-file patches kept missing it.
+## The rule
+`ErrorUtils.setGlobalHandler` must swallow fatal JS errors — never forward to the default handler. The default handler calls `RCTFatal`, which aborts the process with SIGABRT.
 
-**Root cause:** the app's own global error handler (`ErrorUtils.setGlobalHandler`
-in `artifacts/mobile/app/_layout.tsx`) was explicitly forwarding fatal errors to
-RN's `defaultFatalHandler`, which calls `RCTFatal` and aborts the process. So
-*any* uncaught fatal JS error anywhere at startup was converted into a hard
-launch crash.
+**Why:** React Native's default global error handler forwards fatal JS exceptions to `RCTExceptionsManager.reportFatal` → `RCTFatal` → process abort. The native crash trace only shows the RN reporting path, never the real JS error. App Review rejects apps that hard-crash on launch.
 
-**Decision:** the global handler now SWALLOWS uncaught JS errors (reports to
-Sentry, logs in dev) and never forwards to `defaultFatalHandler`.
+**How to apply:** Set `ErrorUtils.setGlobalHandler` once at module top level in `_layout.tsx`, after all other init blocks, so nothing can overwrite it. In dev, log to `console.error`. In prod, swallow silently (no forwarding).
 
-**Why:** a shipped app must degrade gracefully — App Review rejects launch
-crashes outright. A blank/degraded screen is debuggable; a SIGABRT on launch is
-not. Errors still reach Sentry with a full JS stack so the true root throw can be
-found once the app survives.
+## Why Sentry was removed
+`Sentry.wrap()` (previously used as the default export wrapper) re-installs Sentry's own global fatal-forwarding handler at runtime, overwriting the custom `setGlobalHandler` fix on every app launch. Additionally: Sentry added a cold-launch network round-trip (`captureMessage` ping), required a custom Podfix plugin to compile against Xcode 26, and produced zero useful crash reports across builds 12, 14, 18, and 19.
 
-**How to apply / caveats:**
-- This only covers errors routed through `ErrorUtils` AFTER the handler is
-  registered. It does NOT catch: native ObjC/SIGSEGV crashes, JS thrown during
-  module import before `_layout.tsx` runs, or direct native `reportException`.
-- Treat the swallow as a containment layer, not the final root-cause fix. To find
-  the real throw, confirm Sentry DSN is in the EAS build (separate from Replit
-  secrets — must be set in expo.dev EAS env vars) and read the captured event.
+## How to apply / caveats
+- This only covers errors routed through `ErrorUtils` AFTER the handler is registered. It does NOT catch: native ObjC/SIGSEGV crashes, JS thrown during module import before `_layout.tsx` runs, or direct native `reportException`.
 - `newArchEnabled: false` → old RCT bridge; this targets exactly that pipeline.
-- Sentry verification ping (`captureMessage("Bible Wake: app launched")`) lives in
-  `_layout.tsx`; remove it once Sentry delivery is confirmed in a real build.
+- Do not re-add any crash SDK that wraps the root component (e.g. `Sentry.wrap()`, `Bugsnag.start()`) — any SDK that installs its own global handler will undo this fix.

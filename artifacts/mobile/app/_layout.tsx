@@ -12,7 +12,6 @@ import * as SplashScreen from "expo-splash-screen";
 import Constants from "expo-constants";
 import React, { useEffect, useRef } from "react";
 import { AppState, AppStateStatus, Appearance, Platform, View } from "react-native";
-import * as Sentry from "@sentry/react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -28,21 +27,6 @@ import {
   SubscriptionProvider,
   useSubscription,
 } from "@/lib/revenuecat";
-
-// ── Sentry crash reporting ────────────────────────────────────────────────────
-// Must be initialized before any providers, hooks, or error handlers.
-if (Platform.OS !== "web") {
-  Sentry.init({
-    dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
-    environment: __DEV__ ? "development" : "production",
-    enableNativeNagger: false,
-  });
-
-  // Verification ping — remove once Sentry is confirmed working.
-  // Shows up in Sentry → your project → Issues (or the "Logs" tab).
-  // If you never see this event, the DSN is not in the build.
-  Sentry.captureMessage("Bible Wake: app launched", "info");
-}
 
 // ── Global notification handler ───────────────────────────────────────────────
 // Must be set before any notification fires. Controls foreground presentation.
@@ -64,33 +48,6 @@ if (Platform.OS !== "web") {
   registerBackgroundAlarmTask().catch(() => {});
 }
 
-// ── Global JS error handler ───────────────────────────────────────────────────
-// Catches any unhandled JS exception (including void-fired async rejections)
-// and reports them to Sentry WITHOUT crashing the process.
-if (Platform.OS !== "web" && typeof ErrorUtils !== "undefined") {
-  // Swallow ALL uncaught JS errors — including ones flagged fatal — so they
-  // never reach React Native's default fatal handler. The default handler
-  // calls RCTFatal, which aborts the process with SIGABRT: this is the exact
-  // crash seen on every TestFlight build. The native trace only ever shows
-  // the reporting path (RCTExceptionsManager → RCTFatal), never the real JS
-  // error, which is why per-file patches kept missing it.
-  //
-  // A shipped app must degrade gracefully, never hard-crash on launch (App
-  // Review rejects launch crashes outright). By NOT forwarding to the default
-  // handler the app stays alive; the error is still captured in Sentry with a
-  // full JS stack trace so the underlying cause can be diagnosed and fixed.
-  ErrorUtils.setGlobalHandler((error: Error, isFatal?: boolean) => {
-    if (__DEV__) {
-      console.error("[GlobalHandler]", isFatal ? "FATAL" : "non-fatal", error);
-    }
-    try {
-      Sentry.captureException(error, { level: isFatal ? "fatal" : "error" });
-    } catch {
-      // The global error handler must never throw — that would itself be fatal.
-    }
-  });
-}
-
 // Create (or verify) the max-importance Android notification channel that
 // enables USE_FULL_SCREEN_INTENT and lock-screen alarm overlays. No-ops on iOS/web.
 if (Platform.OS === "android") {
@@ -98,6 +55,27 @@ if (Platform.OS === "android") {
 }
 
 SplashScreen.preventAutoHideAsync();
+
+// ── Global JS error handler ───────────────────────────────────────────────────
+// Catches any unhandled JS exception (including void-fired async rejections)
+// and swallows them instead of forwarding to React Native's default fatal
+// handler. The default handler calls RCTFatal, which aborts the process with
+// SIGABRT — the crash seen on every TestFlight build. The native trace only
+// ever shows the reporting path (RCTExceptionsManager → RCTFatal), never the
+// real JS error.
+//
+// A shipped app must degrade gracefully, never hard-crash on launch (App
+// Review rejects launch crashes outright). By NOT forwarding to the default
+// handler the app stays alive.
+//
+// This is set last at module top level so nothing else can overwrite it.
+if (Platform.OS !== "web" && typeof ErrorUtils !== "undefined") {
+  ErrorUtils.setGlobalHandler((error: Error, isFatal?: boolean) => {
+    if (__DEV__) {
+      console.error("[GlobalHandler]", isFatal ? "FATAL" : "non-fatal", error);
+    }
+  });
+}
 
 const queryClient = new QueryClient();
 
@@ -306,4 +284,4 @@ function RootLayout() {
   );
 }
 
-export default Platform.OS !== "web" ? Sentry.wrap(RootLayout) : RootLayout;
+export default RootLayout;
