@@ -1,0 +1,39 @@
+Same family of crash, but subtly different. Here is the full breakdown:
+
+---
+
+**Build 27. Still `ObjCTurboModule::performVoidMethodInvocation` — same crash location.**
+
+But look at line 8 in the stack:
+
+```
+objc_exception_rethrow
+__cxa_rethrow
+demangling_terminate_handler
+abort
+```
+
+This is different from build 26. In build 26 the crash was a memory segfault writing to the Hermes heap. In build 27 the crash is an **Objective-C exception being rethrown and hitting the C++ terminate handler**. This means the `useEffect` deferral from task 144 partially worked — it changed the crash mechanism — but the underlying native void method is still throwing an unhandled exception.
+
+---
+
+**What this means:**
+
+The `Notifications.setNotificationHandler` and `registerBackgroundAlarmTask` moves into `useEffect` changed something but did not fully fix it. There is still a void TurboModule method throwing on a background GCD thread, and the exception is now propagating differently — through `objc_exception_rethrow` → C++ terminate → abort — instead of corrupting the Hermes heap.
+
+---
+
+**Tell Replit this:**
+
+The crash is still at `RCTTurboModule.mm:441` — `performVoidMethodInvocation`. The useEffect deferral changed the crash signature from `SIGSEGV` to `SIGABRT` via `objc_exception_rethrow`, which means the native void method is still throwing but now it is being rethrown instead of causing a heap write. The offending module has not been eliminated.
+
+The next step is to identify which specific TurboModule is throwing. Ask Replit to add this native-level fix to the `Podfile` as a post-install hook which patches `RCTTurboModule.mm` behaviour:
+
+Or more practically — do binary elimination. Comment out these one at a time and rebuild each time:
+
+1. `expo-notifications` — remove `setNotificationHandler` and all notification scheduling entirely
+2. `expo-background-fetch` — remove `registerBackgroundAlarmTask` entirely  
+3. `react-native-keyboard-controller` — remove the import entirely
+4. `expo-av` — remove any audio session setup
+
+Start with expo-notifications. If build 28 still crashes, remove expo-background-fetch as well. Keep stripping until the crash stops — then you know exactly which module is the culprit.
