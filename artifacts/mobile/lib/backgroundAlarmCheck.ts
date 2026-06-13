@@ -56,7 +56,16 @@ TaskManager.defineTask(BACKGROUND_ALARM_TASK, async () => {
   }
 });
 
-/** Register the background alarm check task. Safe to call multiple times. */
+/**
+ * Register the background alarm check task. Safe to call multiple times.
+ *
+ * The outer synchronous try-catch guards against any native void-method throw
+ * that occurs before the first `await` (i.e. before the async state machine
+ * hands control back to the caller). Under New Architecture on iOS 26, such a
+ * throw on a background GCD thread would otherwise cause a SIGSEGV via
+ * convertNSExceptionToJSError. The inner try-catch is the existing best-effort
+ * guard around the await chain.
+ */
 export async function registerBackgroundAlarmTask(): Promise<void> {
   if (Platform.OS === "web") return;
   try {
@@ -71,11 +80,16 @@ export async function registerBackgroundAlarmTask(): Promise<void> {
       BACKGROUND_ALARM_TASK
     );
     if (!isRegistered) {
-      await BackgroundFetch.registerTaskAsync(BACKGROUND_ALARM_TASK, {
-        minimumInterval: 60 * 60,
-        stopOnTerminate: false,
-        startOnBoot: true,
-      });
+      try {
+        await BackgroundFetch.registerTaskAsync(BACKGROUND_ALARM_TASK, {
+          minimumInterval: 60 * 60,
+          stopOnTerminate: false,
+          startOnBoot: true,
+        });
+      } catch {
+        // registerTaskAsync is a void native method — swallow any throw so a
+        // background-GCD exception cannot propagate to the New Arch crash path.
+      }
     }
   } catch {
     // Background fetch is best-effort; silently degrade

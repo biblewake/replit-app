@@ -28,33 +28,18 @@ import {
   useSubscription,
 } from "@/lib/revenuecat";
 
-// ── Global notification handler ───────────────────────────────────────────────
-// Must be set before any notification fires. Controls foreground presentation.
-if (Platform.OS !== "web") {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }),
-  });
-}
+// ── Module-level: only TaskManager.defineTask calls are safe here ─────────────
+// All other native void-method calls are deferred to useEffect in RootLayout.
+// Under New Architecture, a void TurboModule method that throws on a background
+// GCD thread causes a SIGSEGV because convertNSExceptionToJSError tries to write
+// into the Hermes heap off the JS thread. Deferring to useEffect ensures the
+// React runtime is fully up before any native calls are made.
 
-// Register the background alarm check task at module load time so the task
-// definition is present before any JS suspension (required by TaskManager).
-if (Platform.OS !== "web") {
-  registerBackgroundAlarmTask().catch(() => {});
+try {
+  SplashScreen.preventAutoHideAsync();
+} catch {
+  // Swallow — SplashScreen is best-effort; app must not crash if it fails
 }
-
-// Create (or verify) the max-importance Android notification channel that
-// enables USE_FULL_SCREEN_INTENT and lock-screen alarm overlays. No-ops on iOS/web.
-if (Platform.OS === "android") {
-  ensureAndroidAlarmChannel().catch(() => {});
-}
-
-SplashScreen.preventAutoHideAsync();
 
 // ── Global JS error handler ───────────────────────────────────────────────────
 // Catches any unhandled JS exception (including void-fired async rejections)
@@ -249,6 +234,48 @@ function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
+
+  // ── Deferred native initialization ────────────────────────────────────────
+  // These calls use void TurboModule methods. Under New Architecture, a void
+  // TurboModule method that throws on a background GCD thread causes SIGSEGV
+  // (Hermes heap write off the JS thread). Running them inside useEffect
+  // ensures the React/Hermes runtime is fully up before any native calls fire.
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+
+    // Configure foreground notification presentation.
+    try {
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldShowBanner: true,
+          shouldShowList: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+        }),
+      });
+    } catch {
+      // Swallow — if the native layer throws, we degrade gracefully
+    }
+
+    // Register the background alarm task. Extra synchronous try-catch in
+    // addition to the internal one in registerBackgroundAlarmTask so that
+    // any synchronous native throw before a Promise is returned is contained.
+    try {
+      registerBackgroundAlarmTask().catch(() => {});
+    } catch {
+      // Swallow — background fetch is best-effort
+    }
+
+    // Create the max-importance Android notification channel.
+    if (Platform.OS === "android") {
+      try {
+        ensureAndroidAlarmChannel().catch(() => {});
+      } catch {
+        // Swallow — best-effort
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (Platform.OS !== "web") {
