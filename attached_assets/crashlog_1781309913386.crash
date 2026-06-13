@@ -1,0 +1,181 @@
+Incident Identifier: 6F6E8CD7-E0BD-4132-9B48-36D16638CCD3
+Distributor ID:      com.apple.TestFlight
+Hardware Model:      iPhone15,4
+Process:             BibleWake [9744]
+Path:                /private/var/containers/Bundle/Application/8941BD2E-A27C-4005-9BC7-77581C4C63A6/BibleWake.app/BibleWake
+Identifier:          com.tinochiwara.biblewake
+Version:             1.0.0 (26)
+AppStoreTools:       17F41
+AppVariant:          1:iPhone15,4:26
+Beta:                YES
+Code Type:           ARM-64 (Native)
+Role:                Foreground
+Parent Process:      launchd [1]
+Coalition:           com.tinochiwara.biblewake [9363]
+
+Date/Time:           2026-06-12 18:13:32.7254 -0500
+Launch Time:         2026-06-12 18:13:32.2847 -0500
+OS Version:          iPhone OS 26.4.2 (23E261)
+Release Type:        User
+Baseband Version:    3.50.07
+Report Version:      104
+
+Exception Type:  EXC_BAD_ACCESS (SIGSEGV)
+Exception Subtype: KERN_INVALID_ADDRESS at 0x0000000100000000
+Exception Codes: 0x0000000000000001, 0x0000000100000000
+VM Region Info: 0x100000000 is not in any region.  Bytes before following region: 79757312
+      REGION TYPE                 START - END      [ VSIZE] PRT/MAX SHRMOD  REGION DETAIL
+      UNUSED SPACE AT START
+--->  
+      __TEXT                   104c10000-104c14000 [   16K] r-x/r-x SM=COW  /var/containers/Bundle/Application/8941BD2E-A27C-4005-9BC7-77581C4C63A6/BibleWake.app/BibleWake
+Termination Reason: SIGNAL 11 Segmentation fault: 11
+Terminating Process: exc handler [9744]
+
+Triggered by Thread:  1
+
+
+Thread 0 name:
+Thread 0:
+0   libsystem_kernel.dylib        	0x000000024ea44cd4 mach_msg2_trap + 8 (:-1)
+1   libsystem_kernel.dylib        	0x000000024ea4830c mach_msg2_internal + 76 (mach_msg.c:201)
+2   libsystem_kernel.dylib        	0x000000024ea4822c mach_msg_overwrite + 424 (mach_msg.c:0)
+3   libsystem_kernel.dylib        	0x000000024ea48078 mach_msg + 24 (mach_msg.c:323)
+4   CoreFoundation                	0x000000019ffcbea4 __CFRunLoopServiceMachPort + 160 (CFRunLoop.c:2650)
+5   CoreFoundation                	0x000000019ff95f94 __CFRunLoopRun + 1188 (CFRunLoop.c:3035)
+6   CoreFoundation                	0x000000019ff951d0 _CFRunLoopRunSpecificWithOptions + 532 (CFRunLoop.c:3462)
+7   GraphicsServices              	0x00000002454cf498 GSEventRunModal + 120 (GSEvent.c:2049)
+8   UIKitCore                     	0x00000001a5c592c4 -[UIApplication _run] + 796 (UIApplication.m:3904)
+9   UIKitCore                     	0x00000001a5bc4158 UIApplicationMain + 332 (UIApplication.m:5586)
+10  BibleWake                     	0x0000000104c15620 main + 64 (AppDelegate.swift:6)
+11  dyld                          	0x000000019cba9c1c start + 6928 (:-1)
+
+Thread 1 name:
+Thread 1 Crashed:
+0   hermes                        	0x0000000105fd49c4 hermes::vm::PinnedHermesValue::PinnedHermesValue(hermes::vm::HermesValue) + 4 (HermesValue.h:594)
+1   hermes                        	0x0000000105fd49c4 hermes::vm::PinnedHermesValue::PinnedHermesValue(hermes::vm::HermesValue) + 4 (HermesValue.h:594)
+2   hermes                        	0x0000000105fd49c4 hermes::vm::GCScope::newPinnedHermesValue(hermes::vm::HermesValue) + 16 (HandleRootOwner.h:459)
+3   hermes                        	0x0000000105fd49c4 hermes::vm::HandleRootOwner::newPinnedHermesValue(hermes::vm::GCScope*, hermes::vm::HermesValue) + 16 (HandleRootOwner-inline.h:97)
+4   hermes                        	0x0000000105fd49c4 hermes::vm::HandleRootOwner::newPinnedHermesValue(hermes::vm::HermesValue) + 20 (HandleRootOwner-inline.h:103)
+5   hermes                        	0x0000000105fd49c4 hermes::vm::HandleBase::HandleBase(hermes::vm::HandleRootOwner&, hermes::vm::HermesValue) + 20 (Handle-inline.h:37)
+6   hermes                        	0x0000000105fd49c4 hermes::vm::Handle<hermes::vm::SymbolID>::Handle(hermes::vm::HandleRootOwner&, hermes::vm::SymbolID) + 20 (Handle.h:317)
+7   hermes                        	0x0000000105fd49c4 hermes::vm::Handle<hermes::vm::SymbolID>::Handle(hermes::vm::HandleRootOwner&, hermes::vm::SymbolID) + 20 (Handle.h:317)
+8   hermes                        	0x0000000105fd49c4 hermes::vm::HandleRootOwner::makeHandle(hermes::vm::SymbolID) + 20 (HandleRootOwner-inline.h:32)
+9   hermes                        	0x0000000105fd49c4 hermes::vm::IdentifierTable::getSymbolHandleFromPrimitive(hermes::vm::Runtime&, hermes::vm::PseudoHandle<hermes::vm::StringPrimitive>) + 244 (IdentifierTable.cpp:0)
+10  hermes                        	0x0000000105fe70f8 hermes::vm::(anonymous namespace)::getOwnComputedPrimitiveDescriptorImpl(hermes::vm::Handle<hermes::vm::JSObject>, hermes::vm::Runtime&, hermes::vm::Handle<hermes::vm::HermesValue>, hermes::vm::JSO... + 52 (JSObject.cpp:745)
+11  hermes                        	0x0000000105fe70f8 hermes::vm::JSObject::getComputedPrimitiveDescriptor(hermes::vm::Handle<hermes::vm::JSObject>, hermes::vm::Runtime&, hermes::vm::Handle<hermes::vm::HermesValue>, hermes::vm::MutableHandle<hermes::v... + 148 (JSObject.cpp:986)
+12  hermes                        	0x0000000105fe92f8 hermes::vm::JSObject::putComputedWithReceiver_RJS(hermes::vm::Handle<hermes::vm::JSObject>, hermes::vm::Runtime&, hermes::vm::Handle<hermes::vm::HermesValue>, hermes::vm::Handle<hermes::vm::HermesV... + 348 (JSObject.cpp:1593)
+13  hermes                        	0x0000000105fae5b8 hermes::vm::JSObject::putComputed_RJS(hermes::vm::Handle<hermes::vm::JSObject>, hermes::vm::Runtime&, hermes::vm::Handle<hermes::vm::HermesValue>, hermes::vm::Handle<hermes::vm::HermesValue>, herme... + 16 (JSObject.h:1959)
+14  hermes                        	0x0000000105fae5b8 facebook::hermes::(anonymous namespace)::HermesRuntimeImpl::setPropertyValue(facebook::jsi::Object const&, facebook::jsi::String const&, facebook::jsi::Value const&) + 176 (hermes.cpp:2282)
+15  React                         	0x00000001064e33f0 <deduplicated_symbol> + 116
+16  React                         	0x00000001064df9f4 <deduplicated_symbol> + 92 (:-1)
+17  React                         	0x00000001067c2b0c facebook::react::TurboModuleConvertUtils::convertNSExceptionToJSError(facebook::jsi::Runtime&, NSException*, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> con... + 216 (RCTTurboModule.mm:221)
+18  React                         	0x00000001067c35a4 invocation function for block in facebook::react::ObjCTurboModule::performVoidMethodInvocation(facebook::jsi::Runtime&, char const*, NSInvocation*, NSMutableArray*) + 328 (RCTTurboModule.mm:438)
+19  React                         	0x00000001067c84a8 facebook::react::ObjCTurboModule::performVoidMethodInvocation(facebook::jsi::Runtime&, char const*, NSInvocation*, NSMutableArray*)::$_1::operator()() const + 64 (RCTTurboModule.mm:460)
+20  React                         	0x00000001067c84a8 decltype(std::declval<facebook::react::ObjCTurboModule::performVoidMethodInvocation(facebook::jsi::Runtime&, char const*, NSInvocation*, NSMutableArray*)::$_1&>()()) std::__1::__invoke[abi:ne180100... + 64 (invoke.h:344)
+21  React                         	0x00000001067c84a8 void std::__1::__invoke_void_return_wrapper<void, true>::__call[abi:ne180100]<facebook::react::ObjCTurboModule::performVoidMethodInvocation(facebook::jsi::Runtime&, char const*, NSInvocation*, NSMu... + 64 (invoke.h:419)
+22  React                         	0x00000001067c84a8 std::__1::__function::__alloc_func<facebook::react::ObjCTurboModule::performVoidMethodInvocation(facebook::jsi::Runtime&, char const*, NSInvocation*, NSMutableArray*)::$_1, std::__1::allocator<face... + 64 (function.h:169)
+23  React                         	0x00000001067c84a8 std::__1::__function::__func<facebook::react::ObjCTurboModule::performVoidMethodInvocation(facebook::jsi::Runtime&, char const*, NSInvocation*, NSMutableArray*)::$_1, std::__1::allocator<facebook::... + 88 (function.h:311)
+24  libdispatch.dylib             	0x00000001da1b09a8 _dispatch_call_block_and_release + 32 (init.c:1597)
+25  libdispatch.dylib             	0x00000001da1ca1e4 _dispatch_client_callout + 16 (client_callout.mm:85)
+26  libdispatch.dylib             	0x00000001da1b8fb0 _dispatch_lane_serial_drain + 740 (queue.c:4033)
+27  libdispatch.dylib             	0x00000001da1b9aac _dispatch_lane_invoke + 392 (queue.c:4124)
+28  libdispatch.dylib             	0x00000001da1c3dac _dispatch_root_queue_drain_deferred_wlh + 284 (queue.c:7329)
+29  libdispatch.dylib             	0x00000001da1c36ac _dispatch_workloop_worker_thread + 720 (queue.c:6923)
+30  libsystem_pthread.dylib       	0x00000001fedb03b0 _pthread_wqthread + 292 (pthread.c:2696)
+31  libsystem_pthread.dylib       	0x00000001fedaf8c0 start_wqthread + 8 (:-1)
+
+Thread 2:
+
+Thread 3:
+
+Thread 4:
+
+Thread 5:
+
+Thread 6:
+
+Thread 7:
+
+Thread 8 name:
+Thread 8:
+0   libsystem_kernel.dylib        	0x000000024ea44cd4 mach_msg2_trap + 8 (:-1)
+1   libsystem_kernel.dylib        	0x000000024ea4830c mach_msg2_internal + 76 (mach_msg.c:201)
+2   libsystem_kernel.dylib        	0x000000024ea4822c mach_msg_overwrite + 424 (mach_msg.c:0)
+3   libsystem_kernel.dylib        	0x000000024ea48078 mach_msg + 24 (mach_msg.c:323)
+4   CoreFoundation                	0x000000019ffcbea4 __CFRunLoopServiceMachPort + 160 (CFRunLoop.c:2650)
+5   CoreFoundation                	0x000000019ff95f94 __CFRunLoopRun + 1188 (CFRunLoop.c:3035)
+6   CoreFoundation                	0x000000019ff951d0 _CFRunLoopRunSpecificWithOptions + 532 (CFRunLoop.c:3462)
+7   Foundation                    	0x000000019d208cf0 -[NSRunLoop(NSRunLoop) runMode:beforeDate:] + 212 (NSRunLoop.m:375)
+8   Foundation                    	0x000000019d208bd8 -[NSRunLoop(NSRunLoop) runUntilDate:] + 64 (NSRunLoop.m:422)
+9   UIKitCore                     	0x00000001a5c1eafc -[UIEventFetcher threadMain] + 420 (UIEventFetcher.m:1333)
+10  Foundation                    	0x000000019d28c804 __NSThread__start__ + 732 (NSThread.m:1004)
+11  libsystem_pthread.dylib       	0x00000001fedb3438 _pthread_start + 136 (pthread.c:931)
+12  libsystem_pthread.dylib       	0x00000001fedaf8cc thread_start + 8 (:-1)
+
+Thread 9:
+
+Thread 10:
+
+Thread 11:
+
+Thread 12:
+
+Thread 13:
+
+Thread 14 name:
+Thread 14:
+0   libsystem_kernel.dylib        	0x000000024ea4a5e8 __psynch_cvwait + 8 (:-1)
+1   libsystem_pthread.dylib       	0x00000001fedb1b48 _pthread_cond_wait + 980 (pthread_cond.c:862)
+2   libc++.1.dylib                	0x00000001af65abcc std::__1::condition_variable::wait(std::__1::unique_lock<std::__1::mutex>&) + 32 (condition_variable.cpp:36)
+3   hermes                        	0x00000001060739c4 void std::__1::condition_variable::wait<hermes::vm::HadesGC::Executor::worker()::'lambda'()>(std::__1::unique_lock<std::__1::mutex>&, hermes::vm::HadesGC::Executor::worker()::'lambda'()) + 28 (condition_variable.h:146)
+4   hermes                        	0x00000001060739c4 hermes::vm::HadesGC::Executor::worker() + 116 (HadesGC.cpp:1062)
+5   hermes                        	0x000000010607392c hermes::vm::HadesGC::Executor::Executor()::'lambda'()::operator()() const + 4 (HadesGC.cpp:1033)
+6   hermes                        	0x000000010607392c decltype(std::declval<hermes::vm::HadesGC::Executor::Executor()::'lambda'()>()()) std::__1::__invoke[abi:nn180100]<hermes::vm::HadesGC::Executor::Executor()::'lambda'()>(hermes::vm::HadesGC::Execut... + 4 (invoke.h:344)
+7   hermes                        	0x000000010607392c void std::__1::__thread_execute[abi:nn180100]<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, hermes::vm::HadesGC::Executor::Executor()::'lambd... + 4 (thread.h:199)
+8   hermes                        	0x000000010607392c void* std::__1::__thread_proxy[abi:nn180100]<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, hermes::vm::HadesGC::Executor::Exe... + 44 (thread.h:208)
+9   libsystem_pthread.dylib       	0x00000001fedb3438 _pthread_start + 136 (pthread.c:931)
+10  libsystem_pthread.dylib       	0x00000001fedaf8cc thread_start + 8 (:-1)
+
+Thread 15 name:
+Thread 15:
+0   libsystem_kernel.dylib        	0x000000024ea44c68 semaphore_timedwait_trap + 8 (:-1)
+1   libdispatch.dylib             	0x00000001da1e57d8 _dispatch_sema4_timedwait + 64 (lock.c:154)
+2   libdispatch.dylib             	0x00000001da1b2a68 _dispatch_semaphore_wait_slow + 76 (semaphore.c:116)
+3   libdispatch.dylib             	0x00000001da1c26fc _dispatch_worker_thread + 324 (queue.c:7663)
+4   libsystem_pthread.dylib       	0x00000001fedb3438 _pthread_start + 136 (pthread.c:931)
+5   libsystem_pthread.dylib       	0x00000001fedaf8cc thread_start + 8 (:-1)
+
+
+Thread 1 crashed with ARM Thread State (64-bit):
+    x0: 0x0000000100000000   x1: 0xfffb80000000008d   x2: 0xffffffffffffffff   x3: 0x0000000000000000
+    x4: 0x0000000000000065   x5: 0x0000000000000065   x6: 0x000000016b276568   x7: 0xfffff0003ffff800
+    x8: 0x000000016b276568   x9: 0x0000000100000000  x10: 0x000000010ba53000  x11: 0xffffffffffffffff
+   x12: 0x0000000000000000  x13: 0x000000010e55aab4  x14: 0x010000020a10f461  x15: 0x000000020a10f460
+   x16: 0x00000002c049ef30  x17: 0x000000019ff77a9c  x18: 0x0000000000000000  x19: 0x000000010baa0000
+   x20: 0x000000010baa4430  x21: 0x000000016b276578  x22: 0x000000010bac1ab8  x23: 0x000000010baa0000
+   x24: 0x000000001fffffff  x25: 0x000000016b276568  x26: 0x0000000000000000  x27: 0x0000000000000000
+   x28: 0x000000016b276558   fp: 0x000000016b2763e0   lr: 0x0000000105fd4948
+    sp: 0x000000016b2763c0   pc: 0x0000000105fd49c4 cpsr: 0x80001000
+   esr: 0x92000046 (Data Abort) byte write Translation fault
+
+
+Binary Images:
+        0x104c10000 -         0x1052cbfff BibleWake arm64  <10dff7e49f6d3e619433b022519cc2cd> /private/var/containers/Bundle/Application/8941BD2E-A27C-4005-9BC7-77581C4C63A6/BibleWake.app/BibleWake
+        0x10554c000 -         0x105557fff libobjc-trampolines.dylib arm64e  <e51a481b92f532ba9e8bfcecda3b8431> /private/preboot/Cryptexes/OS/usr/lib/libobjc-trampolines.dylib
+        0x1059ac000 -         0x105a33fff ReactNativeDependencies arm64  <b35f1182b82e33728a74a4fe502c0906> /private/var/containers/Bundle/Application/8941BD2E-A27C-4005-9BC7-77581C4C63A6/BibleWake.app/Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies
+        0x105fa4000 -         0x1061a7fff hermes arm64  <80d5528f2c783b90b90f747e89a9f880> /private/var/containers/Bundle/Application/8941BD2E-A27C-4005-9BC7-77581C4C63A6/BibleWake.app/Frameworks/hermes.framework/hermes
+        0x1064b8000 -         0x1068f3fff React arm64  <76fbcee9351730b39dc662c4e914e908> /private/var/containers/Bundle/Application/8941BD2E-A27C-4005-9BC7-77581C4C63A6/BibleWake.app/Frameworks/React.framework/React
+        0x19cba5000 -         0x19cc49ebf dyld arm64e  <80dd1800f68d354f81068cb5ea621aca> /usr/lib/dyld
+        0x19d1fe000 -         0x19e08645f Foundation arm64e  <66bf417c1d003457a302196bbaec23d0> /System/Library/Frameworks/Foundation.framework/Foundation
+        0x19ff67000 -         0x1a05030ff CoreFoundation arm64e  <11f13078e01b343ba0208d60bae7bbb6> /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation
+        0x1a5b38000 -         0x1a80773bf UIKitCore arm64e  <32c1b300a6013e148b533419a2d2f234> /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore
+        0x1af64e000 -         0x1af6dea7b libc++.1.dylib arm64e  <c3f6d9de52273c4cbec3bd43bfb08435> /usr/lib/libc++.1.dylib
+        0x1cfd02000 -         0x1cffb26bf MediaExperience arm64e  <023c73aa4a3a365293d76c150e518b24> /System/Library/PrivateFrameworks/MediaExperience.framework/MediaExperience
+        0x1da1af000 -         0x1da1f55ff libdispatch.dylib arm64e  <5fcac52f01e93bf08aac42c442c53560> /usr/lib/system/libdispatch.dylib
+        0x1fedaf000 -         0x1fedbb4ef libsystem_pthread.dylib arm64e  <6c9bcde9819d345d9d71b60ad47e5159> /usr/lib/system/libsystem_pthread.dylib
+        0x1ff67e000 -         0x20098c1df MetalPerformanceShadersGraph arm64e  <36a253b30d613f2692e523686a9b9ed0> /System/Library/Frameworks/MetalPerformanceShadersGraph.framework/MetalPerformanceShadersGraph
+        0x2454ce000 -         0x2454d67bf GraphicsServices arm64e  <4e01d837d3923b40abd3ff5755b93327> /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices
+        0x24ea44000 -         0x24ea7fac7 libsystem_kernel.dylib arm64e  <5f4e68e1021c3a8fa6f62c4c077d0676> /usr/lib/system/libsystem_kernel.dylib
+        0x2c049e000 -         0x2c04a63a3 libsystem_platform.dylib arm64e  <56427ac9a3b83c26b7ab941348e1faea> /usr/lib/system/libsystem_platform.dylib
+
+EOF

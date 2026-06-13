@@ -1,0 +1,48 @@
+Different crash this time — and the stack trace tells us exactly what is happening.
+
+---
+
+**What changed:**
+No more `SIGABRT` from `RCTFatal`. This is now `EXC_BAD_ACCESS (SIGSEGV)` — a memory access violation. Different crash, different cause. Progress.
+
+---
+
+**The exact crash chain:**
+```
+ObjCTurboModule::performVoidMethodInvocation (RCTTurboModule.mm:438)
+convertNSExceptionToJSError (RCTTurboModule.mm:221)
+JSObject::putComputedWithReceiver_RJS
+PinnedHermesValue::PinnedHermesValue (HermesValue.h:594)
+```
+
+A TurboModule void method is throwing an NSException, React Native is trying to convert it into a JS error and write it into the Hermes heap from a background GCD thread, and that write is crashing because it is accessing invalid memory.
+
+**This is Root Cause B from Replit's own diagnosis in task #142.** The exact same crash pattern they described — `void native method → NSException → convertNSExceptionToJSError → Hermes heap corruption on background thread`.
+
+---
+
+**The problem:** RevenueCat was removed but something else has the exact same crash pattern. There is still a native module with a void method that is throwing an NSException on a background thread.
+
+---
+
+**Tell Replit this:**
+
+RevenueCat is gone but the Root Cause B crash is still happening. Line 438 of `RCTTurboModule.mm` is `performVoidMethodInvocation` — a native module with a void return type is throwing on a background thread and corrupting the Hermes heap.
+
+Run this to find every remaining native module that could be doing this:
+
+```bash
+grep -rn "void\|RCTEventEmitter\|NativeModule" \
+  artifacts/mobile/app/_layout.tsx \
+  artifacts/mobile/app/index.tsx \
+  artifacts/mobile/lib/
+```
+
+The most likely remaining suspects in order are:
+
+1. **expo-notifications** — scheduling or permission calls on startup that throw on a background thread
+2. **expo-av** — audio session initialisation throwing before the session is configured
+3. **react-native-keyboard-controller** — known to have void method issues on New Architecture
+4. **expo-background-fetch** — task registration throwing on startup
+
+Ask Replit to temporarily comment out the initialisation of each one of these, one at a time, starting with expo-notifications, rebuild each time, until the crash stops.
