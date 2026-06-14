@@ -91,7 +91,7 @@ function GestureWrapper({ children }: { children: React.ReactNode }) {
 
 
 function RootLayoutNav() {
-  const { onboardingComplete } = useAuth();
+  const { onboardingComplete, isAnonymous } = useAuth();
   const { isSubscribed, isLoading: subscriptionLoading } = useSubscription();
   const segments = useSegments();
   const router = useRouter();
@@ -114,6 +114,14 @@ function RootLayoutNav() {
       return;
     }
 
+    // Onboarding complete — block anonymous (guest) users from the main app.
+    // Anonymous Supabase sessions and the in-memory guest flag both count here.
+    // Redirect to onboarding so the user can sign in with Google or Apple.
+    if (isAnonymous) {
+      if (!inOnboarding) router.replace("/onboarding");
+      return;
+    }
+
     // Onboarding complete — check subscription status.
     // Wait for the subscription query to finish loading before deciding.
     if (subscriptionLoading) return;
@@ -127,7 +135,7 @@ function RootLayoutNav() {
     if (inOnboarding || inPaywall) {
       router.replace("/(tabs)");
     }
-  }, [onboardingComplete, isSubscribed, subscriptionLoading, segments, router]);
+  }, [onboardingComplete, isAnonymous, isSubscribed, subscriptionLoading, segments, router]);
 
   // ── iOS: reschedule alarms on every foreground transition ────────────────
   // iOS cancels all local notifications on device reboot and has no

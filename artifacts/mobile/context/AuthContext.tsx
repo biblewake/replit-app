@@ -53,6 +53,13 @@ interface AuthContextType {
    * session instead, so this flag stays false.
    */
   isGuest: boolean;
+  /**
+   * True when the current session is anonymous — either a Supabase anonymous
+   * session (`user.is_anonymous === true`) or the in-memory guest flag set when
+   * Supabase is not configured. Properly signed-in Google/Apple users are never
+   * considered anonymous.
+   */
+  isAnonymous: boolean;
   /** Mark onboarding done — persists the flag and flips the gate. */
   completeOnboarding: () => Promise<void>;
   /** Update a subset of the user's profile (persists to Supabase and updates local state). */
@@ -70,6 +77,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   onboardingComplete: null,
   isGuest: false,
+  isAnonymous: false,
   completeOnboarding: async () => {},
   updateProfile: async () => {},
   signInWithGoogle: async () => {},
@@ -412,6 +420,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(null);
   }, []);
 
+  const isAnonymous = isGuest || (user?.is_anonymous === true);
+
   return (
     <AuthContext.Provider
       value={{
@@ -420,6 +430,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         profile,
         isLoading,
         isGuest,
+        isAnonymous,
         onboardingComplete,
         completeOnboarding,
         updateProfile,
