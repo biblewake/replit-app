@@ -24,8 +24,8 @@ const CONFIG: Record<PermissionKind, PermissionConfig> = {
   },
   alarm: {
     image: require("../../assets/images/alarm-clock.png"),
-    title: "Ring even on silent",
-    body: "Bible Wake uses iOS's system alarm so it wakes you even on silent and through Sleep and Focus modes.",
+    title: "Wake up on time, every time",
+    body: "Breaks through Sleep and Focus modes so your morning Scripture alarm always reaches you.",
     cta: "Allow alarm sounds",
   },
   camera: {
@@ -61,7 +61,6 @@ export function PermissionScreen({
             allowAlert: true,
             allowBadge: true,
             allowSound: true,
-            allowCriticalAlerts: kind === "alarm",
           },
         });
       } else if (kind === "camera") {
