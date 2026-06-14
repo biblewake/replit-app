@@ -262,14 +262,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * GOOGLE SIGN-IN
+   * GOOGLE SIGN-IN — uses PKCE flow via Supabase OAuth.
    *
-   * Before this works:
-   *   1. Supabase Dashboard → Auth → Providers → Google → Enable
-   *   2. Paste your Google OAuth Client ID and Secret
-   *      (Get from console.cloud.google.com → APIs & Services → Credentials)
-   *   3. Add your app's redirect URI to the Google OAuth client's authorized redirect URIs:
-   *      https://<your-supabase-project>.supabase.co/auth/v1/callback
+   * After the browser redirect, the OS delivers a biblewake:// deep link
+   * containing ?code=… which _layout.tsx exchanges for a session via
+   * supabase.auth.exchangeCodeForSession(url).
+   *
+   * ── External configuration required (cannot be done in code) ────────────────
+   *   1. Supabase Dashboard → Auth → URL Configuration → Redirect URLs
+   *      → add:  biblewake://
+   *   2. Google Cloud Console → APIs & Services → Credentials
+   *      → OAuth 2.0 client → Authorized redirect URIs
+   *      → add:  https://<your-supabase-project>.supabase.co/auth/v1/callback
+   *   3. Supabase Dashboard → Auth → Providers → Google → Enable
+   *      → paste the Client ID and Secret from step 2
+   * ────────────────────────────────────────────────────────────────────────────
    */
   const signInWithGoogle = useCallback(async () => {
     try {
@@ -284,7 +291,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         );
         return;
       }
-      const redirectTo = makeRedirectUri!({ scheme: "mobile" });
+      const redirectTo = makeRedirectUri!({ scheme: "biblewake" });
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -297,24 +304,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
       if (!data.url) throw new Error("No OAuth URL returned");
 
-      const result = await WebBrowser.openAuthSessionAsync(
-        data.url,
-        redirectTo
-      );
-
-      if (result.type === "success" && result.url) {
-        // Try query params first, then fragment (#access_token=...)
-        const fragment = result.url.split("#")[1] ?? "";
-        const params = new URLSearchParams(fragment);
-        const at = params.get("access_token");
-        const rt = params.get("refresh_token");
-        if (at && rt) {
-          await supabase.auth.setSession({
-            access_token: at,
-            refresh_token: rt,
-          });
-        }
-      }
+      // Open the OAuth page. On success the OS delivers a biblewake:// deep
+      // link with ?code=… which _layout.tsx handles via exchangeCodeForSession.
+      await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
     } catch (error) {
       console.error("[BibleWake] Google sign-in error:", error);
       Alert.alert(
@@ -325,13 +317,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * APPLE SIGN-IN
+   * APPLE SIGN-IN — uses PKCE flow via Supabase OAuth.
    *
-   * Before this works:
-   *   1. Supabase Dashboard → Auth → Providers → Apple → Enable
-   *   2. Paste your Apple Service ID and Private Key
-   *      (Get from developer.apple.com → Certificates, IDs & Profiles)
-   *   3. Register your app's redirect URI with Apple
+   * After the browser redirect, the OS delivers a biblewake:// deep link
+   * containing ?code=… which _layout.tsx exchanges for a session via
+   * supabase.auth.exchangeCodeForSession(url).
+   *
+   * ── External configuration required (cannot be done in code) ────────────────
+   *   1. Supabase Dashboard → Auth → URL Configuration → Redirect URLs
+   *      → add:  biblewake://
+   *   2. Apple Developer → Certificates, IDs & Profiles → Service IDs
+   *      → Return URLs → add:
+   *        https://<your-supabase-project>.supabase.co/auth/v1/callback
+   *   3. Supabase Dashboard → Auth → Providers → Apple → Enable
+   *      → paste the Service ID and Private Key from step 2
+   * ────────────────────────────────────────────────────────────────────────────
    */
   const signInWithApple = useCallback(async () => {
     try {
@@ -346,7 +346,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         );
         return;
       }
-      const redirectTo = makeRedirectUri!({ scheme: "mobile" });
+      const redirectTo = makeRedirectUri!({ scheme: "biblewake" });
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "apple",
@@ -359,23 +359,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
       if (!data.url) throw new Error("No OAuth URL returned");
 
-      const result = await WebBrowser.openAuthSessionAsync(
-        data.url,
-        redirectTo
-      );
-
-      if (result.type === "success" && result.url) {
-        const fragment = result.url.split("#")[1] ?? "";
-        const params = new URLSearchParams(fragment);
-        const at = params.get("access_token");
-        const rt = params.get("refresh_token");
-        if (at && rt) {
-          await supabase.auth.setSession({
-            access_token: at,
-            refresh_token: rt,
-          });
-        }
-      }
+      // Open the OAuth page. On success the OS delivers a biblewake:// deep
+      // link with ?code=… which _layout.tsx handles via exchangeCodeForSession.
+      await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
     } catch (error) {
       console.error("[BibleWake] Apple sign-in error:", error);
       Alert.alert(

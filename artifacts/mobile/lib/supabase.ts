@@ -127,6 +127,7 @@ export const supabase: SupabaseClient = isSupabaseConfigured
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: false,
+        flowType: "pkce",
       },
     })
   : // ── Stub client ── returned when secrets are not configured.
