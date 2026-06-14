@@ -1,0 +1,25 @@
+> pnpm expo prebuild --no-install --platform ios
+env: load .env
+env: export EXPO_PUBLIC_REVENUECAT_TEST_API_KEY EXPO_PUBLIC_REVENUECAT_IOS_API_KEY EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY EXPO_PUBLIC_DOMAIN
+- Creating native directory (./ios)
+✔ Created native directory
+- Updating package.json
+✔ Updated package.json
+- Running prebuild
+[withAlarmSounds] Copied 36 sound files to AlarmSounds/
+- Running prebuild
+✖ Prebuild failed
+TypeError: [ios.xcodeproj]: withIosXcodeprojBaseMod: Cannot read properties of null (reading 'path')
+TypeError: [ios.xcodeproj]: withIosXcodeprojBaseMod: Cannot read properties of null (reading 'path')
+    at correctForPath (/Users/expo/workingdir/build/node_modules/.pnpm/xcode@3.0.1/node_modules/xcode/lib/pbxProject.js:1682:38)
+    at correctForResourcesPath (/Users/expo/workingdir/build/node_modules/.pnpm/xcode@3.0.1/node_modules/xcode/lib/pbxProject.js:1672:12)
+    at pbxProject.addResourceFile (/Users/expo/workingdir/build/node_modules/.pnpm/xcode@3.0.1/node_modules/xcode/lib/pbxProject.js:258:9)
+    at /Users/expo/workingdir/build/artifacts/mobile/plugins/withAlarmSounds.js:104:20
+    at action (/Users/expo/workingdir/build/node_modules/.pnpm/@expo+config-plugins@54.0.4/node_modules/@expo/config-plugins/build/plugins/withMod.js:199:29)
+    at interceptingMod (/Users/expo/workingdir/build/node_modules/.pnpm/@expo+config-plugins@54.0.4/node_modules/@expo/config-plugins/build/plugins/withMod.js:104:27)
+    at action (/Users/expo/workingdir/build/node_modules/.pnpm/@expo+config-plugins@54.0.4/node_modules/@expo/config-plugins/build/plugins/withMod.js:204:14)
+    at async interceptingMod (/Users/expo/workingdir/build/node_modules/.pnpm/@expo+config-plugins@54.0.4/node_modules/@expo/config-plugins/build/plugins/withMod.js:104:21)
+    at async interceptingMod (/Users/expo/workingdir/build/node_modules/.pnpm/@expo+config-plugins@54.0.4/node_modules/@expo/config-plugins/build/plugins/withMod.js:104:21)
+    at async interceptingMod (/Users/expo/workingdir/build/node_modules/.pnpm/@expo+config-plugins@54.0.4/node_modules/@expo/config-plugins/build/plugins/withMod.js:104:21)
+Error: pnpm expo prebuild --no-install --platform ios exited with non-zero code: 1
+/bin/bash -eo pipefail /var/folders/5_/4knlryn57n39p2c_jw8567z00000gn/T/eas-build/1989e4a2-1419-4865-9af0-611b3bbe17e6/steps/step-005/scripts/6e91ee20-7464-47cb-8bc8-07f022da293f.sh exited with non-zero code: 1

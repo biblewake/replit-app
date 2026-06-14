@@ -6,12 +6,18 @@
  * What this does:
  *  1. Copies every .mp3 under assets/sounds/ (flattened — filename only,
  *     no subdirectory) into ios/AlarmSounds/ during Expo prebuild.
- *  2. Adds each file to the Xcode project's "Copy Bundle Resources" build
- *     phase so iOS bundles them at the app bundle root.
+ *  2. Creates an "AlarmSounds" group in the Xcode project and adds each file
+ *     to the "Copy Bundle Resources" build phase so iOS bundles them at the
+ *     app bundle root.
  *
  * AlarmKit looks up sounds by filename stem (no path prefix, no extension),
  * so "bright/chirps.mp3" becomes soundName="chirps".
  * All filenames across categories are unique so flattening is safe.
+ *
+ * NOTE: addResourceFile(path) fails when `path` contains a directory separator
+ * because xcode@3 's correctForPath/correctForResourcesPath returns null for
+ * sub-paths. We work around this by creating a PBXGroup for AlarmSounds and
+ * adding each file by name-only inside that group.
  */
 
 const { withXcodeProject, withDangerousMod } = require("expo/config-plugins");
@@ -71,8 +77,15 @@ function withCopySounds(config) {
 }
 
 /**
- * Step 2 — add each sound file to the Xcode project's "Copy Bundle
- * Resources" build phase. Runs after the ios platform project is generated.
+ * Step 2 — add each sound file to the Xcode project.
+ *
+ * Strategy (avoids the addResourceFile sub-path bug in xcode@3):
+ *  a) Create (or reuse) a PBXGroup named "AlarmSounds" whose sourceTree is
+ *     "<group>" and whose path is "AlarmSounds" — this maps to ios/AlarmSounds/.
+ *  b) Add each .mp3 file to that group.  addFile() accepts a group UUID and
+ *     a plain filename, so xcode never has to resolve a sub-path.
+ *  c) Add each resulting PBXBuildFile to the "Copy Bundle Resources" phase of
+ *     the first target, which is what makes iOS bundle the files.
  */
 function withRegisterSounds(config) {
   return withXcodeProject(config, (cfg) => {
@@ -85,10 +98,36 @@ function withRegisterSounds(config) {
     }
 
     const files = collectMp3Files(soundsSrcDir);
+    if (files.length === 0) return cfg;
+
     const targetUuid = xcodeProject.getFirstTarget().uuid;
 
-    // Track which filenames are already registered to avoid duplicates on
-    // repeated prebuild runs.
+    // ── (a) Get or create the AlarmSounds group ───────────────────────────
+    let groupUuid;
+    const existingGroup = xcodeProject.pbxGroupByName(ALARM_SOUNDS_DIR);
+    if (existingGroup) {
+      // pbxGroupByName returns the group object; we need its key (UUID).
+      const section = xcodeProject.pbxGroupSection();
+      groupUuid = Object.keys(section).find(
+        (k) =>
+          !k.endsWith("_comment") &&
+          section[k] &&
+          section[k].name === `"${ALARM_SOUNDS_DIR}"` ||
+          section[k] && section[k].name === ALARM_SOUNDS_DIR
+      );
+    }
+
+    if (!groupUuid) {
+      const result = xcodeProject.addPbxGroup([], ALARM_SOUNDS_DIR, ALARM_SOUNDS_DIR);
+      groupUuid = result.uuid;
+
+      // Attach the new group to the project's main group so Xcode shows it.
+      const mainGroupKey =
+        xcodeProject.getFirstProject().firstProject.mainGroup;
+      xcodeProject.addToPbxGroup(groupUuid, mainGroupKey);
+    }
+
+    // ── (b) Track already-registered filenames to avoid duplicates ────────
     const existingRefs = xcodeProject.pbxFileReferenceSection();
     const registeredNames = new Set(
       Object.values(existingRefs)
@@ -96,15 +135,24 @@ function withRegisterSounds(config) {
         .map((ref) => String(ref.name).replace(/^"(.*)"$/, "$1"))
     );
 
+    // ── (c) Add each file to the group and to Copy Bundle Resources ───────
     let added = 0;
     for (const { name } of files) {
       if (registeredNames.has(name)) continue;
 
-      // Path is relative to the ios/ directory (platformProjectRoot).
-      xcodeProject.addResourceFile(
-        path.join(ALARM_SOUNDS_DIR, name),
-        { target: targetUuid }
-      );
+      // addFile(path, groupKey, opt) — path is relative to the group's path,
+      // so we only need the bare filename here.
+      const fileRef = xcodeProject.addFile(name, groupUuid, {
+        target: targetUuid,
+        lastKnownFileType: "audio.mp3",
+      });
+
+      if (!fileRef) continue;
+
+      // Ensure the file appears in Copy Bundle Resources for the target.
+      xcodeProject.addToPbxBuildFileSection(fileRef);
+      xcodeProject.addToPbxResourcesBuildPhase(fileRef);
+
       added++;
     }
 
