@@ -13,6 +13,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useAuth } from "@/context/AuthContext";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { OL, ONBOARDING_ORANGE } from "@/components/onboarding/primitives";
 import { ActivityIndicator } from "react-native";
 
@@ -140,6 +141,7 @@ export function AnalysisScreen({ onDone }: { onDone: () => void }) {
 export function AccountScreen({ onContinue }: { onContinue: () => void }) {
   const { signInWithGoogle, signInWithApple, signInAnonymously, session, isGuest } = useAuth();
   const [busy, setBusy] = useState<null | "google" | "apple" | "anon">(null);
+  const showGuestLogin = useFeatureFlag("show_guest_login");
 
   useEffect(() => {
     if (session || isGuest) onContinue();
@@ -230,19 +232,21 @@ export function AccountScreen({ onContinue }: { onContinue: () => void }) {
         </Pressable>
       </View>
 
-      {/* Anonymous skip link */}
-      <Pressable
-        disabled={busy !== null}
-        onPress={() => { void runAnon(); }}
-        hitSlop={10}
-        style={({ pressed }) => [styles.anonLink, { opacity: pressed ? 0.6 : 1 }]}
-      >
-        {busy === "anon" ? (
-          <ActivityIndicator size="small" color={OL.mutedForeground} />
-        ) : (
-          <Text style={styles.anonLinkText}>Continue without an account</Text>
-        )}
-      </Pressable>
+      {/* Anonymous skip link — visible only when show_guest_login flag is true */}
+      {showGuestLogin ? (
+        <Pressable
+          disabled={busy !== null}
+          onPress={() => { void runAnon(); }}
+          hitSlop={10}
+          style={({ pressed }) => [styles.anonLink, { opacity: pressed ? 0.6 : 1 }]}
+        >
+          {busy === "anon" ? (
+            <ActivityIndicator size="small" color={OL.mutedForeground} />
+          ) : (
+            <Text style={styles.anonLinkText}>Continue without an account</Text>
+          )}
+        </Pressable>
+      ) : null}
 
     </View>
   );
