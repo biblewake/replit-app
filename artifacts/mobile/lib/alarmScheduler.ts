@@ -128,7 +128,9 @@ export async function scheduleAlarmNotifications(alarm: Alarm): Promise<void> {
   };
 
   const scheduledIds: string[] = [];
-  const hasAnyDay = alarm.days.some(Boolean);
+  // Respect scheduleType: "one-time" always takes the one-off path regardless
+  // of which day toggles were last active.
+  const hasAnyDay = alarm.scheduleType !== "one-time" && alarm.days.some(Boolean);
 
   if (!hasAnyDay) {
     // One-time: fire at the next occurrence of this time

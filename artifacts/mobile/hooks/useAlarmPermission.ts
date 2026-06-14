@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { AppState, AppStateStatus, PermissionsAndroid, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
+import { getAlarmKitAuthDenied } from "@/lib/alarmKitScheduler";
 
 export function useAlarmPermission(): {
   hasPermission: boolean;
   hasExactAlarmPermission: boolean;
+  alarmKitAuthorized: boolean;
 } {
   const [hasPermission, setHasPermission] = useState(true);
   const [hasExactAlarmPermission, setHasExactAlarmPermission] = useState(true);
+  const [alarmKitAuthorized, setAlarmKitAuthorized] = useState(true);
 
   const checkPermission = async () => {
     try {
@@ -28,6 +31,14 @@ export function useAlarmPermission(): {
         setHasExactAlarmPermission(true);
       }
     }
+
+    if (Platform.OS === "ios") {
+      // Read the persisted denied flag written by scheduleAlarmKit — never
+      // calls requestAuthorization() so this path never triggers the system
+      // prompt during passive foreground checks.
+      const denied = await getAlarmKitAuthDenied();
+      setAlarmKitAuthorized(!denied);
+    }
   };
 
   useEffect(() => {
@@ -42,5 +53,5 @@ export function useAlarmPermission(): {
     return () => sub.remove();
   }, []);
 
-  return { hasPermission, hasExactAlarmPermission };
+  return { hasPermission, hasExactAlarmPermission, alarmKitAuthorized };
 }

@@ -51,6 +51,8 @@ function formatDays(days: boolean[]): string {
 export default function AlarmCard({ alarm, onToggle, onPress, onPermissionDenied }: AlarmCardProps) {
   const colors = useColors();
 
+  const showVerse = alarm.alarmType === "verse" && !!alarm.verseRef;
+
   return (
     <Pressable
       style={({ pressed }) => [
@@ -101,17 +103,21 @@ export default function AlarmCard({ alarm, onToggle, onPress, onPermissionDenied
         <Text style={[styles.name, { color: colors.mutedForeground }]}>
           {alarm.name}
         </Text>
-        <Text style={[styles.dot, { color: colors.mutedForeground }]}>
-          {" · "}
-        </Text>
-        <Image
-          source={require("../assets/images/bible_1.png")}
-          style={styles.bibleIcon}
-          resizeMode="contain"
-        />
-        <Text style={[styles.verse, { color: colors.mutedForeground }]}>
-          {" "}{alarm.verseRef}
-        </Text>
+        {showVerse && (
+          <>
+            <Text style={[styles.dot, { color: colors.mutedForeground }]}>
+              {" · "}
+            </Text>
+            <Image
+              source={require("../assets/images/bible_1.png")}
+              style={styles.bibleIcon}
+              resizeMode="contain"
+            />
+            <Text style={[styles.verse, { color: colors.mutedForeground }]}>
+              {" "}{alarm.verseRef}
+            </Text>
+          </>
+        )}
       </View>
     </Pressable>
   );

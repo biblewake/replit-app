@@ -6,61 +6,93 @@
  *  - Display a full-screen alert on the Lock Screen and Dynamic Island
  *  - Appear on Apple Watch
  *
- * This module is a no-op on Android. All Platform.OS checks are explicit
+ * This module is a no-op on Android / web. All Platform.OS checks are explicit
  * so AlarmKit code never executes on non-iOS platforms.
- *
- * Storage:
- *  "@bible_wake_ak_ids"      — app alarm ID → AlarmKit UUID (forward map)
- *  "@bible_wake_ak_reverse"  — AlarmKit UUID → app alarm ID (reverse map)
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
+import type { LaunchPayload, AuthorizationStatus } from "expo-alarm-kit";
 
 import { Alarm } from "@/context/AlarmContext";
 
-const AK_IDS_KEY = "@bible_wake_ak_ids";
-const AK_REVERSE_KEY = "@bible_wake_ak_reverse";
-
-// ── AlarmKit module type (expo-alarm-kit) ─────────────────────────────────────
-
-interface AlarmKitModule {
-  configure(appGroup: string): Promise<void>;
-  requestAuthorization(): Promise<string>;
-  scheduleAlarm(options: AlarmKitOneOffOptions): Promise<string>;
-  scheduleRepeatingAlarm(options: AlarmKitRepeatingOptions): Promise<string>;
-  cancelAlarm(uuid: string): Promise<void>;
-  getLaunchPayload(): AlarmKitPayload | null;
-}
-
-interface AlarmKitOneOffOptions {
-  /** Unix timestamp (ms) for the alarm fire time */
-  timestamp: number;
-  title: string;
-  soundName?: string;
-  launchAppOnDismiss?: boolean;
-  launchAppOnSnooze?: boolean;
-}
-
-interface AlarmKitRepeatingOptions {
-  hour: number;
-  minute: number;
-  /** 1=Sunday … 7=Saturday, matching iOS Calendar weekday convention */
-  weekdays: number[];
-  title: string;
-  soundName?: string;
-  launchAppOnDismiss?: boolean;
-  launchAppOnSnooze?: boolean;
-}
-
-export interface AlarmKitPayload {
-  /** AlarmKit UUID of the alarm that fired */
-  alarmId?: string;
-  action?: "dismiss" | "snooze";
-}
+// Re-export LaunchPayload as AlarmKitPayload for backward compatibility.
+export type AlarmKitPayload = LaunchPayload;
+export type { AuthorizationStatus };
 
 /** Possible outcomes of a scheduleAlarmKit call. */
 export type AlarmKitScheduleResult = "ok" | "denied" | "unavailable" | "error";
+
+export interface ScheduleAlarmKitOptions {
+  /**
+   * When true, skip the requestAuthorization() call and proceed directly to
+   * scheduling. Use this for background reschedule paths so the iOS auth
+   * dialog is never triggered outside an explicit user action.
+   *
+   * Default: false — authorization is requested (triggers system prompt on first call).
+   */
+  skipAuth?: boolean;
+}
+
+// ── Persisted authorization status ───────────────────────────────────────────
+// We persist whether AlarmKit authorization is denied so useAlarmPermission can
+// reflect the state without calling requestAuthorization() passively (which
+// would trigger the system prompt when status is notDetermined).
+
+const AK_AUTH_DENIED_KEY = "@bible_wake_ak_auth_denied";
+
+/**
+ * Read the persisted AlarmKit denied flag (set by scheduleAlarmKit).
+ * Safe to call at any time — never triggers the iOS system prompt.
+ * Returns false on Android / web / any read error.
+ */
+export async function getAlarmKitAuthDenied(): Promise<boolean> {
+  if (Platform.OS !== "ios") return false;
+  try {
+    const val = await AsyncStorage.getItem(AK_AUTH_DENIED_KEY);
+    return val === "true";
+  } catch {
+    return false;
+  }
+}
+
+// ── Lazy require guard ────────────────────────────────────────────────────────
+// expo-alarm-kit is iOS-only. Using require() keeps the module from being
+// evaluated on Android/web and avoids a hard import that would fail on those
+// platforms.
+
+type ExpoAlarmKitModule = typeof import("expo-alarm-kit");
+
+function getAk(): ExpoAlarmKitModule | null {
+  if (Platform.OS !== "ios") return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return require("expo-alarm-kit") as ExpoAlarmKitModule;
+  } catch {
+    return null;
+  }
+}
+
+// ── configure() — synchronous, called once ───────────────────────────────────
+// The real expo-alarm-kit API has configure() as a synchronous call that
+// returns boolean. We call it lazily on first use and cache the result.
+
+let _configured = false;
+
+function ensureConfigured(): boolean {
+  if (_configured) return true;
+  const ak = getAk();
+  if (!ak) return false;
+  try {
+    const ok = ak.configure("group.com.tinochiwara.biblewake");
+    _configured = ok;
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 /**
  * Derive the AlarmKit soundName from a Bible Wake sound ID.
@@ -84,96 +116,34 @@ function soundNameFromSoundId(soundId: string | undefined): string | undefined {
   return soundId.slice(idx + 1);
 }
 
-function getAlarmKitModule(): AlarmKitModule | null {
-  if (Platform.OS !== "ios") return null;
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require("expo-alarm-kit") as AlarmKitModule;
-  } catch {
-    return null;
-  }
-}
-
-// ── Singleton configure guarantee ─────────────────────────────────────────────
-// Ensures configure() is awaited exactly once before any scheduling attempt,
-// including calls from background task context where initAlarmKit() may not
-// have run.
-
-let _configurePromise: Promise<void> | null = null;
-
-async function ensureConfigured(): Promise<boolean> {
-  const ak = getAlarmKitModule();
-  if (!ak) return false;
-  if (!_configurePromise) {
-    _configurePromise = ak.configure("group.com.tinochiwara.biblewake").catch(() => {
-      // Reset so next call retries if configure threw
-      _configurePromise = null;
-    });
-  }
-  await _configurePromise;
-  return true;
-}
-
-// ── AsyncStorage helpers ───────────────────────────────────────────────────────
-
-async function loadAkIds(): Promise<Record<string, string>> {
-  try {
-    const raw = await AsyncStorage.getItem(AK_IDS_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-async function saveAkIds(map: Record<string, string>): Promise<void> {
-  try {
-    await AsyncStorage.setItem(AK_IDS_KEY, JSON.stringify(map));
-  } catch {}
-}
-
-async function loadAkReverse(): Promise<Record<string, string>> {
-  try {
-    const raw = await AsyncStorage.getItem(AK_REVERSE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-async function saveAkReverse(map: Record<string, string>): Promise<void> {
-  try {
-    await AsyncStorage.setItem(AK_REVERSE_KEY, JSON.stringify(map));
-  } catch {}
-}
-
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
- * Initialize AlarmKit (configure the App Group). Safe to call eagerly, but
- * scheduling calls also call this implicitly via ensureConfigured() so it is
- * not required to call this first.
- * No-op on Android.
+ * Initialize AlarmKit (configure the App Group). Safe to call eagerly on iOS,
+ * but scheduling calls also call ensureConfigured() implicitly.
+ * No-op on Android / web.
  */
 export async function initAlarmKit(): Promise<void> {
-  await ensureConfigured();
+  ensureConfigured();
 }
 
 /**
- * Request Alarms permission explicitly. Shows the iOS system prompt on first
- * call; subsequent calls return the cached status without prompting.
- * Returns "authorized", "denied", or "unavailable".
- * No-op on Android (returns "unavailable").
+ * Request Alarms permission explicitly.
+ *
+ * On iOS, shows the iOS system prompt on the first call; subsequent calls
+ * return the cached status without prompting.
+ *
+ * Returns "authorized", "denied", "notDetermined", or "unavailable".
+ * No-op on Android / web (returns "unavailable").
  *
  * NOTE: For spec-compliant behavior, prefer calling scheduleAlarmKit() on
- * first alarm save — it requests authorization automatically and returns the
- * result. Only call this directly when you need to pre-warm the status without
- * scheduling an alarm (e.g. for status checks).
+ * first alarm save — it requests authorization automatically. Only call this
+ * directly when you need the status without scheduling (e.g. permission checks).
  */
-export async function requestAlarmKitPermission(): Promise<string> {
-  const ak = getAlarmKitModule();
+export async function requestAlarmKitPermission(): Promise<AuthorizationStatus | "unavailable"> {
+  const ak = getAk();
   if (!ak) return "unavailable";
-  const configured = await ensureConfigured();
-  if (!configured) return "unavailable";
+  if (!ensureConfigured()) return "unavailable";
   try {
     return await ak.requestAuthorization();
   } catch {
@@ -182,40 +152,16 @@ export async function requestAlarmKitPermission(): Promise<string> {
 }
 
 /**
- * Resolve a Bible Wake alarm ID from an AlarmKit UUID.
- * Used in _layout.tsx to navigate to alarm-ringing when launched by AlarmKit.
- */
-export async function resolveAlarmIdFromAkUuid(akUuid: string): Promise<string | null> {
-  const reverse = await loadAkReverse();
-  return reverse[akUuid] ?? null;
-}
-
-/**
- * Options for scheduleAlarmKit.
- */
-export interface ScheduleAlarmKitOptions {
-  /**
-   * When true, skip the requestAuthorization() call and proceed directly to
-   * scheduling. Use this for background reschedule paths (e.g. rescheduleAllAlarms
-   * called on foreground) so the iOS auth dialog is never triggered outside an
-   * explicit user action.
-   *
-   * Default: false — authorization is requested (triggers system prompt on first call).
-   */
-  skipAuth?: boolean;
-}
-
-/**
  * Schedule (or reschedule) an alarm via AlarmKit on iOS.
  *
  * Lifecycle:
- *  1. Ensures AlarmKit is configured (configure() singleton).
+ *  1. Ensures AlarmKit is configured (synchronous configure() singleton).
  *  2. Unless skipAuth=true, requests Alarms authorization — this triggers the
  *     iOS system prompt on the first alarm save. Returns "denied" if the user
  *     refuses; the caller should surface a clear UI message.
  *  3. Cancels any existing AlarmKit alarm for this app alarm ID.
  *  4. Schedules a repeating or one-off alarm.
- *  5. Persists the AlarmKit UUID in AsyncStorage.
+ *  5. Persists the authorization status (denied flag) for passive checks.
  *
  * Returns "ok" on success, "denied" if permission is denied, "unavailable" on
  * non-iOS, or "error" on unexpected failure.
@@ -224,23 +170,25 @@ export async function scheduleAlarmKit(
   alarm: Alarm,
   { skipAuth = false }: ScheduleAlarmKitOptions = {}
 ): Promise<AlarmKitScheduleResult> {
-  const ak = getAlarmKitModule();
+  const ak = getAk();
   if (!ak) return "unavailable";
+  if (!ensureConfigured()) return "error";
 
-  const configured = await ensureConfigured();
-  if (!configured) return "error";
-
-  // Request authorization — triggers the iOS system prompt on the first call.
-  // Skipped in reschedule paths (skipAuth=true) to avoid prompting outside
-  // an explicit user action. If auth is denied, scheduling will fail silently.
   if (!skipAuth) {
-    let authStatus: string;
+    let authStatus: AuthorizationStatus;
     try {
       authStatus = await ak.requestAuthorization();
     } catch {
       authStatus = "denied";
     }
-    if (authStatus !== "authorized") return "denied";
+    if (authStatus === "authorized") {
+      // User has (re-)authorized — clear any stale denied flag.
+      AsyncStorage.removeItem(AK_AUTH_DENIED_KEY).catch(() => {});
+    } else {
+      // denied or notDetermined: persist denied flag so passive checks reflect it.
+      AsyncStorage.setItem(AK_AUTH_DENIED_KEY, "true").catch(() => {});
+      return "denied";
+    }
   }
 
   // Cancel any previously scheduled AlarmKit alarm for this app alarm ID.
@@ -256,13 +204,11 @@ export async function scheduleAlarmKit(
     : alarm.hour;
 
   const title = alarm.name || "Bible Wake";
-  // Derive the bundled sound filename stem from the alarm's soundId.
-  // Sound IDs follow the pattern "<category>_<filename>" (e.g. "bright_chirps").
-  // withAlarmSounds.js flattens all .mp3 files to the bundle root, so AlarmKit
-  // expects just the stem (no path prefix, no extension): e.g. "chirps".
-  // If soundId is absent the parameter is omitted and AlarmKit uses its default.
   const soundName = soundNameFromSoundId(alarm.soundId);
-  const hasAnyDay = alarm.days.some(Boolean);
+
+  // Respect scheduleType: "one-time" always takes the one-off path regardless
+  // of which day toggles were last active.
+  const isRepeating = alarm.scheduleType !== "one-time" && alarm.days.some(Boolean);
 
   // Bible Wake days array: index 0 = Sunday … 6 = Saturday
   // AlarmKit weekdays: 1 = Sunday … 7 = Saturday (iOS Calendar convention)
@@ -271,10 +217,10 @@ export async function scheduleAlarmKit(
     if (alarm.days[i]) weekdays.push(i + 1);
   }
 
-  let akUuid: string;
   try {
-    if (hasAnyDay) {
-      akUuid = await ak.scheduleRepeatingAlarm({
+    if (isRepeating) {
+      const ok = await ak.scheduleRepeatingAlarm({
+        id: alarm.id,
         hour: hour24,
         minute: alarm.minute,
         weekdays,
@@ -282,7 +228,10 @@ export async function scheduleAlarmKit(
         soundName,
         launchAppOnDismiss: true,
         launchAppOnSnooze: true,
+        dismissPayload: alarm.id,
+        snoozePayload: alarm.id,
       });
+      if (!ok) return "error";
     } else {
       const now = new Date();
       const target = new Date();
@@ -290,56 +239,50 @@ export async function scheduleAlarmKit(
       if (target <= now) {
         target.setDate(target.getDate() + 1);
       }
-      akUuid = await ak.scheduleAlarm({
-        timestamp: target.getTime(),
+      const ok = await ak.scheduleAlarm({
+        id: alarm.id,
+        epochSeconds: Math.floor(target.getTime() / 1000),
         title,
         soundName,
         launchAppOnDismiss: true,
         launchAppOnSnooze: true,
+        dismissPayload: alarm.id,
+        snoozePayload: alarm.id,
       });
+      if (!ok) return "error";
     }
   } catch {
     return "error";
   }
-
-  // Persist forward and reverse UUID mappings.
-  const [fwd, rev] = await Promise.all([loadAkIds(), loadAkReverse()]);
-  fwd[alarm.id] = akUuid;
-  rev[akUuid] = alarm.id;
-  await Promise.all([saveAkIds(fwd), saveAkReverse(rev)]);
 
   return "ok";
 }
 
 /**
  * Cancel an AlarmKit alarm by the app's alarm ID.
- * No-op if no AlarmKit UUID is stored for this alarm or platform is not iOS.
+ * No-op if the platform is not iOS.
  */
 export async function cancelAlarmKit(alarmId: string): Promise<void> {
-  const ak = getAlarmKitModule();
+  const ak = getAk();
   if (!ak) return;
-
-  const fwd = await loadAkIds();
-  const akUuid = fwd[alarmId];
-  if (!akUuid) return;
-
   try {
-    await ak.cancelAlarm(akUuid);
+    await ak.cancelAlarm(alarmId);
+    // Ignore the boolean return — best-effort cancel; failure is non-fatal.
   } catch {}
-
-  const rev = await loadAkReverse();
-  delete fwd[alarmId];
-  delete rev[akUuid];
-  await Promise.all([saveAkIds(fwd), saveAkReverse(rev)]);
 }
 
 /**
  * Returns the AlarmKit launch payload if the app was opened by an AlarmKit
  * alarm (dismiss or snooze action), or null otherwise.
+ *
+ * The payload's `alarmId` field is the same ID that was passed to
+ * scheduleAlarm / scheduleRepeatingAlarm — no reverse-lookup needed.
+ *
  * Must be called on the JS thread; safe to call on every app open.
+ * The payload is cleared after retrieval (subsequent calls return null).
  */
-export function getLaunchPayload(): AlarmKitPayload | null {
-  const ak = getAlarmKitModule();
+export function getLaunchPayload(): LaunchPayload | null {
+  const ak = getAk();
   if (!ak) return null;
   try {
     return ak.getLaunchPayload();

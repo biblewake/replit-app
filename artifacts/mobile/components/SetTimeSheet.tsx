@@ -33,6 +33,7 @@ function WheelColumn({ items, selectedIndex, onSelect, formatItem }: WheelColumn
   const colors = useColors();
   const scrollRef = useRef<ScrollView>(null);
   const isScrolling = useRef(false);
+  const isSettling = useRef(false);
 
   useEffect(() => {
     if (!isScrolling.current) {
@@ -43,16 +44,32 @@ function WheelColumn({ items, selectedIndex, onSelect, formatItem }: WheelColumn
     }
   }, [selectedIndex]);
 
-  const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    isScrolling.current = false;
-    const offsetY = e.nativeEvent.contentOffset.y;
+  const snapToIndex = (offsetY: number) => {
     const index = Math.round(offsetY / ITEM_HEIGHT);
     const clamped = Math.max(0, Math.min(items.length - 1, index));
     if (clamped !== selectedIndex) {
       Haptics.selectionAsync();
       onSelect(clamped);
     }
+    isSettling.current = true;
     scrollRef.current?.scrollTo({ y: clamped * ITEM_HEIGHT, animated: true });
+    setTimeout(() => { isSettling.current = false; }, 200);
+  };
+
+  const handleMomentumScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (isSettling.current) return;
+    isScrolling.current = false;
+    snapToIndex(e.nativeEvent.contentOffset.y);
+  };
+
+  const handleScrollEndDrag = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (isSettling.current) return;
+    // Only snap here for slow drags that don't generate a momentum event.
+    const velocityY = e.nativeEvent.velocity?.y ?? 0;
+    if (Math.abs(velocityY) < 0.1) {
+      isScrolling.current = false;
+      snapToIndex(e.nativeEvent.contentOffset.y);
+    }
   };
 
   return (
@@ -66,8 +83,8 @@ function WheelColumn({ items, selectedIndex, onSelect, formatItem }: WheelColumn
           paddingVertical: ITEM_HEIGHT * 2,
         }}
         onScrollBeginDrag={() => { isScrolling.current = true; }}
-        onMomentumScrollEnd={handleScrollEnd}
-        onScrollEndDrag={handleScrollEnd}
+        onMomentumScrollEnd={handleMomentumScrollEnd}
+        onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
       >
         {items.map((item, i) => {

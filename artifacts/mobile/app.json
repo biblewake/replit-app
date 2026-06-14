@@ -28,7 +28,9 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {
-        "com.apple.security.application-groups": ["group.com.tinochiwara.biblewake"]
+        "com.apple.security.application-groups": [
+          "group.com.tinochiwara.biblewake"
+        ]
       },
       "associatedDomains": [
         "applinks:cmaysraaclfvofiynctl.supabase.co"

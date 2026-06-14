@@ -26,7 +26,6 @@ import {
 } from "@/lib/backgroundAlarmCheck";
 import {
   getLaunchPayload,
-  resolveAlarmIdFromAkUuid,
 } from "@/lib/alarmKitScheduler";
 import {
   SubscriptionProvider,
@@ -158,17 +157,15 @@ function RootLayoutNav() {
       rescheduleAllAlarms().catch(() => {});
 
       // Check whether AlarmKit foregrounded the app (dismiss/snooze action).
+      // payload.alarmId is the same id passed to scheduleAlarm/scheduleRepeatingAlarm
+      // so no reverse-lookup is needed.
       const payload = getLaunchPayload();
       if (!payload?.alarmId) return;
-      resolveAlarmIdFromAkUuid(payload.alarmId)
-        .then((appAlarmId) => {
-          // Omit 'type' so alarm-ringing.tsx derives it from alarm.wakeUpCheck.
-          router.push({
-            pathname: "/alarm-ringing",
-            params: { alarmId: appAlarmId ?? payload.alarmId },
-          });
-        })
-        .catch(() => {});
+      // Omit 'type' so alarm-ringing.tsx derives it from alarm.wakeUpCheck.
+      router.push({
+        pathname: "/alarm-ringing",
+        params: { alarmId: payload.alarmId },
+      });
     };
 
     // Run immediately on cold launch.

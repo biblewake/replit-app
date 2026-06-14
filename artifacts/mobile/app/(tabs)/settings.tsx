@@ -15,10 +15,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 
 import { useColors } from "@/hooks/useColors";
 import { useIsNativeTabs } from "@/hooks/useIsNativeTabs";
 import { useAuth } from "@/context/AuthContext";
+import { useAlarms } from "@/context/AlarmContext";
 import { useSubscription } from "@/lib/revenuecat";
 import { supabase } from "@/lib/supabase";
 import { requestBatteryOptimizationExemption } from "@/lib/batteryOptimization";
@@ -117,6 +119,8 @@ export default function SettingsScreen() {
   const colors = useColors();
   const { signOut, profile, updateProfile, user } = useAuth();
   const { customerInfo } = useSubscription();
+  const { alarms } = useAlarms();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const isNativeTabs = useIsNativeTabs();
 
@@ -535,6 +539,48 @@ export default function SettingsScreen() {
         >
           <Text style={[styles.logoutBtnText, { color: colors.foreground }]}>Log Out</Text>
         </Pressable>
+
+        {/* Debug */}
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+          Debug
+        </Text>
+        <View
+          style={[
+            styles.group,
+            { backgroundColor: colors.card, shadowColor: colors.foreground },
+          ]}
+        >
+          <SettingsRow
+            colors={colors}
+            isFirst
+            isLast
+            icon={
+              <Ionicons
+                name="play-circle-outline"
+                size={20}
+                color={colors.foreground}
+              />
+            }
+            label="Test Alarm"
+            subtitle="Preview the alarm-ringing screen"
+            onPress={() => {
+              const firstActive = alarms.find((a) => a.enabled) ?? alarms[0];
+              if (!firstActive) {
+                Alert.alert("No Alarms", "Add an alarm first to test it.");
+                return;
+              }
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              router.push({
+                pathname: "/alarm-ringing",
+                params: {
+                  alarmId: firstActive.id,
+                  type: firstActive.wakeUpCheck ? "wakeup" : "verse",
+                  isTest: "true",
+                },
+              });
+            }}
+          />
+        </View>
       </ScrollView>
 
       <TroubleshootSheet
