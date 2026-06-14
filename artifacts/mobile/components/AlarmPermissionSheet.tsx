@@ -22,7 +22,7 @@ import { useColors } from "@/hooks/useColors";
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
 
-export type AlarmPermissionType = "notification" | "exactAlarm";
+export type AlarmPermissionType = "notification" | "exactAlarm" | "alarmKit";
 
 interface AlarmPermissionSheetProps {
   visible: boolean;
@@ -45,6 +45,12 @@ const CONTENT: Record<
     subtitle:
       'Bible Wake needs permission to schedule exact alarms. Without it, your alarms may fire late or not at all. Tap below to open "Alarms & reminders" and enable it for Bible Wake.',
     buttonLabel: "Open Alarm Settings",
+  },
+  alarmKit: {
+    title: "Alarm Access Denied",
+    subtitle:
+      "Bible Wake needs Alarms permission to wake you up at your scheduled time, even when your phone is on silent. Go to Settings → Privacy & Security → Alarms and turn on Bible Wake.",
+    buttonLabel: "Open Settings",
   },
 };
 

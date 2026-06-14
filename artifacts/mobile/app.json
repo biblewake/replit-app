@@ -17,13 +17,18 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.tinochiwara.biblewake",
       "buildNumber": "10",
+      "deploymentTarget": "26.0",
       "infoPlist": {
         "UIBackgroundModes": [
           "audio",
           "fetch"
         ],
         "NSMicrophoneUsageDescription": "Bible Wake uses the microphone so you can recite your scripture verse aloud during your morning alarm.",
+        "NSAlarmKitUsageDescription": "Bible Wake uses alarms to wake you up at your scheduled time, even when your phone is on silent.",
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.com.tinochiwara.biblewake"]
       },
       "associatedDomains": [
         "applinks:cmaysraaclfvofiynctl.supabase.co"
@@ -91,7 +96,8 @@
           "cameraPermission": "Bible Wake uses the camera so you can verify you're awake during your morning alarm."
         }
       ],
-      "./plugins/withBootReceiver"
+      "./plugins/withBootReceiver",
+      "expo-alarm-kit"
     ],
     "experiments": {
       "typedRoutes": true,

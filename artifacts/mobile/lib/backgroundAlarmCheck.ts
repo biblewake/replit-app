@@ -28,6 +28,7 @@ import { Platform } from "react-native";
 
 import { Alarm, ALARM_CACHE_KEY } from "@/context/AlarmContext";
 import { scheduleAlarmNotifications } from "./alarmScheduler";
+import { scheduleAlarmKit } from "./alarmKitScheduler";
 
 export const BACKGROUND_ALARM_TASK = "BACKGROUND_ALARM_CHECK";
 
@@ -40,11 +41,22 @@ export const BACKGROUND_ALARM_TASK = "BACKGROUND_ALARM_CHECK";
 export async function rescheduleAllAlarms(): Promise<void> {
   const raw = await AsyncStorage.getItem(ALARM_CACHE_KEY);
   const alarms: Alarm[] = raw ? JSON.parse(raw) : [];
-  await Promise.all(
-    alarms
-      .filter((a) => a.enabled)
-      .map((a) => scheduleAlarmNotifications(a))
-  );
+  // iOS 26+: reschedule via AlarmKit with skipAuth=true so the iOS Alarms
+  // permission dialog is never triggered outside an explicit user action.
+  // Android: reschedule via expo-notifications (no auth concept).
+  if (Platform.OS === "ios") {
+    await Promise.all(
+      alarms
+        .filter((a) => a.enabled)
+        .map((a) => scheduleAlarmKit(a, { skipAuth: true }))
+    );
+  } else {
+    await Promise.all(
+      alarms
+        .filter((a) => a.enabled)
+        .map((a) => scheduleAlarmNotifications(a))
+    );
+  }
 }
 
 TaskManager.defineTask(BACKGROUND_ALARM_TASK, async () => {

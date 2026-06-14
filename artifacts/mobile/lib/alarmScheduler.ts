@@ -24,6 +24,10 @@ import { Platform } from "react-native";
 
 import { Alarm } from "@/context/AlarmContext";
 
+// On iOS 26+, alarm scheduling is handled entirely by AlarmKit (alarmKitScheduler.ts).
+// scheduleAlarmNotifications is a no-op on iOS so alarms are never double-fired.
+// cancelAlarmNotifications remains active on iOS to clean up any legacy notifications.
+
 const ANDROID_ALARM_CHANNEL_ID = "bible_wake_alarms";
 
 /**
@@ -84,6 +88,8 @@ export async function cancelAlarmNotifications(alarmId: string): Promise<void> {
  * Does nothing if the alarm is disabled.
  */
 export async function scheduleAlarmNotifications(alarm: Alarm): Promise<void> {
+  // iOS 26+: AlarmKit handles all alarm scheduling — do not double-fire via notifications.
+  if (Platform.OS === "ios") return;
   if (Platform.OS === "web") return;
 
   await cancelAlarmNotifications(alarm.id);

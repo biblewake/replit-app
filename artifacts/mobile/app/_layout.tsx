@@ -25,6 +25,10 @@ import {
   rescheduleAllAlarms,
 } from "@/lib/backgroundAlarmCheck";
 import {
+  getLaunchPayload,
+  resolveAlarmIdFromAkUuid,
+} from "@/lib/alarmKitScheduler";
+import {
   SubscriptionProvider,
   useSubscription,
 } from "@/lib/revenuecat";
@@ -137,35 +141,54 @@ function RootLayoutNav() {
     }
   }, [onboardingComplete, isAnonymous, isSubscribed, subscriptionLoading, segments, router]);
 
-  // ── iOS: reschedule alarms on every foreground transition ────────────────
-  // iOS cancels all local notifications on device reboot and has no
-  // BOOT_COMPLETED equivalent. Rescheduling whenever the app becomes active
-  // ensures alarms are restored the first time the user opens the app after a
-  // reboot (or after any other OS-level notification purge).
+  // ── iOS: foreground handler — reschedule alarms + check AlarmKit payload ──
+  // Combined into one AppState listener to handle both cold launch and warm
+  // foreground events (e.g. user taps Dismiss/Snooze from the system alarm UI
+  // while the app is already in the background).
+  //
+  // getLaunchPayload() is idempotent for the current launch event: AlarmKit
+  // sets it when foregrounding the app; it returns null on ordinary app-switches
+  // unrelated to an alarm action.
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   useEffect(() => {
     if (Platform.OS !== "ios") return;
 
-    // Reschedule immediately on cold launch in case the device was rebooted
-    // while the app was not running.
-    rescheduleAllAlarms().catch(() => {});
+    const handleForeground = () => {
+      // Reschedule — guards against OS notification purge after reboot.
+      rescheduleAllAlarms().catch(() => {});
+
+      // Check whether AlarmKit foregrounded the app (dismiss/snooze action).
+      const payload = getLaunchPayload();
+      if (!payload?.alarmId) return;
+      resolveAlarmIdFromAkUuid(payload.alarmId)
+        .then((appAlarmId) => {
+          // Omit 'type' so alarm-ringing.tsx derives it from alarm.wakeUpCheck.
+          router.push({
+            pathname: "/alarm-ringing",
+            params: { alarmId: appAlarmId ?? payload.alarmId },
+          });
+        })
+        .catch(() => {});
+    };
+
+    // Run immediately on cold launch.
+    handleForeground();
 
     const subscription = AppState.addEventListener(
       "change",
       (nextState: AppStateStatus) => {
         const prev = appStateRef.current;
         appStateRef.current = nextState;
-        // Only act when transitioning into active from background/inactive.
         if (
           nextState === "active" &&
           (prev === "background" || prev === "inactive")
         ) {
-          rescheduleAllAlarms().catch(() => {});
+          handleForeground();
         }
       }
     );
     return () => subscription.remove();
-  }, []); // run once on mount
+  }, [router]); // router is stable but listed to satisfy exhaustive-deps
 
   // ── PKCE OAuth callback — handles biblewake://?code=… deep links ─────────
   // When Supabase redirects back after Google/Apple sign-in it appends a
@@ -193,9 +216,9 @@ function RootLayoutNav() {
     return () => subscription.remove();
   }, []);
 
-  // ── Cold-launch: app opened by tapping an alarm notification ─────────────
+  // ── Cold-launch: app opened by tapping an alarm notification (Android) ────
   useEffect(() => {
-    if (Platform.OS === "web") return;
+    if (Platform.OS !== "android") return;
     Notifications.getLastNotificationResponseAsync()
       .then((response) => {
         if (!response) return;
@@ -216,7 +239,10 @@ function RootLayoutNav() {
       .catch(() => {});
   }, []); // run once on mount
 
-  // ── Foreground / background tap listener ─────────────────────────────────
+  // ── Foreground / background notification tap listener ─────────────────────
+  // Android: handles alarm notifications.
+  // iOS: handles non-alarm notifications (verse-of-the-day, etc.) only —
+  //      AlarmKit alarms are handled via getLaunchPayload() above.
   useEffect(() => {
     if (Platform.OS === "web") return;
     const subscription = Notifications.addNotificationResponseReceivedListener(
@@ -225,6 +251,8 @@ function RootLayoutNav() {
           alarmId?: string;
           type?: string;
         };
+        // On iOS, alarm navigation is handled by AlarmKit payload; skip here.
+        if (Platform.OS === "ios" && data?.alarmId) return;
         if (data?.alarmId) {
           router.push({
             pathname: "/alarm-ringing",

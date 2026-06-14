@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Animated,
@@ -30,7 +30,7 @@ export default function AlarmsScreen() {
   const insets = useSafeAreaInsets();
   const isNativeTabs = useIsNativeTabs();
   const router = useRouter();
-  const { alarms, addAlarm, updateAlarm, deleteAlarm, toggleAlarm } = useAlarms();
+  const { alarms, addAlarm, updateAlarm, deleteAlarm, toggleAlarm, alarmKitDenied, clearAlarmKitDenied } = useAlarms();
   const { hasPermission, hasExactAlarmPermission } = useAlarmPermission();
   const allPermissionsGranted = hasPermission && hasExactAlarmPermission;
   const [editingAlarm, setEditingAlarm] = useState<Alarm | null>(null);
@@ -38,6 +38,13 @@ export default function AlarmsScreen() {
   const [newAlarmType, setNewAlarmType] = useState<"verse" | "normal">("verse");
   const [fabOpen, setFabOpen] = useState(false);
   const [showPermissionSheet, setShowPermissionSheet] = useState(false);
+
+  // iOS 26+: show the AlarmKit permission sheet when the user denies Alarms access.
+  const [showAlarmKitSheet, setShowAlarmKitSheet] = useState(false);
+  useEffect(() => {
+    if (alarmKitDenied) setShowAlarmKitSheet(true);
+  }, [alarmKitDenied]);
+
   const permissionSheetType = !hasPermission ? "notification" as const : "exactAlarm" as const;
 
   const openPermissionSheet = () => setShowPermissionSheet(true);
@@ -373,6 +380,14 @@ export default function AlarmsScreen() {
         visible={showPermissionSheet}
         onClose={() => setShowPermissionSheet(false)}
         permissionType={permissionSheetType}
+      />
+      <AlarmPermissionSheet
+        visible={showAlarmKitSheet}
+        onClose={() => {
+          setShowAlarmKitSheet(false);
+          clearAlarmKitDenied();
+        }}
+        permissionType="alarmKit"
       />
     </View>
   );

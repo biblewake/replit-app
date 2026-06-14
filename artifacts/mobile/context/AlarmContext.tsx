@@ -10,6 +10,7 @@
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Notifications from "expo-notifications";
 import React, {
   createContext,
   useCallback,
@@ -17,12 +18,18 @@ import React, {
   useEffect,
   useState,
 } from "react";
+import { Platform } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { pickRandomVerseBackground } from "@/lib/wakeHistory";
 import {
   cancelAlarmNotifications,
   scheduleAlarmNotifications,
 } from "@/lib/alarmScheduler";
+import {
+  scheduleAlarmKit,
+  cancelAlarmKit,
+  type AlarmKitScheduleResult,
+} from "@/lib/alarmKitScheduler";
 
 export interface Alarm {
   id: string;
@@ -85,6 +92,14 @@ interface AlarmContextType {
   incrementStreak: (recitalSuccess?: boolean) => void;
   /** Whether alarms are loaded from their source (Supabase or AsyncStorage) */
   isLoaded: boolean;
+  /**
+   * iOS 26+: true when the user has denied the Alarms permission to AlarmKit.
+   * Surface a settings sheet so the user can re-enable it.
+   * Always false on Android.
+   */
+  alarmKitDenied: boolean;
+  /** Call after the user dismisses the denied-permission sheet to reset the flag. */
+  clearAlarmKitDenied: () => void;
 }
 
 const AlarmContext = createContext<AlarmContextType>({
@@ -98,6 +113,8 @@ const AlarmContext = createContext<AlarmContextType>({
   longestStreak: 1,
   incrementStreak: (_recitalSuccess?: boolean) => {},
   isLoaded: false,
+  alarmKitDenied: false,
+  clearAlarmKitDenied: () => {},
 });
 
 // ── Supabase helpers ───────────────────────────────────────────────────────────
@@ -147,12 +164,51 @@ function alarmToRow(alarm: Omit<Alarm, "id">, userId: string) {
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 
+// AsyncStorage key that marks the one-time legacy iOS notification migration as done.
+const LEGACY_NOTIF_MIGRATION_KEY = "@legacy_notif_migration_alarmkit_v1";
+
+/**
+ * One-time migration for iOS: when upgrading from a pre-AlarmKit build, cancel
+ * all previously scheduled expo-notifications alarms so they don't double-fire
+ * alongside AlarmKit alarms.  Guarded by AsyncStorage so it runs exactly once.
+ */
+async function cancelLegacyIosNotifications(): Promise<void> {
+  if (Platform.OS !== "ios") return;
+  try {
+    const done = await AsyncStorage.getItem(LEGACY_NOTIF_MIGRATION_KEY);
+    if (done) return;
+    await Notifications.cancelAllScheduledNotificationsAsync();
+    await AsyncStorage.setItem(LEGACY_NOTIF_MIGRATION_KEY, "done");
+  } catch {
+    // Non-fatal — worst case, duplicate notifications fire until next launch.
+  }
+}
+
+function cancelForPlatform(alarmId: string): Promise<void> {
+  if (Platform.OS === "ios") {
+    // Belt-and-suspenders: cancel both AlarmKit UUID and any legacy notification
+    // IDs for this alarm.  Keeps delete/update/toggle safe during the migration
+    // window when an old notification may still be scheduled for the same alarm.
+    return Promise.all([
+      cancelAlarmKit(alarmId),
+      cancelAlarmNotifications(alarmId),
+    ]).then(() => {});
+  }
+  return cancelAlarmNotifications(alarmId);
+}
+
 export function AlarmProvider({ children }: { children: React.ReactNode }) {
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [streak, setStreak] = useState(0);
   const [longestStreak, setLongestStreak] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
+  const [alarmKitDenied, setAlarmKitDenied] = useState(false);
+
+  // ── iOS legacy notification migration (runs once on first AlarmKit launch) ────
+  useEffect(() => {
+    cancelLegacyIosNotifications();
+  }, []);
 
   // ── Detect auth state ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -281,6 +337,21 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
     });
   }, [userId]);
 
+  // ── Unified platform scheduling (inside provider — can access setAlarmKitDenied) ──
+  // Used by all user-initiated scheduling paths: addAlarm, updateAlarm, toggleAlarm.
+  // On iOS, calls scheduleAlarmKit (which requests authorization on first call) and
+  // surfaces alarmKitDenied=true when the user has denied Alarms permission.
+  const scheduleOnPlatform = useCallback(async (alarm: Alarm): Promise<void> => {
+    if (Platform.OS === "ios") {
+      const result: AlarmKitScheduleResult = await scheduleAlarmKit(alarm).catch(
+        () => "error" as AlarmKitScheduleResult
+      );
+      if (result === "denied") setAlarmKitDenied(true);
+    } else {
+      scheduleAlarmNotifications(alarm).catch(() => {});
+    }
+  }, []);
+
   // ── CRUD operations ───────────────────────────────────────────────────────────
 
   const addAlarm = useCallback(
@@ -307,7 +378,7 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
         if (!error && data) {
           newAlarm = rowToAlarm(data);
           setAlarms((prev) => [...prev, newAlarm]);
-          scheduleAlarmNotifications(newAlarm).catch(() => {});
+          await scheduleOnPlatform(newAlarm);
           return;
         }
       }
@@ -315,21 +386,23 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
       // Guest mode or Supabase error — local only
       newAlarm = { ...alarm, id: generateId() };
       setAlarms((prev) => [...prev, newAlarm]);
-      scheduleAlarmNotifications(newAlarm).catch(() => {});
+      await scheduleOnPlatform(newAlarm);
     },
-    [userId]
+    [userId, scheduleOnPlatform]
   );
 
   const updateAlarm = useCallback(
     (id: string, updates: Partial<Alarm>) => {
+      // Capture the computed alarm outside setAlarms so we can schedule after state update.
+      let alarmToSchedule: Alarm | undefined;
       setAlarms((prev) => {
         const updated = prev.map((a) => (a.id === id ? { ...a, ...updates } : a));
-        const updatedAlarm = updated.find((a) => a.id === id);
-        if (updatedAlarm) {
-          scheduleAlarmNotifications(updatedAlarm).catch(() => {});
-        }
+        alarmToSchedule = updated.find((a) => a.id === id);
         return updated;
       });
+      if (alarmToSchedule) {
+        scheduleOnPlatform(alarmToSchedule).catch(() => {});
+      }
 
       if (userId) {
         // Convert camelCase updates to snake_case for Supabase
@@ -361,13 +434,13 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
         }
       }
     },
-    [userId]
+    [userId, scheduleOnPlatform]
   );
 
   const deleteAlarm = useCallback(
     (id: string) => {
       setAlarms((prev) => prev.filter((a) => a.id !== id));
-      cancelAlarmNotifications(id).catch(() => {});
+      cancelForPlatform(id).catch(() => {});
 
       if (userId) {
         Promise.resolve(
@@ -384,30 +457,30 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
 
   const toggleAlarm = useCallback(
     (id: string) => {
+      // Capture the computed alarm outside setAlarms so scheduling and Supabase
+      // updates run after the state update, not inside the updater.
+      let alarmToSchedule: Alarm | undefined;
       setAlarms((prev) => {
         const updated = prev.map((a) =>
           a.id === id ? { ...a, enabled: !a.enabled } : a
         );
-
-        const alarm = updated.find((a) => a.id === id);
-        if (alarm) {
-          scheduleAlarmNotifications(alarm).catch(() => {});
-
-          if (userId) {
-            Promise.resolve(
-              supabase
-                .from("alarms")
-                .update({ enabled: alarm.enabled })
-                .eq("id", id)
-                .eq("user_id", userId)
-            ).catch(() => {});
-          }
-        }
-
+        alarmToSchedule = updated.find((a) => a.id === id);
         return updated;
       });
+      if (alarmToSchedule) {
+        scheduleOnPlatform(alarmToSchedule).catch(() => {});
+        if (userId) {
+          Promise.resolve(
+            supabase
+              .from("alarms")
+              .update({ enabled: alarmToSchedule.enabled })
+              .eq("id", id)
+              .eq("user_id", userId)
+          ).catch(() => {});
+        }
+      }
     },
-    [userId]
+    [userId, scheduleOnPlatform]
   );
 
   const getNextAlarm = useCallback((): Alarm | null => {
@@ -470,6 +543,8 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
         longestStreak,
         incrementStreak,
         isLoaded: loaded,
+        alarmKitDenied,
+        clearAlarmKitDenied: () => setAlarmKitDenied(false),
       }}
     >
       {children}
