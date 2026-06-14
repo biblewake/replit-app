@@ -62,6 +62,28 @@ export interface AlarmKitPayload {
 /** Possible outcomes of a scheduleAlarmKit call. */
 export type AlarmKitScheduleResult = "ok" | "denied" | "unavailable" | "error";
 
+/**
+ * Derive the AlarmKit soundName from a Bible Wake sound ID.
+ *
+ * Sound IDs follow the pattern "<category>_<filename_stem>", e.g.:
+ *   "bright_chirps"        → "chirps"
+ *   "calm_morning_chirp"   → "morning_chirp"
+ *   "energetic_pop_it_up"  → "pop_it_up"
+ *
+ * withAlarmSounds.js flattens all .mp3 files from assets/sounds/ to the
+ * app bundle root, so AlarmKit needs just the stem — no path prefix and no
+ * file extension.
+ *
+ * Returns undefined if soundId is falsy so that AlarmKit falls back to its
+ * built-in default tone.
+ */
+function soundNameFromSoundId(soundId: string | undefined): string | undefined {
+  if (!soundId) return undefined;
+  const idx = soundId.indexOf("_");
+  if (idx === -1) return soundId;
+  return soundId.slice(idx + 1);
+}
+
 function getAlarmKitModule(): AlarmKitModule | null {
   if (Platform.OS !== "ios") return null;
   try {
@@ -233,11 +255,13 @@ export async function scheduleAlarmKit(
     ? 0
     : alarm.hour;
 
-  // Custom alarm sounds are out of scope for this release (task spec: "uses
-  // system default for now"). soundName is left undefined so AlarmKit uses
-  // the default iOS alarm tone. A follow-up task (#155) will bundle the app's
-  // custom sounds as Xcode resources and wire them here.
   const title = alarm.name || "Bible Wake";
+  // Derive the bundled sound filename stem from the alarm's soundId.
+  // Sound IDs follow the pattern "<category>_<filename>" (e.g. "bright_chirps").
+  // withAlarmSounds.js flattens all .mp3 files to the bundle root, so AlarmKit
+  // expects just the stem (no path prefix, no extension): e.g. "chirps".
+  // If soundId is absent the parameter is omitted and AlarmKit uses its default.
+  const soundName = soundNameFromSoundId(alarm.soundId);
   const hasAnyDay = alarm.days.some(Boolean);
 
   // Bible Wake days array: index 0 = Sunday … 6 = Saturday
@@ -255,6 +279,7 @@ export async function scheduleAlarmKit(
         minute: alarm.minute,
         weekdays,
         title,
+        soundName,
         launchAppOnDismiss: true,
         launchAppOnSnooze: true,
       });
@@ -268,6 +293,7 @@ export async function scheduleAlarmKit(
       akUuid = await ak.scheduleAlarm({
         timestamp: target.getTime(),
         title,
+        soundName,
         launchAppOnDismiss: true,
         launchAppOnSnooze: true,
       });
