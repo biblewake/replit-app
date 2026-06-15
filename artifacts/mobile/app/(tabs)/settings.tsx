@@ -325,7 +325,6 @@ export default function SettingsScreen() {
           )}
           <SettingsRow
             colors={colors}
-            isLast
             icon={
               <MaterialCommunityIcons
                 name="bug-outline"
@@ -335,6 +334,35 @@ export default function SettingsScreen() {
             }
             label="Report a Bug"
             onPress={openSupport}
+          />
+          <SettingsRow
+            colors={colors}
+            isLast
+            icon={
+              <Ionicons
+                name="play-circle-outline"
+                size={20}
+                color={colors.foreground}
+              />
+            }
+            label="Test Alarm"
+            subtitle="Preview the alarm-ringing screen"
+            onPress={() => {
+              const firstActive = alarms.find((a) => a.enabled) ?? alarms[0];
+              if (!firstActive) {
+                Alert.alert("No Alarms", "Add an alarm first to test it.");
+                return;
+              }
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              router.push({
+                pathname: "/alarm-ringing",
+                params: {
+                  alarmId: firstActive.id,
+                  type: firstActive.wakeUpCheck ? "wakeup" : "verse",
+                  isTest: "true",
+                },
+              });
+            }}
           />
         </View>
         {Platform.OS === "android" && (
@@ -540,47 +568,6 @@ export default function SettingsScreen() {
           <Text style={[styles.logoutBtnText, { color: colors.foreground }]}>Log Out</Text>
         </Pressable>
 
-        {/* Debug */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
-          Debug
-        </Text>
-        <View
-          style={[
-            styles.group,
-            { backgroundColor: colors.card, shadowColor: colors.foreground },
-          ]}
-        >
-          <SettingsRow
-            colors={colors}
-            isFirst
-            isLast
-            icon={
-              <Ionicons
-                name="play-circle-outline"
-                size={20}
-                color={colors.foreground}
-              />
-            }
-            label="Test Alarm"
-            subtitle="Preview the alarm-ringing screen"
-            onPress={() => {
-              const firstActive = alarms.find((a) => a.enabled) ?? alarms[0];
-              if (!firstActive) {
-                Alert.alert("No Alarms", "Add an alarm first to test it.");
-                return;
-              }
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-              router.push({
-                pathname: "/alarm-ringing",
-                params: {
-                  alarmId: firstActive.id,
-                  type: firstActive.wakeUpCheck ? "wakeup" : "verse",
-                  isTest: "true",
-                },
-              });
-            }}
-          />
-        </View>
       </ScrollView>
 
       <TroubleshootSheet
