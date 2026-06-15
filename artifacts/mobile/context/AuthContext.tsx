@@ -23,6 +23,7 @@ import React, {
 } from "react";
 import { Alert, Platform } from "react-native";
 import { Session, User } from "@supabase/supabase-js";
+import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -287,19 +288,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * ────────────────────────────────────────────────────────────────────────────
    */
   const signInWithGoogle = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      Alert.alert("Sign-in unavailable", "Supabase is not configured in this build.");
+      return;
+    }
     try {
-      let makeRedirectUri: ((opts: { scheme: string }) => string) | undefined;
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        makeRedirectUri = require("expo-auth-session").makeRedirectUri;
-      } catch {
-        Alert.alert(
-          "Not available",
-          "Google sign-in requires a production build. It is not supported in Expo Go."
-        );
-        return;
-      }
-      const redirectTo = makeRedirectUri!({ scheme: "biblewake" });
+      const redirectTo = Linking.createURL("");
 
       if (__DEV__) {
         console.log("[BibleWake] Google OAuth redirectTo:", redirectTo);
@@ -312,6 +306,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           skipBrowserRedirect: true,
         },
       });
+
+      // DEBUG — remove after confirming OAuth works
+      Alert.alert("OAuth Debug", `URL: ${data?.url ?? "none"}\nError: ${error?.message ?? "none"}`);
 
       if (error) throw error;
       if (!data.url) throw new Error("No OAuth URL returned");
@@ -345,19 +342,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * ────────────────────────────────────────────────────────────────────────────
    */
   const signInWithApple = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      Alert.alert("Sign-in unavailable", "Supabase is not configured in this build.");
+      return;
+    }
     try {
-      let makeRedirectUri: ((opts: { scheme: string }) => string) | undefined;
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        makeRedirectUri = require("expo-auth-session").makeRedirectUri;
-      } catch {
-        Alert.alert(
-          "Not available",
-          "Apple sign-in requires a production build. It is not supported in Expo Go."
-        );
-        return;
-      }
-      const redirectTo = makeRedirectUri!({ scheme: "biblewake" });
+      const redirectTo = Linking.createURL("");
 
       if (__DEV__) {
         console.log("[BibleWake] Apple OAuth redirectTo:", redirectTo);
@@ -370,6 +360,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           skipBrowserRedirect: true,
         },
       });
+
+      // DEBUG — remove after confirming OAuth works
+      Alert.alert("OAuth Debug", `URL: ${data?.url ?? "none"}\nError: ${error?.message ?? "none"}`);
 
       if (error) throw error;
       if (!data.url) throw new Error("No OAuth URL returned");

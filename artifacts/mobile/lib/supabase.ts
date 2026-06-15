@@ -87,6 +87,7 @@ if (missingVars.length > 0) {
  * Guest mode (AsyncStorage only) is used when false.
  */
 export const isSupabaseConfigured = Boolean(supabaseUrl) && Boolean(supabaseAnonKey);
+console.log(`[BibleWake] Supabase configured: ${isSupabaseConfigured}, url prefix: ${supabaseUrl?.slice(0, 20) ?? "unset"}`);
 
 // ── Session storage adapter ───────────────────────────────────────────────────
 /**
