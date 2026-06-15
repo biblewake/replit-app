@@ -1,0 +1,75 @@
+This is a very common TestFlight OAuth issue. Here is the full breakdown:
+
+---
+
+**Why it works locally but fails on TestFlight:**
+
+In development, Expo uses `exp://` redirect URLs. In TestFlight/production, your app needs a proper deep link redirect URL registered with both Supabase and your app config. If these do not match exactly, Supabase returns no OAuth URL and the sign in fails silently.
+
+---
+
+**The fix has three parts:**
+
+**Part 1 — Add your production redirect URL to Supabase:**
+
+Go to your Supabase dashboard:
+- Authentication → URL Configuration
+- Add this to **Redirect URLs:**
+```
+com.tinochiwara.biblewake://auth/callback
+```
+Also make sure your Site URL is set to something valid, even if just your website URL.
+
+---
+
+**Part 2 — Check your `app.json` scheme:**
+
+Make sure you have a scheme defined:
+```json
+{
+  "expo": {
+    "scheme": "com.tinochiwara.biblewake"
+  }
+}
+```
+
+---
+
+**Part 3 — Fix the OAuth call in your code:**
+
+Your Google sign in code needs to explicitly pass the redirect URL for production. Tell Replit to update the OAuth call to something like this:
+
+```javascript
+const { data, error } = await supabase.auth.signInWithOAuth({
+  provider: 'google',
+  options: {
+    redirectTo: makeRedirectUri({
+      scheme: 'com.tinochiwara.biblewake',
+      path: 'auth/callback'
+    }),
+    skipBrowserRedirect: true
+  }
+})
+```
+
+Make sure `makeRedirectUri` is imported from `expo-auth-session`:
+```javascript
+import { makeRedirectUri } from 'expo-auth-session'
+```
+
+---
+
+**Part 4 — Add the redirect URL to Google Cloud Console:**
+
+Go to Google Cloud Console → your OAuth credentials → Authorized redirect URIs and add:
+```
+https://<your-supabase-project-ref>.supabase.co/auth/v1/callback
+```
+
+This is often the missing piece that causes the "No OAuth URL returned" error specifically.
+
+---
+
+**Most likely culprit in your case:**
+
+The Supabase redirect URL not being registered is the number one cause of this exact error message on TestFlight. Start there first.

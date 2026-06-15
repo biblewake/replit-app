@@ -1,0 +1,67 @@
+That confirms the problem is happening **before** Supabase is even reached. The OAuth URL is never being generated in the first place — so nothing hits Supabase's servers.
+
+---
+
+**This means the failure is on the client side**, specifically in how `makeRedirectUri` is constructing the URL or how the OAuth initiation is being called.
+
+---
+
+**Most likely causes:**
+
+**1. The scheme in `app.json` does not match what `makeRedirectUri` is generating**
+
+In TestFlight, `makeRedirectUri` behaves differently than in Expo Go. Add a `console.log` temporarily to see what URL it is actually producing:
+
+```javascript
+const redirectUrl = makeRedirectUri({
+  scheme: 'com.tinochiwara.biblewake',
+  path: 'auth/callback'
+})
+console.log('Redirect URL:', redirectUrl)
+```
+
+Check your Sentry or logs to see what value this produces in production.
+
+**2. `skipBrowserRedirect: true` with no browser open handling**
+
+If `skipBrowserRedirect` is true but you are not manually opening the browser with `WebBrowser.openAuthSessionAsync`, the flow dies immediately with no URL. Ask Replit to confirm the full OAuth flow looks like this:
+
+```javascript
+const { data, error } = await supabase.auth.signInWithOAuth({
+  provider: 'google',
+  options: {
+    redirectTo: redirectUrl,
+    skipBrowserRedirect: true
+  }
+})
+
+if (data?.url) {
+  await WebBrowser.openAuthSessionAsync(data.url, redirectUrl)
+} else {
+  console.log('No URL returned:', error)
+}
+```
+
+The `if (data?.url)` check is where your error is coming from — `data.url` is null or undefined.
+
+**3. Missing Google provider configuration in Supabase**
+
+Even though nothing shows in logs, go to Supabase → Authentication → Providers → Google and confirm:
+- Google is enabled
+- Client ID and Client Secret are filled in
+- Authorized Client IDs includes your iOS client ID from Google Cloud Console
+
+---
+
+**The fastest debug path:**
+
+Add a temporary alert in your code right after the `signInWithOAuth` call:
+
+```javascript
+Alert.alert(
+  'OAuth Debug',
+  `URL: ${data?.url ?? 'none'}\nError: ${error?.message ?? 'none'}`
+)
+```
+
+That will show you exactly what Supabase is returning on the next TestFlight build without needing logs.

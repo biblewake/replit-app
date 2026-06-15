@@ -1,0 +1,77 @@
+This is a common issue with Google OAuth in Expo. Here is the full breakdown:
+
+---
+
+**Most likely causes in order:**
+
+**1. Redirect URI mismatch** — the most common cause. Your Google OAuth client in Google Cloud Console does not have the correct redirect URI registered. For Expo you need:
+
+```
+https://auth.expo.io/@tinochiwara/mobile
+```
+
+And also add your Supabase callback URL:
+```
+https://<your-project-ref>.supabase.co/auth/v1/callback
+```
+
+Both must be in your Google Cloud Console under **Authorized redirect URIs**.
+
+---
+
+**2. Supabase Google provider not configured correctly.** In your Supabase dashboard:
+- Go to **Authentication → Providers → Google**
+- Make sure Google is enabled
+- Make sure your **Client ID** and **Client Secret** from Google Cloud Console are pasted in correctly
+- The **Authorized Client IDs** field must match exactly
+
+---
+
+**3. Wrong OAuth flow for Expo.** In Expo you cannot use the standard web OAuth flow directly. You need to use `expo-auth-session` with the correct configuration. Make sure your code looks like this:
+
+```javascript
+import * as WebBrowser from 'expo-web-browser'
+import { makeRedirectUri } from 'expo-auth-session'
+
+WebBrowser.maybeCompleteAuthSession()
+
+const redirectUri = makeRedirectUri({
+  scheme: 'com.tinochiwara.biblewake'
+})
+
+const { data, error } = await supabase.auth.signInWithOAuth({
+  provider: 'google',
+  options: {
+    redirectTo: redirectUri,
+    skipBrowserRedirect: true
+  }
+})
+```
+
+---
+
+**4. Missing scheme in app.json.** Your `app.json` must have your scheme defined:
+
+```json
+"scheme": "com.tinochiwara.biblewake"
+```
+
+---
+
+**5. In production vs development difference.** If this works in dev but not TestFlight, the redirect URI is different between environments. In production you need the bundle identifier scheme, not the Expo Go scheme.
+
+---
+
+**Quickest way to diagnose:**
+
+Ask Replit to log the full error object:
+
+```javascript
+const { data, error } = await supabase.auth.signInWithOAuth(...)
+console.log('OAuth data:', JSON.stringify(data))
+console.log('OAuth error:', JSON.stringify(error))
+```
+
+If `data.url` is null or undefined, the issue is on the Supabase configuration side. If the URL exists but the browser redirect fails, the issue is on the Expo redirect URI side.
+
+Which environment is this happening in — development, TestFlight, or both?
