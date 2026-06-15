@@ -301,6 +301,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       const redirectTo = makeRedirectUri!({ scheme: "biblewake" });
 
+      if (__DEV__) {
+        console.log("[BibleWake] Google OAuth redirectTo:", redirectTo);
+      }
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
@@ -317,10 +321,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
     } catch (error) {
       console.error("[BibleWake] Google sign-in error:", error);
-      Alert.alert(
-        "Sign-in failed",
-        "Could not sign in with Google. Please try again."
-      );
+      const message =
+        error instanceof Error ? error.message : "An unexpected error occurred.";
+      Alert.alert("Sign-in failed", message);
     }
   }, []);
 
@@ -356,6 +359,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       const redirectTo = makeRedirectUri!({ scheme: "biblewake" });
 
+      if (__DEV__) {
+        console.log("[BibleWake] Apple OAuth redirectTo:", redirectTo);
+      }
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "apple",
         options: {
@@ -372,10 +379,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
     } catch (error) {
       console.error("[BibleWake] Apple sign-in error:", error);
-      Alert.alert(
-        "Sign-in failed",
-        "Could not sign in with Apple. Please try again."
-      );
+      const message =
+        error instanceof Error ? error.message : "An unexpected error occurred.";
+      Alert.alert("Sign-in failed", message);
     }
   }, []);
 

@@ -25,9 +25,25 @@ export function useFeatureFlag(key: string): boolean {
           .select("value")
           .eq("key", key)
           .single();
-        if (!error && data && typeof data.value === "boolean") {
+        if (error) {
+          // PGRST116 = no rows found (flag doesn't exist). Any other error
+          // may indicate an RLS misconfiguration — the anon role needs a
+          // SELECT policy on feature_flags for unauthenticated reads to work.
+          if (error.code !== "PGRST116") {
+            console.warn(
+              `[useFeatureFlag] Could not read flag "${key}" — possible RLS issue (anon SELECT policy required):`,
+              error.message
+            );
+          }
+          return;
+        }
+        if (data && typeof data.value === "boolean") {
           cache[key] = data.value;
           setValue(data.value);
+        } else {
+          console.warn(
+            `[useFeatureFlag] Flag "${key}" returned no data — possible RLS issue (anon SELECT policy required)`
+          );
         }
       } catch {
         // network failure — keep the safe default of false

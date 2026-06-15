@@ -56,6 +56,29 @@ export async function getAlarmKitAuthDenied(): Promise<boolean> {
   }
 }
 
+/**
+ * Persist the AlarmKit authorization result so useAlarmPermission can reflect
+ * the real state without triggering the system prompt on passive checks.
+ *
+ * Call this immediately after requestAlarmKitPermission() resolves:
+ *   - "authorized"        → remove the key (permission granted)
+ *   - anything else       → write "true" (denied / notDetermined)
+ */
+export async function persistAlarmKitAuthStatus(
+  status: AuthorizationStatus | "unavailable"
+): Promise<void> {
+  if (Platform.OS !== "ios") return;
+  try {
+    if (status === "authorized") {
+      await AsyncStorage.removeItem(AK_AUTH_DENIED_KEY);
+    } else {
+      await AsyncStorage.setItem(AK_AUTH_DENIED_KEY, "true");
+    }
+  } catch {
+    // best-effort
+  }
+}
+
 // ── Lazy require guard ────────────────────────────────────────────────────────
 // expo-alarm-kit is iOS-only. Using require() keeps the module from being
 // evaluated on Android/web and avoids a hard import that would fail on those

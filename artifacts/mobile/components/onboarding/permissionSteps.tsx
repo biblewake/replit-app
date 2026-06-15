@@ -5,6 +5,10 @@ import * as Notifications from "expo-notifications";
 import * as StoreReview from "expo-store-review";
 import { Camera } from "expo-camera";
 import { OL, ONBOARDING_ORANGE } from "@/components/onboarding/primitives";
+import {
+  requestAlarmKitPermission,
+  persistAlarmKitAuthStatus,
+} from "@/lib/alarmKitScheduler";
 
 export type PermissionKind = "notifications" | "alarm" | "camera" | "review";
 
@@ -55,7 +59,7 @@ export function PermissionScreen({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setBusy(true);
     try {
-      if (kind === "notifications" || kind === "alarm") {
+      if (kind === "notifications") {
         await Notifications.requestPermissionsAsync({
           ios: {
             allowAlert: true,
@@ -63,6 +67,9 @@ export function PermissionScreen({
             allowSound: true,
           },
         });
+      } else if (kind === "alarm") {
+        const status = await requestAlarmKitPermission();
+        await persistAlarmKitAuthStatus(status);
       } else if (kind === "camera") {
         await Camera.requestCameraPermissionsAsync();
       } else if (kind === "review") {
