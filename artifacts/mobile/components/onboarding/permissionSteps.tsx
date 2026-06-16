@@ -54,10 +54,15 @@ export function PermissionScreen({
 }) {
   const cfg = CONFIG[kind];
   const [busy, setBusy] = useState(false);
+  const [unavailableNote, setUnavailableNote] = useState<string | null>(null);
 
   const request = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setBusy(true);
+    setUnavailableNote(null);
+    // Tracks whether the unavailable early-exit path handled its own
+    // cleanup + continuation, so the finally block skips them.
+    let handledEarly = false;
     try {
       if (kind === "notifications") {
         await Notifications.requestPermissionsAsync({
@@ -69,6 +74,17 @@ export function PermissionScreen({
         });
       } else if (kind === "alarm") {
         const status = await requestAlarmKitPermission();
+        if (status === "unavailable") {
+          setUnavailableNote(
+            "Alarm sounds require iOS 26 or later on a device build."
+          );
+          handledEarly = true;
+          setBusy(false);
+          // Give the user a moment to read the note before advancing.
+          await new Promise<void>((resolve) => setTimeout(resolve, 1500));
+          onContinue();
+          return;
+        }
         await persistAlarmKitAuthStatus(status);
       } else if (kind === "camera") {
         await Camera.requestCameraPermissionsAsync();
@@ -80,8 +96,10 @@ export function PermissionScreen({
     } catch {
       // best-effort
     } finally {
-      setBusy(false);
-      onContinue();
+      if (!handledEarly) {
+        setBusy(false);
+        onContinue();
+      }
     }
   };
 
@@ -94,6 +112,11 @@ export function PermissionScreen({
         ) : null}
         <Text style={[styles.title, { color: OL.foreground }]}>{cfg.title}</Text>
         <Text style={[styles.bodyText, { color: OL.mutedForeground }]}>{cfg.body}</Text>
+        {unavailableNote ? (
+          <Text style={[styles.unavailableNote, { color: OL.mutedForeground }]}>
+            {unavailableNote}
+          </Text>
+        ) : null}
       </View>
 
       <View style={styles.actions}>
@@ -171,5 +194,13 @@ const styles = StyleSheet.create({
   skipText: {
     fontSize: 15,
     fontFamily: "Inter_500Medium",
+  },
+  unavailableNote: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    lineHeight: 18,
+    maxWidth: 300,
+    marginTop: 4,
   },
 });

@@ -69,9 +69,16 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const isNativeTabs = useIsNativeTabs();
   const { alarms, toggleAlarm, addAlarm, updateAlarm, streak, getNextAlarm } = useAlarms();
-  const { hasPermission, hasExactAlarmPermission } = useAlarmPermission();
-  const allPermissionsGranted = hasPermission && hasExactAlarmPermission;
-  const permissionSheetType = !hasPermission ? "notification" as const : "exactAlarm" as const;
+  const { hasPermission, hasExactAlarmPermission, alarmKitAuthorized } = useAlarmPermission();
+  const allPermissionsGranted =
+    hasPermission &&
+    hasExactAlarmPermission &&
+    (Platform.OS !== "ios" || alarmKitAuthorized);
+  const permissionSheetType = !hasPermission
+    ? ("notification" as const)
+    : Platform.OS === "ios" && !alarmKitAuthorized
+    ? ("alarmKit" as const)
+    : ("exactAlarm" as const);
   const { user, profile } = useAuth();
   const [showAddAlarm, setShowAddAlarm] = useState(false);
   const [editingAlarm, setEditingAlarm] = useState<import("@/context/AlarmContext").Alarm | null>(null);
@@ -213,7 +220,11 @@ export default function HomeScreen() {
             </View>
             <View style={styles.permBannerText}>
               <Text style={[styles.permBannerTitle, { color: "#FF3B30" }]}>
-                {!hasPermission ? "Alarm Access Denied" : "Exact Alarms Disabled"}
+                {!hasPermission
+                  ? "Alarm Access Denied"
+                  : Platform.OS === "ios" && !alarmKitAuthorized
+                  ? "Alarm Access Denied"
+                  : "Exact Alarms Disabled"}
               </Text>
               <Text style={[styles.permBannerSub, { color: colors.mutedForeground }]}>
                 Tap to grant permission and enable alarms

@@ -62,12 +62,16 @@ export async function getAlarmKitAuthDenied(): Promise<boolean> {
  *
  * Call this immediately after requestAlarmKitPermission() resolves:
  *   - "authorized"        → remove the key (permission granted)
- *   - anything else       → write "true" (denied / notDetermined)
+ *   - "denied"            → write "true" (user explicitly denied)
+ *   - "notDetermined"     → write "true" (asked but not yet answered)
+ *   - "unavailable"       → no-op (AlarmKit not available on this build/device;
+ *                           do NOT set the denied flag — the user was never asked)
  */
 export async function persistAlarmKitAuthStatus(
   status: AuthorizationStatus | "unavailable"
 ): Promise<void> {
   if (Platform.OS !== "ios") return;
+  if (status === "unavailable") return;
   try {
     if (status === "authorized") {
       await AsyncStorage.removeItem(AK_AUTH_DENIED_KEY);
