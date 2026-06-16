@@ -199,8 +199,8 @@ export function AccountScreen({ onContinue }: { onContinue: () => void }) {
       </View>
 
       <View style={styles.authButtons}>
-        {/* Apple — black, shown first on non-Android */}
-        {Platform.OS !== "android" ? (
+        {/* Apple — black, shown on iOS only */}
+        {Platform.OS === "ios" ? (
           <Pressable
             disabled={busy !== null}
             onPress={() => run("apple")}
