@@ -1,0 +1,135 @@
+[92m✅ Modified [1mapp.json[22m with:[39m
+{
+  "name": "Bible Wake",
+  "slug": "bible-wake",
+  "owner": "replit-private-24c10180-a6e0-4d25-b059-06a4201f94cc",
+  "extra": {
+    "eas": {
+      "projectId": "6c888f73-a1de-4871-8e37-f640761c60a2"
+    }
+  },
+  "ios": {
+    "appleTeamId": "29F6KUYJ5C",
+    "bundleIdentifier": "com.tinochiwara.biblewake",
+    "infoPlist": {
+      "ITSAppUsesNonExemptEncryption": false
+    }
+  }
+}
+
+
+[2mFull [1mapp.json[22m config:[22m
+[2m{
+  "name": "Bible Wake",
+  "slug": "bible-wake",
+  "version": "1.0.0",
+  "orientation": "portrait",
+  "icon": "./assets/images/icon.png",
+  "scheme": "biblewake",
+  "userInterfaceStyle": "automatic",
+  "newArchEnabled": true,
+  "splash": {
+    "image": "./assets/images/splash.png",
+    "resizeMode": "cover",
+    "backgroundColor": "#1C1C1C"
+  },
+  "ios": {
+    "supportsTablet": false,
+    "bundleIdentifier": "com.tinochiwara.biblewake",
+    "buildNumber": "10",
+    "deploymentTarget": "26.0",
+    "infoPlist": {
+      "UIBackgroundModes": [
+        "audio",
+        "fetch"
+      ],
+      "NSMicrophoneUsageDescription": "Bible Wake uses the microphone so you can recite your scripture verse aloud during your morning alarm.",
+      "NSAlarmKitUsageDescription": "Bible Wake uses alarms to wake you up at your scheduled time, even when your phone is on silent.",
+      "ITSAppUsesNonExemptEncryption": false
+    },
+    "entitlements": {
+      "com.apple.security.application-groups": [
+        "group.com.tinochiwara.biblewake"
+      ]
+    },
+    "associatedDomains": [
+      "applinks:cmaysraaclfvofiynctl.supabase.co"
+    ],
+    "appleTeamId": "29F6KUYJ5C"
+  },
+  "android": {
+    "package": "com.tinochiwara.biblewake",
+    "versionCode": 1,
+    "adaptiveIcon": {
+      "foregroundImage": "./assets/images/icon.png",
+      "backgroundColor": "#1C1C1C"
+    },
+    "permissions": [
+      "android.permission.SCHEDULE_EXACT_ALARM",
+      "android.permission.USE_FULL_SCREEN_INTENT",
+      "android.permission.WAKE_LOCK",
+      "android.permission.FOREGROUND_SERVICE",
+      "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+      "com.google.android.gms.permission.AD_ID",
+      "android.permission.CAMERA",
+      "android.permission.RECORD_AUDIO"
+    ]
+  },
+  "web": {
+    "favicon": "./assets/images/icon.png"
+  },
+  "plugins": [
+    "expo-dev-client",
+    [
+      "expo-router",
+      {
+        "origin": "https://replit.com/"
+      }
+    ],
+    "expo-font",
+    "expo-web-browser",
+    [
+      "expo-system-ui",
+      {
+        "style": "automatic",
+        "backgroundColor": "#000000"
+      }
+    ],
+    [
+      "expo-notifications",
+      {
+        "icon": "./assets/images/icon.png",
+        "color": "#1A73E8"
+      }
+    ],
+    "expo-apple-authentication",
+    "expo-task-manager",
+    "expo-background-fetch",
+    [
+      "expo-tracking-transparency",
+      {
+        "userTrackingPermission": "Bible Wake uses this to measure how well onboarding helps you build your scripture habit."
+      }
+    ],
+    [
+      "expo-camera",
+      {
+        "cameraPermission": "Bible Wake uses the camera so you can verify you're awake during your morning alarm."
+      }
+    ],
+    "./plugins/withBootReceiver",
+    "./plugins/withAlarmSounds"
+  ],
+  "experiments": {
+    "typedRoutes": true,
+    "reactCompiler": false
+  },
+  "extra": {
+    "eas": {
+      "projectId": "6c888f73-a1de-4871-8e37-f640761c60a2"
+    }
+  },
+  "owner": "replit-private-24c10180-a6e0-4d25-b059-06a4201f94cc"
+}[22m
