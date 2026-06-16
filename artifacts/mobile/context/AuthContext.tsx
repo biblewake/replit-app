@@ -25,6 +25,7 @@ import { Alert, Platform } from "react-native";
 import { Session, User } from "@supabase/supabase-js";
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
+import * as AppleAuthentication from "expo-apple-authentication";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -307,9 +308,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       });
 
-      // DEBUG — remove after confirming OAuth works
-      Alert.alert("OAuth Debug", `URL: ${data?.url ?? "none"}\nError: ${error?.message ?? "none"}`);
-
       if (error) throw error;
       if (!data.url) throw new Error("No OAuth URL returned");
 
@@ -325,52 +323,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * APPLE SIGN-IN — uses PKCE flow via Supabase OAuth.
+   * APPLE SIGN-IN — uses the native iOS identity token flow.
    *
-   * After the browser redirect, the OS delivers a biblewake:// deep link
-   * containing ?code=… which _layout.tsx exchanges for a session via
-   * supabase.auth.exchangeCodeForSession(url).
+   * expo-apple-authentication presents the Face ID / Apple ID sheet directly
+   * (no browser popup). The identity token returned by Apple is passed straight
+   * to supabase.auth.signInWithIdToken(), so no OAuth Secret is needed in the
+   * Supabase dashboard — only the Apple provider needs to be enabled there.
    *
    * ── External configuration required (cannot be done in code) ────────────────
-   *   1. Supabase Dashboard → Auth → URL Configuration → Redirect URLs
-   *      → add:  biblewake://
-   *   2. Apple Developer → Certificates, IDs & Profiles → Service IDs
-   *      → Return URLs → add:
-   *        https://<your-supabase-project>.supabase.co/auth/v1/callback
-   *   3. Supabase Dashboard → Auth → Providers → Apple → Enable
-   *      → paste the Service ID and Private Key from step 2
+   *   Supabase Dashboard → Auth → Providers → Apple → Enable
+   *   (No Service ID or Secret Key needed for the native id_token flow)
    * ────────────────────────────────────────────────────────────────────────────
    */
   const signInWithApple = useCallback(async () => {
+    if (Platform.OS !== "ios") return; // Apple Sign-In is iOS-only
+
     if (!isSupabaseConfigured) {
       Alert.alert("Sign-in unavailable", "Supabase is not configured in this build.");
       return;
     }
     try {
-      const redirectTo = Linking.createURL("");
-
-      if (__DEV__) {
-        console.log("[BibleWake] Apple OAuth redirectTo:", redirectTo);
-      }
-
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "apple",
-        options: {
-          redirectTo,
-          skipBrowserRedirect: true,
-        },
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
       });
 
-      // DEBUG — remove after confirming OAuth works
-      Alert.alert("OAuth Debug", `URL: ${data?.url ?? "none"}\nError: ${error?.message ?? "none"}`);
+      const { identityToken } = credential;
+      if (!identityToken) throw new Error("Apple did not return an identity token.");
+
+      const { error } = await supabase.auth.signInWithIdToken({
+        provider: "apple",
+        token: identityToken,
+      });
 
       if (error) throw error;
-      if (!data.url) throw new Error("No OAuth URL returned");
-
-      // Open the OAuth page. On success the OS delivers a biblewake:// deep
-      // link with ?code=… which _layout.tsx handles via exchangeCodeForSession.
-      await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-    } catch (error) {
+    } catch (error: unknown) {
+      // User dismissed the sheet — not an error worth surfacing.
+      if (
+        error instanceof Error &&
+        (error as { code?: string }).code === "ERR_REQUEST_CANCELED"
+      ) {
+        return;
+      }
       console.error("[BibleWake] Apple sign-in error:", error);
       const message =
         error instanceof Error ? error.message : "An unexpected error occurred.";

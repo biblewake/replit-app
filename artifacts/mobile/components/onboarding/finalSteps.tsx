@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useAuth } from "@/context/AuthContext";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { supabase } from "@/lib/supabase";
 import { OL, ONBOARDING_ORANGE } from "@/components/onboarding/primitives";
 import { ActivityIndicator } from "react-native";
 
@@ -143,8 +144,20 @@ export function AccountScreen({ onContinue }: { onContinue: () => void }) {
   const [busy, setBusy] = useState<null | "google" | "apple" | "anon">(null);
   const showGuestLogin = useFeatureFlag("show_guest_login");
 
+  // Sign out any stale anonymous session left over from a previous install so
+  // the user always starts the auth screen clean.
   useEffect(() => {
-    if (session || isGuest) onContinue();
+    if (session?.user?.is_anonymous === true) {
+      supabase.auth.signOut().catch(() => {});
+    }
+    // Run once on mount only
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Advance only when a real (non-anonymous) signed-in session exists, or the
+  // user explicitly chose guest mode.
+  useEffect(() => {
+    if ((session && !session.user?.is_anonymous) || isGuest) onContinue();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, isGuest]);
 
