@@ -57,6 +57,62 @@ export async function getAlarmKitAuthDenied(): Promise<boolean> {
 }
 
 /**
+ * Check the live AlarmKit authorization status and sync AsyncStorage when the
+ * cached state says "denied".
+ *
+ * Safe to call on every app foreground — it only calls requestAuthorization()
+ * when the cached flag is already "true" (denied), meaning the user has already
+ * made a decision, so iOS will NOT re-show the system prompt.
+ *
+ * If the cached flag is not set (authorized or notDetermined), the function
+ * returns false immediately without calling requestAuthorization(), preventing
+ * an unwanted permission prompt during passive checks.
+ *
+ * Returns the up-to-date "denied" state (true = still denied, false = authorized).
+ * Always returns false on Android / web.
+ */
+export async function syncAlarmKitAuthIfDenied(): Promise<boolean> {
+  if (Platform.OS !== "ios") return false;
+
+  // Only hit the live API when we already have a persisted "denied" flag.
+  // If no flag exists, the user is authorized (or never asked) — skip the call
+  // to avoid triggering the system prompt while status is notDetermined.
+  const wasDenied = await getAlarmKitAuthDenied();
+  if (!wasDenied) return false;
+
+  const ak = getAk();
+  if (!ak || !ensureConfigured()) {
+    // AlarmKit unavailable — leave the cached flag as-is and report denied.
+    return true;
+  }
+
+  let status: AuthorizationStatus;
+  try {
+    status = await ak.requestAuthorization();
+  } catch {
+    // Treat errors conservatively — keep "denied" state.
+    return true;
+  }
+
+  if (status === "authorized") {
+    try {
+      await AsyncStorage.removeItem(AK_AUTH_DENIED_KEY);
+    } catch {
+      // best-effort
+    }
+    return false;
+  }
+
+  // Still denied or notDetermined — ensure the flag is written.
+  try {
+    await AsyncStorage.setItem(AK_AUTH_DENIED_KEY, "true");
+  } catch {
+    // best-effort
+  }
+  return true;
+}
+
+/**
  * Persist the AlarmKit authorization result so useAlarmPermission can reflect
  * the real state without triggering the system prompt on passive checks.
  *

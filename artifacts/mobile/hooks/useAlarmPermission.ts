@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AppState, AppStateStatus, PermissionsAndroid, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
-import { getAlarmKitAuthDenied } from "@/lib/alarmKitScheduler";
+import { syncAlarmKitAuthIfDenied } from "@/lib/alarmKitScheduler";
 
 export function useAlarmPermission(): {
   hasPermission: boolean;
@@ -33,10 +33,12 @@ export function useAlarmPermission(): {
     }
 
     if (Platform.OS === "ios") {
-      // Read the persisted denied flag written by scheduleAlarmKit — never
-      // calls requestAuthorization() so this path never triggers the system
-      // prompt during passive foreground checks.
-      const denied = await getAlarmKitAuthDenied();
+      // On foreground: sync the live AlarmKit authorization status when the
+      // cached flag says "denied". requestAuthorization() is safe to call in
+      // this case because the user has already made a decision — iOS will NOT
+      // re-show the system prompt. If the flag is not set (authorized or
+      // notDetermined) the call is skipped entirely to avoid an unwanted prompt.
+      const denied = await syncAlarmKitAuthIfDenied();
       setAlarmKitAuthorized(!denied);
     }
   };
