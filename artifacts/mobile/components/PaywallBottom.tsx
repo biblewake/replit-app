@@ -11,21 +11,11 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import type { PurchasesPackage } from "react-native-purchases";
 
 import { OL, ONBOARDING_ORANGE } from "@/components/onboarding/primitives";
 
 type Plan = "yearly" | "weekly";
-
-/** Minimal package shape — matches what the store SDK provides at runtime. */
-export interface RCPackage {
-  identifier: string;
-  product: {
-    priceString: string;
-    price: number;
-    introPrice: { periodNumberOfUnits?: number; periodUnit?: string; paymentMode?: string; priceString?: string } | null | undefined;
-    title: string;
-  };
-}
 
 function openPrivacy() {
   Linking.openURL("https://trybiblewake.com/privacy-policy").catch(() => {});
@@ -43,8 +33,11 @@ function LinkText({ label, onPress }: { label: string; onPress: () => void }) {
 }
 
 /** Derive trial label from store product intro price metadata. Returns null when no trial. */
-function getTrialLabel(pkg: RCPackage | undefined): string | null {
-  const introPrice = pkg?.product.introPrice;
+function getTrialLabel(pkg: PurchasesPackage | undefined): string | null {
+  const introPrice = pkg?.product.introPrice as
+    | { periodNumberOfUnits?: number; periodUnit?: string; paymentMode?: string }
+    | null
+    | undefined;
   if (!introPrice) return null;
   const units = introPrice.periodNumberOfUnits;
   const unit = introPrice.periodUnit?.toLowerCase() ?? "day";
@@ -53,9 +46,9 @@ function getTrialLabel(pkg: RCPackage | undefined): string | null {
 }
 
 interface PaywallBottomProps {
-  annualPkg: RCPackage | undefined;
-  weeklyPkg: RCPackage | undefined;
-  onPurchase: (pkg: RCPackage) => Promise<void>;
+  annualPkg: PurchasesPackage | undefined;
+  weeklyPkg: PurchasesPackage | undefined;
+  onPurchase: (pkg: PurchasesPackage) => Promise<void>;
   onRestore: () => Promise<void>;
   isPurchasing: boolean;
   isRestoring: boolean;
@@ -76,7 +69,7 @@ export function PaywallBottom({
 }: PaywallBottomProps) {
   const [plan, setPlan] = useState<Plan>(defaultPlan);
   const [confirmVisible, setConfirmVisible] = useState(false);
-  const [pendingPkg, setPendingPkg] = useState<RCPackage | null>(null);
+  const [pendingPkg, setPendingPkg] = useState<PurchasesPackage | null>(null);
 
   const isYearly = plan === "yearly";
 
@@ -95,7 +88,9 @@ export function PaywallBottom({
 
   // Trial label and intro price string — both derived from package metadata only.
   const trialLabel = getTrialLabel(annualPkg);
-  const introPriceStr = annualPkg?.product.introPrice?.priceString;
+  const introPriceStr = (
+    annualPkg?.product.introPrice as { priceString?: string } | null | undefined
+  )?.priceString;
 
   const handleCta = () => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
