@@ -75,13 +75,13 @@ export function PermissionScreen({
       } else if (kind === "alarm") {
         const status = await requestAlarmKitPermission();
         if (status === "unavailable") {
-          setUnavailableNote(
-            "Alarm sounds require iOS 26 or later on a device build."
-          );
+          // Show a brief "Continuing…" label so the user knows something
+          // happened, keep the button disabled, and advance quickly.
+          setUnavailableNote("Continuing\u2026");
           handledEarly = true;
+          // Short pause (300ms max) so the label is readable, then advance.
+          await new Promise<void>((resolve) => setTimeout(resolve, 300));
           setBusy(false);
-          // Give the user a moment to read the note before advancing.
-          await new Promise<void>((resolve) => setTimeout(resolve, 1500));
           onContinue();
           return;
         }

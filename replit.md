@@ -197,6 +197,12 @@ The `eas.json` `submit.production.android` block is already configured to use `.
 
 - **Edge function changes require a re-deploy.** Code edits to `supabase/functions/verses/` or `supabase/functions/transcribe/` are NOT picked up automatically in production unless you push to `main` (which triggers the GitHub Action) or run `supabase functions deploy <name>` manually. Forgetting this step means the app silently uses stale function code.
 
+- **AlarmKit `configure()` requires an App Group (one-time manual step).** `alarmKitScheduler.ts` calls `ak.configure("group.com.tinochiwara.biblewake")`. This returns `false` — and alarms will silently fail to fire — unless the App Group is registered and the provisioning profile includes it. Steps:
+  1. Apple Developer Portal → Certificates, IDs & Profiles → Identifiers → App Groups → register `group.com.tinochiwara.biblewake`
+  2. Edit the `com.tinochiwara.biblewake` App ID to enable the App Groups capability and select the group above
+  3. Re-run `eas build` so EAS regenerates the provisioning profile with the new capability
+  The permission dialog (`requestAuthorization()`) works independently of `configure()` and will still appear — but alarm scheduling itself requires the App Group for the launch payload to be delivered.
+
 ## Pointers
 
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details

@@ -264,6 +264,12 @@ function RootLayoutNav() {
     return () => subscription.remove();
   }, [router]);
 
+  // Block rendering until auth/onboarding state is resolved.
+  // This must come AFTER all hooks (Rules of Hooks: no early return before hooks).
+  // Without this guard, the (tabs) stack briefly flashes before the navigation
+  // effect fires its redirect — visible as a "home screen flash" on first launch.
+  if (onboardingComplete === null) return null;
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

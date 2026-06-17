@@ -144,11 +144,21 @@ export function AccountScreen({ onContinue }: { onContinue: () => void }) {
   const [busy, setBusy] = useState<null | "google" | "apple" | "anon">(null);
   const showGuestLogin = useFeatureFlag("show_guest_login");
 
-  // Sign out any stale anonymous session left over from a previous install so
-  // the user always starts the auth screen clean.
+  // Sign out any STALE anonymous session left over from a previous install.
+  // We only sign out if the session was created more than 5 seconds ago —
+  // this prevents the signout from racing with a freshly-arrived Google PKCE
+  // session. The PKCE exchange fires onAuthStateChange which creates a new
+  // real session; if we blindly sign it out here the user gets stuck on this
+  // screen even after a successful Google sign-in.
   useEffect(() => {
     if (session?.user?.is_anonymous === true) {
-      supabase.auth.signOut().catch(() => {});
+      const createdAt = session.user.created_at
+        ? new Date(session.user.created_at).getTime()
+        : 0;
+      const ageMs = Date.now() - createdAt;
+      if (ageMs > 5000) {
+        supabase.auth.signOut().catch(() => {});
+      }
     }
     // Run once on mount only
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -156,10 +166,26 @@ export function AccountScreen({ onContinue }: { onContinue: () => void }) {
 
   // Advance only when a real (non-anonymous) signed-in session exists, or the
   // user explicitly chose guest mode.
+  // Primary path: AuthContext propagates the session update via props.
   useEffect(() => {
     if ((session && !session.user?.is_anonymous) || isGuest) onContinue();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, isGuest]);
+
+  // Fallback path: subscribe directly to Supabase auth state changes so that
+  // PKCE session delivery (Google sign-in) triggers onContinue() even if the
+  // AuthContext → AccountScreen prop chain has a timing gap.
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, newSession) => {
+        if (newSession && !newSession.user?.is_anonymous) {
+          onContinue();
+        }
+      }
+    );
+    return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const run = async (provider: "google" | "apple") => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

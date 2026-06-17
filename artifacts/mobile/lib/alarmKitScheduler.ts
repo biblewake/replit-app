@@ -159,6 +159,14 @@ function getAk(): ExpoAlarmKitModule | null {
 // ── configure() — synchronous, called once ───────────────────────────────────
 // The real expo-alarm-kit API has configure() as a synchronous call that
 // returns boolean. We call it lazily on first use and cache the result.
+//
+// IMPORTANT — One-time manual setup required for configure() to return true:
+//   The App Group "group.com.tinochiwara.biblewake" must be registered in the
+//   Apple Developer Portal (Identifiers → App Groups) and included in the app's
+//   provisioning profile before configure() will succeed on device builds. EAS
+//   must be re-run with credentials after adding the App Group so the profile is
+//   regenerated. Without this, configure() returns false and alarms will not fire
+//   even though the permission dialog appears. This is a one-time manual step.
 
 let _configured = false;
 
@@ -168,6 +176,14 @@ function ensureConfigured(): boolean {
   if (!ak) return false;
   try {
     const ok = ak.configure("group.com.tinochiwara.biblewake");
+    if (!ok) {
+      console.warn(
+        "[AlarmKit] configure() returned false — App Group " +
+        "'group.com.tinochiwara.biblewake' may not be registered in Apple " +
+        "Developer Portal or included in the provisioning profile. " +
+        "Alarm scheduling will fail, but permission requests will still proceed."
+      );
+    }
     _configured = ok;
     return ok;
   } catch {
@@ -226,7 +242,13 @@ export async function initAlarmKit(): Promise<void> {
 export async function requestAlarmKitPermission(): Promise<AuthorizationStatus | "unavailable"> {
   const ak = getAk();
   if (!ak) return "unavailable";
-  if (!ensureConfigured()) return "unavailable";
+  // NOTE: configure() failure does NOT block the permission dialog here.
+  // requestAuthorization() works independently of the App Group — the system
+  // prompt can still be shown even when configure() returns false. Only
+  // scheduleAlarmKit() requires a successful configure() (for the launch payload
+  // to be delivered). We still call ensureConfigured() for the side-effect of
+  // caching the result and emitting a console.warn when it fails.
+  ensureConfigured();
   try {
     return await ak.requestAuthorization();
   } catch {
