@@ -28,6 +28,7 @@ import {
 import {
   scheduleAlarmKit,
   cancelAlarmKit,
+  requestAlarmKitPermission,
   type AlarmKitScheduleResult,
 } from "@/lib/alarmKitScheduler";
 
@@ -55,6 +56,7 @@ export interface Alarm {
 const STORAGE_KEY = "@bible_wake_alarms";
 const STREAK_KEY = "@bible_wake_streak";
 const LONGEST_STREAK_KEY = "@bible_wake_longest_streak";
+const LAST_WAKE_DATE_KEY = "@bible_wake_last_wake_date";
 /** Written for both guest and authenticated users so the background task can read it. */
 export const ALARM_CACHE_KEY = "@bible_wake_alarms_cache";
 
@@ -80,10 +82,15 @@ const SAMPLE_ALARMS: Alarm[] = [
   },
 ];
 
+export interface AddAlarmResult {
+  success: boolean;
+  error?: string;
+}
+
 interface AlarmContextType {
   alarms: Alarm[];
-  addAlarm: (alarm: Omit<Alarm, "id">) => void;
-  updateAlarm: (id: string, updates: Partial<Alarm>) => void;
+  addAlarm: (alarm: Omit<Alarm, "id">) => Promise<AddAlarmResult>;
+  updateAlarm: (id: string, updates: Partial<Alarm>) => Promise<AddAlarmResult>;
   deleteAlarm: (id: string) => void;
   toggleAlarm: (id: string) => void;
   getNextAlarm: () => Alarm | null;
@@ -104,8 +111,8 @@ interface AlarmContextType {
 
 const AlarmContext = createContext<AlarmContextType>({
   alarms: [],
-  addAlarm: () => {},
-  updateAlarm: () => {},
+  addAlarm: () => Promise.resolve({ success: true }),
+  updateAlarm: () => Promise.resolve({ success: true }),
   deleteAlarm: () => {},
   toggleAlarm: () => {},
   getNextAlarm: () => null,
@@ -202,6 +209,7 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
   const [loaded, setLoaded] = useState(false);
   const [streak, setStreak] = useState(0);
   const [longestStreak, setLongestStreak] = useState(0);
+  const [lastWakeDate, setLastWakeDate] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [alarmKitDenied, setAlarmKitDenied] = useState(false);
 
@@ -257,7 +265,7 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
       Promise.resolve(
         supabase
           .from("streaks")
-          .select("current_streak, longest_streak")
+          .select("current_streak, longest_streak, last_wake_date")
           .eq("user_id", userId)
           .single()
       )
@@ -265,6 +273,7 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
           if (data) {
             setStreak(data.current_streak ?? 0);
             setLongestStreak(data.longest_streak ?? 0);
+            if (data.last_wake_date) setLastWakeDate(data.last_wake_date as string);
           }
         })
         .catch(() => {});
@@ -274,11 +283,13 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
         AsyncStorage.getItem(STORAGE_KEY),
         AsyncStorage.getItem(STREAK_KEY),
         AsyncStorage.getItem(LONGEST_STREAK_KEY),
+        AsyncStorage.getItem(LAST_WAKE_DATE_KEY),
       ])
-        .then(([data, streakVal, longestVal]) => {
+        .then(([data, streakVal, longestVal, lastWakeDateVal]) => {
           setAlarms(data ? JSON.parse(data) : SAMPLE_ALARMS);
           if (streakVal !== null) setStreak(parseInt(streakVal, 10));
           if (longestVal !== null) setLongestStreak(parseInt(longestVal, 10));
+          if (lastWakeDateVal !== null) setLastWakeDate(lastWakeDateVal);
         })
         .catch(() => setAlarms(SAMPLE_ALARMS))
         .finally(() => setLoaded(true));
@@ -305,6 +316,16 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
   const incrementStreak = useCallback((recitalSuccess?: boolean) => {
     // Guard: only verse alarms with a passed recital increment the streak
     if (recitalSuccess === false) return;
+
+    const today = new Date().toISOString().split("T")[0];
+
+    // Same-day guard: if already incremented today, skip to avoid double-counting
+    if (lastWakeDate === today) return;
+
+    // Update lastWakeDate immediately to prevent races
+    setLastWakeDate(today);
+    AsyncStorage.setItem(LAST_WAKE_DATE_KEY, today).catch(() => {});
+
     setStreak((prev) => {
       const next = prev + 1;
 
@@ -323,7 +344,7 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
                 user_id: userId,
                 current_streak: next,
                 longest_streak: newLongest,
-                last_wake_date: new Date().toISOString().split("T")[0],
+                last_wake_date: today,
                 updated_at: new Date().toISOString(),
               },
               { onConflict: "user_id" }
@@ -335,7 +356,7 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
       });
       return next;
     });
-  }, [userId]);
+  }, [userId, lastWakeDate]);
 
   // ── Unified platform scheduling (inside provider — can access setAlarmKitDenied) ──
   // Used by all user-initiated scheduling paths: addAlarm, updateAlarm, toggleAlarm.
@@ -355,7 +376,31 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
   // ── CRUD operations ───────────────────────────────────────────────────────────
 
   const addAlarm = useCallback(
-    async (alarm: Omit<Alarm, "id">) => {
+    async (alarm: Omit<Alarm, "id">): Promise<AddAlarmResult> => {
+      // ── Permission gate ──────────────────────────────────────────────────────
+      // Check before persisting: a denied permission means the alarm would
+      // silently never fire, which is worse than blocking the save.
+      if (Platform.OS === "ios") {
+        const status = await requestAlarmKitPermission();
+        if (status === "denied") {
+          setAlarmKitDenied(true);
+          return {
+            success: false,
+            error:
+              "Alarm permission is required. Please allow Alarms for Bible Wake in Settings so your alarm can wake you up.",
+          };
+        }
+      } else if (Platform.OS === "android") {
+        const { status } = await Notifications.requestPermissionsAsync();
+        if (status !== "granted") {
+          return {
+            success: false,
+            error:
+              "Notification permission is required to schedule alarms. Please allow notifications for Bible Wake in Settings.",
+          };
+        }
+      }
+
       let newAlarm: Alarm;
 
       if (userId) {
@@ -379,7 +424,7 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
           newAlarm = rowToAlarm(data);
           setAlarms((prev) => [...prev, newAlarm]);
           await scheduleOnPlatform(newAlarm);
-          return;
+          return { success: true };
         }
       }
 
@@ -387,12 +432,35 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
       newAlarm = { ...alarm, id: generateId() };
       setAlarms((prev) => [...prev, newAlarm]);
       await scheduleOnPlatform(newAlarm);
+      return { success: true };
     },
     [userId, scheduleOnPlatform]
   );
 
   const updateAlarm = useCallback(
-    (id: string, updates: Partial<Alarm>) => {
+    async (id: string, updates: Partial<Alarm>): Promise<AddAlarmResult> => {
+      // ── Permission gate (same as addAlarm) ──────────────────────────────────
+      if (Platform.OS === "ios") {
+        const status = await requestAlarmKitPermission();
+        if (status === "denied") {
+          setAlarmKitDenied(true);
+          return {
+            success: false,
+            error:
+              "Alarm permission is required. Please allow Alarms for Bible Wake in Settings so your alarm can wake you up.",
+          };
+        }
+      } else if (Platform.OS === "android") {
+        const { status } = await Notifications.requestPermissionsAsync();
+        if (status !== "granted") {
+          return {
+            success: false,
+            error:
+              "Notification permission is required to schedule alarms. Please allow notifications for Bible Wake in Settings.",
+          };
+        }
+      }
+
       // Capture the computed alarm outside setAlarms so we can schedule after state update.
       let alarmToSchedule: Alarm | undefined;
       setAlarms((prev) => {
@@ -433,6 +501,8 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
           ).catch(() => {});
         }
       }
+
+      return { success: true };
     },
     [userId, scheduleOnPlatform]
   );

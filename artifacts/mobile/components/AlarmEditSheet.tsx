@@ -6,6 +6,7 @@ import {
   Dimensions,
   Easing,
   FlatList,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -183,11 +184,16 @@ function WheelColumn({ items, selectedIndex, onSelect, formatItem }: WheelColumn
   );
 }
 
+export interface AlarmEditSheetSaveResult {
+  success: boolean;
+  error?: string;
+}
+
 interface AlarmEditSheetProps {
   visible: boolean;
   onClose: () => void;
   alarm?: Alarm | null;
-  onSave: (alarm: Omit<Alarm, "id">) => void;
+  onSave: (alarm: Omit<Alarm, "id">) => Promise<AlarmEditSheetSaveResult> | void;
   onDelete?: () => void;
   alarmType?: "verse" | "normal";
 }
@@ -239,9 +245,12 @@ export default function AlarmEditSheet({
   const [aiError, setAiError] = useState("");
   const [aiPassage, setAiPassage] = useState<VersePassage | null>(null);
   const [aiTheme, setAiTheme] = useState<string | null>(null);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (visible) {
+      setPermissionError(null);
       if (alarm) {
         setHour(alarm.hour === 0 ? 12 : alarm.hour);
         setMinute(alarm.minute);
@@ -420,23 +429,33 @@ export default function AlarmEditSheet({
     onClose();
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setPermissionError(null);
+    setIsSaving(true);
+    try {
+      const result = await onSave({
+        hour,
+        minute,
+        isPM,
+        days,
+        name: name.trim() || "Alarm",
+        verseRef: verse.ref,
+        verseText: verse.text,
+        enabled: alarm?.enabled ?? true,
+        alarmType,
+        scheduleType,
+        wakeUpCheck,
+        soundId: selectedSoundId,
+        verseMode,
+      });
+      if (result && !result.success) {
+        setPermissionError(result.error ?? "Permission required to save alarm.");
+        return;
+      }
+    } finally {
+      setIsSaving(false);
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    onSave({
-      hour,
-      minute,
-      isPM,
-      days,
-      name: name.trim() || "Alarm",
-      verseRef: verse.ref,
-      verseText: verse.text,
-      enabled: alarm?.enabled ?? true,
-      alarmType,
-      scheduleType,
-      wakeUpCheck,
-      soundId: selectedSoundId,
-      verseMode,
-    });
     onClose();
   };
 
@@ -1263,12 +1282,27 @@ export default function AlarmEditSheet({
               },
             ]}
           >
+            {permissionError ? (
+              <View style={[styles.permissionErrorBox, { backgroundColor: "#FEF2F2", borderColor: "#FCA5A5" }]}>
+                <Ionicons name="lock-closed" size={16} color="#DC2626" style={{ marginTop: 1 }} />
+                <View style={{ flex: 1, gap: 6 }}>
+                  <Text style={styles.permissionErrorText}>{permissionError}</Text>
+                  <Pressable
+                    onPress={() => Linking.openSettings()}
+                    style={styles.permissionErrorBtn}
+                  >
+                    <Text style={styles.permissionErrorBtnText}>Open Settings</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : null}
             <Pressable
-              style={[styles.saveBtn, { backgroundColor: colors.foreground }]}
+              style={[styles.saveBtn, { backgroundColor: colors.foreground, opacity: isSaving ? 0.6 : 1 }]}
               onPress={handleSave}
+              disabled={isSaving}
             >
               <Text style={[styles.saveBtnText, { color: colors.primaryForeground }]}>
-                Save Alarm
+                {isSaving ? "Checking permissions…" : "Save Alarm"}
               </Text>
             </Pressable>
             {onDelete && (
@@ -1504,6 +1538,33 @@ const styles = StyleSheet.create({
   saveBtnText: {
     fontSize: 17,
     fontFamily: "Inter_600SemiBold",
+  },
+  permissionErrorBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  permissionErrorText: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: "#B91C1C",
+    lineHeight: 18,
+  },
+  permissionErrorBtn: {
+    alignSelf: "flex-start",
+    backgroundColor: "#DC2626",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  permissionErrorBtnText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFFFFF",
   },
   deleteBtn: {
     borderRadius: 16,

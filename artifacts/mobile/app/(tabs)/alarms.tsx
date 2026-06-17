@@ -199,12 +199,12 @@ export default function AlarmsScreen() {
   };
 
   const handleSaveNew = (alarm: Omit<Alarm, "id">) => {
-    addAlarm(alarm);
+    return addAlarm(alarm);
   };
 
   const handleSaveEdit = (alarm: Omit<Alarm, "id">) => {
     if (editingAlarm) {
-      updateAlarm(editingAlarm.id, alarm);
+      return updateAlarm(editingAlarm.id, alarm);
     }
   };
 

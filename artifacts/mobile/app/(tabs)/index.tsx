@@ -452,7 +452,7 @@ export default function HomeScreen() {
         alarm={editingAlarm}
         onClose={() => setEditingAlarm(null)}
         onSave={(updated) => {
-          if (editingAlarm) updateAlarm(editingAlarm.id, updated);
+          if (editingAlarm) return updateAlarm(editingAlarm.id, updated);
         }}
       />
       <AlarmPermissionSheet
