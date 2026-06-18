@@ -135,6 +135,24 @@ function withRegisterSounds(config) {
         .map((ref) => String(ref.name).replace(/^"(.*)"$/, "$1"))
     );
 
+    // ── (b2) Collect UUIDs already present in Copy Bundle Resources phases ──
+    // Guards against duplicate build-phase entries across repeated prebuild runs.
+    const resourcesPhaseSection =
+      (xcodeProject.hash &&
+        xcodeProject.hash.project &&
+        xcodeProject.hash.project.objects &&
+        xcodeProject.hash.project.objects["PBXResourcesBuildPhase"]) ||
+      {};
+    const existingBuildPhaseUuids = new Set();
+    for (const [key, phase] of Object.entries(resourcesPhaseSection)) {
+      if (key.endsWith("_comment")) continue;
+      if (phase && Array.isArray(phase.files)) {
+        for (const f of phase.files) {
+          existingBuildPhaseUuids.add(typeof f === "object" ? f.value : f);
+        }
+      }
+    }
+
     // ── (c) Add each file to the group and to Copy Bundle Resources ───────
     let added = 0;
     for (const { name } of files) {
@@ -149,9 +167,11 @@ function withRegisterSounds(config) {
 
       if (!fileRef) continue;
 
-      // Ensure the file appears in Copy Bundle Resources for the target.
-      xcodeProject.addToPbxBuildFileSection(fileRef);
-      xcodeProject.addToPbxResourcesBuildPhase(fileRef);
+      // Only register in Copy Bundle Resources if not already present.
+      if (!existingBuildPhaseUuids.has(fileRef.uuid)) {
+        xcodeProject.addToPbxBuildFileSection(fileRef);
+        xcodeProject.addToPbxResourcesBuildPhase(fileRef);
+      }
 
       added++;
     }

@@ -30,8 +30,7 @@
       "entitlements": {
         "com.apple.security.application-groups": [
           "group.com.tinochiwara.biblewake"
-        ],
-        "com.apple.developer.alarms": true
+        ]
       },
       "associatedDomains": [
         "applinks:cmaysraaclfvofiynctl.supabase.co"
