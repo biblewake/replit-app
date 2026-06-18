@@ -294,7 +294,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     try {
-      const redirectTo = Linking.createURL("");
+      const redirectTo = Linking.createURL("/", { scheme: "biblewake" });
 
       if (__DEV__) {
         console.log("[BibleWake] Google OAuth redirectTo:", redirectTo);

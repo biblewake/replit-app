@@ -19,7 +19,6 @@ import { PhoneDemoVideo } from "@/components/onboarding/PhoneDemoVideo";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useAuth } from "@/context/AuthContext";
-import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { supabase } from "@/lib/supabase";
 import { OL, ONBOARDING_ORANGE } from "@/components/onboarding/primitives";
 import { initializeRevenueCat, useSubscription } from "@/lib/revenuecat";
@@ -150,8 +149,6 @@ export function AnalysisScreen({ onDone }: { onDone: () => void }) {
 export function AccountScreen({ onContinue }: { onContinue: () => void }) {
   const { signInWithGoogle, signInWithApple, signInAnonymously, session, isGuest } = useAuth();
   const [busy, setBusy] = useState<null | "google" | "apple" | "anon">(null);
-  const showGuestLogin = useFeatureFlag("show_guest_login");
-
   // Sign out any STALE anonymous session left over from a previous install.
   // We only sign out if the session was created more than 5 seconds ago —
   // this prevents the signout from racing with a freshly-arrived Google PKCE
@@ -279,21 +276,19 @@ export function AccountScreen({ onContinue }: { onContinue: () => void }) {
         </Pressable>
       </View>
 
-      {/* Anonymous skip link — visible only when show_guest_login flag is true */}
-      {showGuestLogin ? (
-        <Pressable
-          disabled={busy !== null}
-          onPress={() => { void runAnon(); }}
-          hitSlop={10}
-          style={({ pressed }) => [styles.anonLink, { opacity: pressed ? 0.6 : 1 }]}
-        >
-          {busy === "anon" ? (
-            <ActivityIndicator size="small" color={OL.mutedForeground} />
-          ) : (
-            <Text style={styles.anonLinkText}>Continue without an account</Text>
-          )}
-        </Pressable>
-      ) : null}
+      {/* Anonymous skip link — always visible */}
+      <Pressable
+        disabled={busy !== null}
+        onPress={() => { void runAnon(); }}
+        hitSlop={10}
+        style={({ pressed }) => [styles.anonLink, { opacity: pressed ? 0.6 : 1 }]}
+      >
+        {busy === "anon" ? (
+          <ActivityIndicator size="small" color={OL.mutedForeground} />
+        ) : (
+          <Text style={styles.anonLinkText}>Continue without an account</Text>
+        )}
+      </Pressable>
 
     </View>
   );
