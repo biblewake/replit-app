@@ -1,0 +1,189 @@
+Successfully loaded '/Users/expo/workingdir/build/artifacts/mobile/ios/Gymfile' 📄
++---------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|                                                                  Detected Values from './Gymfile'                                                                   |
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| suppress_xcode_output | true                                                                                                                                        |
+| clean                 | false                                                                                                                                       |
+| scheme                | BibleWake                                                                                                                                   |
+| configuration         | Release                                                                                                                                     |
+| export_options        |                                                                                                                                             |
+| export_xcargs         | OTHER_CODE_SIGN_FLAGS="--keychain /var/folders/5_/4knlryn57n39p2c_jw8567z00000gn/T/eas-build-d3ee0503-72d9-4ca9-9cf1-6a07aa799d51.keychain" |
+| disable_xcpretty      | true                                                                                                                                        |
+| buildlog_path         | /Users/expo/workingdir/logs                                                                                                                 |
+| derived_data_path     | ./build                                                                                                                                     |
+| result_bundle         | true                                                                                                                                        |
+| result_bundle_path    | /var/folders/5_/4knlryn57n39p2c_jw8567z00000gn/T/result-bundle-1781814247589.xcresult                                                       |
+| output_directory      | ./build                                                                                                                                     |
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+Resolving Swift Package Manager dependencies...
+$ xcodebuild -resolvePackageDependencies -workspace ./BibleWake.xcworkspace -scheme BibleWake -configuration Release -derivedDataPath ./build
+▸ Command line invocation:
+▸     /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -resolvePackageDependencies -workspace ./BibleWake.xcworkspace -scheme BibleWake -configuration Release -derivedDataPath ./build
+▸ resolved source packages:
+$ xcodebuild -showBuildSettings -workspace ./BibleWake.xcworkspace -scheme BibleWake -configuration Release -derivedDataPath ./build 2>&1
+Detected provisioning profile mapping: {:"com.tinochiwara.biblewake"=>"a0eea2ae-8ca4-4c9b-b1e6-e186d8dea6ff"}
+
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|                                                                                           Summary for gym 2.228.0                                                                                           |
++---------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| workspace                                                     | ./BibleWake.xcworkspace                                                                                                                     |
+| scheme                                                        | BibleWake                                                                                                                                   |
+| clean                                                         | false                                                                                                                                       |
+| output_directory                                              | ./build                                                                                                                                     |
+| output_name                                                   | BibleWake                                                                                                                                   |
+| configuration                                                 | Release                                                                                                                                     |
+| silent                                                        | false                                                                                                                                       |
+| skip_package_ipa                                              | false                                                                                                                                       |
+| skip_package_pkg                                              | false                                                                                                                                       |
+| export_options.method                                         | app-store                                                                                                                                   |
+| export_options.provisioningProfiles.com.tinochiwara.biblewake | a0eea2ae-8ca4-4c9b-b1e6-e186d8dea6ff                                                                                                        |
+| export_xcargs                                                 | OTHER_CODE_SIGN_FLAGS="--keychain /var/folders/5_/4knlryn57n39p2c_jw8567z00000gn/T/eas-build-d3ee0503-72d9-4ca9-9cf1-6a07aa799d51.keychain" |
+| build_path                                                    | /Users/expo/Library/Developer/Xcode/Archives/2026-06-18                                                                                     |
+| derived_data_path                                             | ./build                                                                                                                                     |
+| result_bundle                                                 | true                                                                                                                                        |
+| result_bundle_path                                            | /var/folders/5_/4knlryn57n39p2c_jw8567z00000gn/T/result-bundle-1781814247589.xcresult                                                       |
+| buildlog_path                                                 | /Users/expo/workingdir/logs                                                                                                                 |
+| destination                                                   | generic/platform=iOS                                                                                                                        |
+| suppress_xcode_output                                         | true                                                                                                                                        |
+| xcodebuild_formatter                                          | xcpretty                                                                                                                                    |
+| build_timing_summary                                          | false                                                                                                                                       |
+| disable_xcpretty                                              | true                                                                                                                                        |
+| skip_profile_detection                                        | false                                                                                                                                       |
+| xcodebuild_command                                            | xcodebuild                                                                                                                                  |
+| skip_package_dependencies_resolution                          | false                                                                                                                                       |
+| disable_package_automatic_updates                             | false                                                                                                                                       |
+| use_system_scm                                                | false                                                                                                                                       |
+| xcode_path                                                    | /Applications/Xcode.app                                                                                                                     |
++---------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+$ set -o pipefail && xcodebuild -workspace ./BibleWake.xcworkspace -scheme BibleWake -configuration Release -derivedDataPath ./build -destination 'generic/platform=iOS' -archivePath /Users/expo/Library/Developer/Xcode/Archives/2026-06-18/BibleWake\ 2026-06-18\ 13.24.54.xcarchive -resultBundlePath '/var/folders/5_/4knlryn57n39p2c_jw8567z00000gn/T/result-bundle-1781814247589.xcresult' archive | tee /Users/expo/workingdir/logs/BibleWake-BibleWake.log > /dev/null
+❌  BibleWake/BibleWake: Entitlements file defines the value "com.apple.developer.alarms" which is not registered for profile "*[expo] com.tinochiwara.biblewake IOS_APP_STORE 2026-06-18T20:23:38.935Z".
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Skipping duplicate file: ios/AlarmSounds/toy_soldier.mp3
+   Remove: Xcode » BibleWake/BibleWake » Build Phases » Copy Bundle Resources » toy_soldier.mp3
+
+⚠️  Pods/SDWebImage-SDWebImage: iOS@9.0 deployment version mismatch, expected >= 2.0 <= 26.0.99
+▸ ** ARCHIVE FAILED **
+▸ The following build commands failed:
+▸ 	Archiving workspace BibleWake with scheme BibleWake
+▸ (1 failure)
+Exit status: 65
++---------------------------------------+
+|           Build environment           |
++-------------+-------------------------+
+| xcode_path  | /Applications/Xcode.app |
+| gym_version | 2.228.0                 |
+| sdk         | iPhoneOS26.0.sdk        |
++-------------+-------------------------+
+
+
+Looks like fastlane ran into a build/archive error with your project
+It's hard to tell what's causing the error, so we wrote some guides on how
+to troubleshoot build and signing issues: https://docs.fastlane.tools/codesigning/getting-started/
+Before submitting an issue on GitHub, please follow the guide above and make
+sure your project is set up correctly.
+fastlane uses `xcodebuild` commands to generate your binary, you can see the
+the full commands printed out in yellow in the above log.
+Make sure to inspect the output above, as usually you'll find more error information there
+[!] Error building the application - see the log above
+fastlane gym exited with non-zero code: 1
