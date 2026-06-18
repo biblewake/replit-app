@@ -113,6 +113,13 @@ function RootLayoutNav() {
       return;
     }
 
+    // DEV: set to true to land directly on the paywall (skips onboarding + auth gate)
+    const DEV_START_AT_PAYWALL = true;
+    if (DEV_START_AT_PAYWALL) {
+      if (!inPaywall) router.replace("/paywall");
+      return;
+    }
+
     if (!onboardingComplete) {
       if (!inOnboarding) router.replace("/onboarding");
       return;
