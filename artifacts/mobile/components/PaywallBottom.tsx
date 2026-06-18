@@ -84,7 +84,9 @@ export function PaywallBottom({
   const weeklyPrice = weeklyPkg?.product.priceString;
   const annualPriceNum = annualPkg?.product.price;
   const perWeekAnnual =
-    annualPriceNum != null ? `$${(annualPriceNum / 52).toFixed(2)}/week` : null;
+    annualPriceNum != null
+      ? `$${(Math.floor((annualPriceNum / 52) * 100) / 100).toFixed(2)}/week`
+      : null;
 
   // Trial label and intro price string — both derived from package metadata only.
   const trialLabel = getTrialLabel(annualPkg);

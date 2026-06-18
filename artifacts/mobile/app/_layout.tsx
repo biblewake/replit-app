@@ -114,7 +114,7 @@ function RootLayoutNav() {
     }
 
     // DEV: set to true to land directly on the onboarding paywall (step 30)
-    const DEV_START_AT_PAYWALL = true;
+    const DEV_START_AT_PAYWALL = false;
     if (DEV_START_AT_PAYWALL) {
       if (!inOnboarding) router.replace("/onboarding");
       return;
