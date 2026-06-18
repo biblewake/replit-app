@@ -12,6 +12,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { PhoneDemoVideo } from "@/components/onboarding/PhoneDemoVideo";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useAuth } from "@/context/AuthContext";
@@ -340,21 +341,16 @@ function PageA({ onContinue, onRestore, isRestoring }: PageAProps) {
     <View style={styles.pageWrap}>
       <View style={styles.pageHero}>
         <Text style={styles.pageATitleLarge}>
-          We want you to try{"\n"}
-          <Text style={styles.pageTitleQuote}>&quot;Bible Wake&quot;</Text>
-          {" "}for free.
+          We want you to try{"\n"}Bible Wake for free.
         </Text>
-        <View style={styles.mockupFrame}>
-          <View style={styles.mockupInner}>
-            <Text style={styles.mockupAppName}>Bible Wake</Text>
-            <Text style={styles.mockupEmoji}>📖</Text>
-            <Text style={styles.mockupWakeText}>Time to Wake Up!</Text>
-            <Text style={styles.mockupVerseText}>Recite your scripture</Text>
-          </View>
-        </View>
+        <PhoneDemoVideo style={styles.phoneDemoVideo} />
       </View>
 
       <View style={styles.pageFooter}>
+        <View style={styles.trustBadge}>
+          <Ionicons name="checkmark" size={18} color="#000000" />
+          <Text style={styles.trustBadgeText}>No Payment Due Now</Text>
+        </View>
         <Pressable
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -365,7 +361,7 @@ function PageA({ onContinue, onRestore, isRestoring }: PageAProps) {
             { backgroundColor: ONBOARDING_ORANGE, opacity: pressed ? 0.8 : 1 },
           ]}
         >
-          <Text style={styles.ctaText}>Continue</Text>
+          <Text style={styles.ctaText}>Try for $0.00</Text>
         </Pressable>
         <Text style={styles.noCommit}>No commitment, cancel anytime.</Text>
         <View style={styles.linksRow}>
@@ -406,6 +402,10 @@ function PageB({ onContinue }: PageBProps) {
       </View>
 
       <View style={styles.pageFooter}>
+        <View style={styles.trustBadge}>
+          <Ionicons name="checkmark" size={18} color="#000000" />
+          <Text style={styles.trustBadgeText}>No Payment Due Now</Text>
+        </View>
         <Pressable
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -418,6 +418,7 @@ function PageB({ onContinue }: PageBProps) {
         >
           <Text style={styles.ctaText}>Continue</Text>
         </Pressable>
+        <Text style={styles.pricingNote}>Just $0.76/week ($39.99 per year)</Text>
       </View>
     </View>
   );
@@ -900,6 +901,27 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     color: OL.mutedForeground,
     lineHeight: 18,
+  },
+
+  /* Phone demo video hero */
+  phoneDemoVideo: {
+    flex: 1,
+    width: "100%",
+    minHeight: 0,
+  },
+
+  /* Trust badge row ("✓ No Payment Due Now") */
+  trustBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginBottom: 4,
+  },
+  trustBadgeText: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: OL.foreground,
   },
 
   /* Shared CTA + footer (for Pages A & B which don't use PaywallBottom) */

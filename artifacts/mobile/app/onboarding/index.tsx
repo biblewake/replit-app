@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
+  Dimensions,
   Image,
   Platform,
   ScrollView,
@@ -32,9 +33,9 @@ import {
   AnimatedLineChart,
   ComparisonCards,
   CountUpStat,
-  RecitalDemo,
   Typewriter,
 } from "@/components/onboarding/charts";
+import { PhoneDemoVideo } from "@/components/onboarding/PhoneDemoVideo";
 import {
   DaysGrid,
   SoundPickerInline,
@@ -426,14 +427,14 @@ export default function OnboardingNavigator() {
           </View>
         );
 
-      // App demo (RecitalDemo)
+      // App demo (phone video)
       case 23:
         return (
           <InsightScreen
             title="Recite and memorize, every morning"
             body="To turn off your alarm, recite your verse. Bible Wake makes scripture stick."
           >
-            <RecitalDemo />
+            <PhoneDemoVideo style={{ height: Dimensions.get("window").height * 0.52 }} />
           </InsightScreen>
         );
 
