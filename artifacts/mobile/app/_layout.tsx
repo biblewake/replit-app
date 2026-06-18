@@ -113,10 +113,10 @@ function RootLayoutNav() {
       return;
     }
 
-    // DEV: set to true to land directly on the paywall (skips onboarding + auth gate)
+    // DEV: set to true to land directly on the onboarding paywall (step 30)
     const DEV_START_AT_PAYWALL = true;
     if (DEV_START_AT_PAYWALL) {
-      if (!inPaywall) router.replace("/paywall");
+      if (!inOnboarding) router.replace("/onboarding");
       return;
     }
 

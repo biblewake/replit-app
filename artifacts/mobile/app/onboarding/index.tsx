@@ -134,7 +134,8 @@ export default function OnboardingNavigator() {
   const { completeOnboarding, session } = useAuth();
   const { addAlarm } = useAlarms();
 
-  const [step, setStep] = useState(0);
+  // DEV: set to 0 for full onboarding, 30 to jump straight to the paywall
+  const [step, setStep] = useState(30);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [draft, setDraft] = useState<AlarmDraft>(DEFAULT_DRAFT);
   const [hasSignature, setHasSignature] = useState(false);
