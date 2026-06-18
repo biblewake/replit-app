@@ -1,0 +1,171 @@
+
+
+Design a modern mobile paywall screen for a Christian productivity/accountability app.
+
+The layout should be clean, minimal, and conversion-focused, using a white background and a bright orange primary color (#FF9000) the app orange color.
+
+#### Header Section
+
+At the top center, display a bold headline:
+
+**"How your free trial works"**
+
+Use a large, friendly font with strong visual hierarchy.
+
+#### Trial Timeline Section
+
+Below the title, create a vertical timeline positioned slightly left of center.
+
+The timeline should use a thick rounded vertical line with milestone icons connected along it.
+
+##### Step 1 — Today
+
+Orange circular icon with a lock symbol.
+
+Title:
+
+**Today**
+
+Description:
+
+"Unlock all the app's features like smart accountability alarms, bible verse analytics, streak tracking, and more."
+
+##### Step 2 — In 2 Days
+
+Orange circular icon with a bell symbol.
+
+Title:
+
+**In 2 Days**
+
+Description:
+
+"We'll send you a reminder that your trial is ending soon."
+
+##### Step 3 — In 3 Days
+
+Green circular icon with a star symbol.
+
+Title:
+
+**In 3 Days**
+
+Description:
+
+"You'll be charged after your 3-day trial unless you cancel anytime before."
+
+The timeline should visually progress downward, with a subtle orange-to-green gradient indicating progression toward subscription activation.
+
+#### Subscription Options Section
+
+Below the timeline, display two pricing cards side-by-side.
+
+Cards should have rounded corners and clear selection states.
+
+##### Weekly Plan
+
+Title:
+
+Weekly
+
+Price:
+
+$6.99/week
+
+Unselected state:
+
+* White background
+* Thin gray border
+* Empty radio button on right
+
+##### Yearly Plan
+
+Title:
+
+Yearly
+
+Price: $0.76/week
+
+Show a small orange pill badge above the card:
+
+**"3-day free trial"**
+
+Selected state:
+
+* Orange border
+* Slightly elevated appearance
+* Filled orange radio button with checkmark
+
+#### Trust Indicator
+
+Below the pricing options show:
+
+✓ No Payment Due Now
+
+Centered horizontally.
+
+Use subtle styling that reinforces trust and reduces purchase anxiety.
+
+#### Primary CTA: Use standard onboarding "Continue" button
+
+### Small under cta button
+3 days free then $39.99/year ($0.76/week)
+
+#### Footer Links
+
+Below the button display three small text links:
+
+* Restore Purchases
+* Terms
+* Privacy
+
+Center aligned and low emphasis.
+
+
+---
+
+### Component Breakdown (for AI builders)
+
+```
+Screen
+├── Header
+│   └── Title
+│
+├── Trial Timeline
+│   ├── Today (Lock)
+│   ├── In 2 Days (Bell)
+│   └── In 3 Days (Star)
+│
+├── Plan Selector
+│   ├── Weekly Card
+│   └── Yearly Card
+│
+├── Trust Message
+│   └── No Payment Due Now
+│
+├── CTA Button
+│   └── Continue
+├── text under CTA Button
+│   └── 3 days free then $39.99/year ($0.76/week)
+
+│
+└── Footer Links
+    ├── Restore Purchases
+    ├── Terms
+    └── Privacy
+```
+
+What changes when user selects weekly option:
+├── Trial Timeline
+│   ├── Today (Lock)
+│   ├── Today (Bell)
+--------- We won't send you a reminder since you will be charged immediately
+│   └── Today (Star)
+-------- You'll be charged immediately
+
+Below the pricing options show:
+✓ No Commitment, Cancel Anytime
+
+
+### Small under cta button
+Get access today for $6.99 per week
