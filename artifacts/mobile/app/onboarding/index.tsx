@@ -326,18 +326,20 @@ export default function OnboardingNavigator() {
           </InsightScreen>
         );
 
-      // Insight — start every day with scripture (book image)
+      // Insight — start every day with scripture (bible image)
       case 16:
         return (
           <InsightScreen
             title="Start every day with scripture"
             body="The first thing you reach for sets the tone for your whole day. Make it the Word, not your notifications."
           >
-            <Image
-              source={require("../../assets/images/book.png")}
-              style={{ width: 140, height: 140 }}
-              resizeMode="contain"
-            />
+            <View style={{ paddingVertical: 24 }}>
+              <Image
+                source={require("../../assets/images/new-bible.png")}
+                style={{ width: 180, height: 180 }}
+                resizeMode="contain"
+              />
+            </View>
           </InsightScreen>
         );
 
@@ -428,16 +430,9 @@ export default function OnboardingNavigator() {
           </View>
         );
 
-      // App demo (phone video)
+      // App demo (phone video) — rendered outside renderStep() for video preload
       case 23:
-        return (
-          <InsightScreen
-            title="Recite and memorize, every morning"
-            body="To turn off your alarm, recite your verse. Bible Wake makes scripture stick."
-          >
-            <PhoneDemoVideo style={{ height: Dimensions.get("window").height * 0.52 }} />
-          </InsightScreen>
-        );
+        return null;
 
       // Permissions (no "Join thousands" step — removed)
       case 24:
@@ -536,6 +531,18 @@ export default function OnboardingNavigator() {
 
       <Animated.View style={[styles.content, { opacity: fade }]}>
         {renderStep()}
+        {/* Step 23 always mounted so PhoneDemoVideo buffers before the user arrives */}
+        <View
+          style={step === 23 ? styles.step23Visible : styles.step23Hidden}
+          pointerEvents={step === 23 ? "auto" : "none"}
+        >
+          <InsightScreen
+            title="Recite and memorize, every morning"
+            body="To turn off your alarm, recite your verse. Bible Wake makes scripture stick."
+          >
+            <PhoneDemoVideo style={{ height: Dimensions.get("window").height * 0.52 }} />
+          </InsightScreen>
+        </View>
       </Animated.View>
 
       {!selfDriven ? (
@@ -550,6 +557,17 @@ export default function OnboardingNavigator() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
+  },
+  step23Visible: {
+    flex: 1,
+  },
+  step23Hidden: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0,
   },
   topBar: {
     flexDirection: "row",

@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import LottieView from "lottie-react-native";
 import { PhoneDemoVideo } from "@/components/onboarding/PhoneDemoVideo";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -384,18 +385,16 @@ interface PageBProps {
 function PageB({ onContinue }: PageBProps) {
   return (
     <View style={styles.pageWrap}>
+      <Text style={styles.pageBTitle}>
+        {"We\u2019ll send you a\nreminder before your\nfree trial ends"}
+      </Text>
       <View style={[styles.pageHero, { gap: 20 }]}>
-        <Text style={styles.pageBTitle}>
-          {"We\u2019ll send you a\nreminder before your\nfree trial ends"}
-        </Text>
-        <Image
-          source={require("../../assets/images/notification.png")}
-          style={styles.pageBImage}
-          resizeMode="contain"
+        <LottieView
+          source={require("../../assets/animations/notification-bell.json")}
+          autoPlay
+          loop
+          style={styles.pageBLottie}
         />
-        <Text style={styles.pageBBody}>
-          {"We\u2019ll send you a reminder before your trial ends. No surprise charges."}
-        </Text>
       </View>
 
       <View style={styles.pageFooter}>
@@ -458,32 +457,34 @@ function PageC({
   const annualIntro = getIntroOffer(annualPkg);
   const trialDays = annualIntro?.days ?? null;
   const hasTrial = trialDays != null;
-  const trialLabel = hasTrial ? `${trialDays}-day free trial` : null;
+  const displayTrialDays = trialDays ?? 3;
 
   // Prices from store metadata only.
   const annualPrice = annualPkg?.product.priceString;
   const weeklyPrice = weeklyPkg?.product.priceString;
   const annualPriceNum = annualPkg?.product.price;
   const perWeekAnnual =
-    annualPriceNum != null ? `$${(annualPriceNum / 52).toFixed(2)}/week` : null;
+    annualPriceNum != null
+      ? `$${(Math.floor((annualPriceNum / 52) * 100) / 100).toFixed(2)}/week`
+      : null;
 
   // Dynamic copy derived from plan + trial state.
-  const title = hasTrial ? "How your free trial works" : "Choose your plan";
+  const title = "How your free trial works";
 
-  const showTrialTimeline = isYearly && hasTrial;
+  const showTrialTimeline = isYearly;
 
   const step2Label = showTrialTimeline
-    ? `In ${(trialDays as number) - 1} Day${(trialDays as number) - 1 !== 1 ? "s" : ""}`
+    ? `In ${displayTrialDays - 1} Day${displayTrialDays - 1 !== 1 ? "s" : ""}`
     : "Today";
   const step2Body = showTrialTimeline
     ? "We'll send you a reminder that your trial is ending soon."
     : "We won't send you a reminder since you will be charged immediately.";
 
   const step3Label = showTrialTimeline
-    ? `In ${trialDays as number} Day${(trialDays as number) !== 1 ? "s" : ""}`
+    ? `In ${displayTrialDays} Day${displayTrialDays !== 1 ? "s" : ""}`
     : "Today";
   const step3Body = showTrialTimeline
-    ? `You'll be charged after your ${trialDays as number}-day trial unless you cancel anytime before.`
+    ? `You'll be charged after your ${displayTrialDays}-day trial unless you cancel anytime before.`
     : "You'll be charged immediately.";
 
   const trustText =
@@ -539,15 +540,16 @@ function PageC({
         {/* Step 1 — Today */}
         <View style={styles.timelineRow}>
           <View style={styles.timelineIconWrap}>
-            <View style={[styles.timelineIcon, { backgroundColor: ONBOARDING_ORANGE }]}>
-              <Ionicons name="lock-closed" size={16} color="#FFFFFF" />
-            </View>
+            {/* Rod behind circle — starts at circle centre so top is fully hidden */}
             <LinearGradient
-              colors={[ONBOARDING_ORANGE, ONBOARDING_ORANGE]}
+              colors={["#FFD190", "#FFD190"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
-              style={styles.timelineLine}
+              style={[styles.timelineLine, { top: 22 }]}
             />
+            <View style={[styles.timelineIcon, { backgroundColor: ONBOARDING_ORANGE }]}>
+              <Ionicons name="lock-closed" size={22} color="#FFFFFF" />
+            </View>
           </View>
           <View style={styles.timelineText}>
             <Text style={styles.timelineLabel}>Today</Text>
@@ -561,15 +563,16 @@ function PageC({
         {/* Step 2 — Reminder */}
         <View style={styles.timelineRow}>
           <View style={styles.timelineIconWrap}>
-            <View style={[styles.timelineIcon, { backgroundColor: ONBOARDING_ORANGE }]}>
-              <Ionicons name="notifications" size={16} color="#FFFFFF" />
-            </View>
             <LinearGradient
-              colors={[ONBOARDING_ORANGE, "#34C759"]}
+              colors={["#FFD190", "#FFD190", "#75DFBB"]}
+              locations={[0, 0.55, 1]}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
-              style={styles.timelineLine}
+              style={[styles.timelineLine, { top: 22 }]}
             />
+            <View style={[styles.timelineIcon, { backgroundColor: ONBOARDING_ORANGE }]}>
+              <Ionicons name="notifications" size={22} color="#FFFFFF" />
+            </View>
           </View>
           <View style={styles.timelineText}>
             <Text style={styles.timelineLabel}>{step2Label}</Text>
@@ -580,16 +583,25 @@ function PageC({
         {/* Step 3 — Billing */}
         <View style={styles.timelineRow}>
           <View style={styles.timelineIconWrap}>
-            <View style={[styles.timelineIcon, { backgroundColor: "#34C759" }]}>
-              <Ionicons name="star" size={16} color="#FFFFFF" />
+            {/* Final decorative rod — slightly longer than text, rounded at the bottom */}
+            <LinearGradient
+              colors={["#75DFBB", "#75DFBB"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={[styles.timelineLine, { top: 22 }, styles.timelineLineEnd]}
+            />
+            <View style={[styles.timelineIcon, { backgroundColor: "#079867" }]}>
+              <Ionicons name="star" size={22} color="#FFFFFF" />
             </View>
           </View>
-          <View style={styles.timelineText}>
+          <View style={[styles.timelineText, { paddingBottom: 56 }]}>
             <Text style={styles.timelineLabel}>{step3Label}</Text>
             <Text style={styles.timelineBody}>{step3Body}</Text>
           </View>
         </View>
       </View>
+
+      <View style={{ flex: 1 }} />
 
       {/* Plan selector cards */}
       <View style={styles.planRow}>
@@ -635,10 +647,10 @@ function PageC({
               : { borderColor: OL.border },
           ]}
         >
-          {isYearly && trialLabel ? (
+          {isYearly ? (
             <View style={styles.trialBadgeWrap}>
               <View style={styles.trialBadge}>
-                <Text style={styles.trialBadgeText}>{trialLabel}</Text>
+                <Text style={styles.trialBadgeText}>3-day free trial</Text>
               </View>
             </View>
           ) : null}
@@ -790,13 +802,17 @@ export function Paywall({ onComplete }: { onComplete: () => void }) {
 
   return (
     <Animated.View style={[styles.paywallWrap, { opacity: fade }]}>
-      {page === 0 && (
+      {/* PageA is always mounted so PhoneDemoVideo buffers before the user arrives */}
+      <View
+        style={page === 0 ? styles.paywallPage : styles.paywallPageHidden}
+        pointerEvents={page === 0 ? "auto" : "none"}
+      >
         <PageA
           onContinue={() => goPage(1)}
           onRestore={() => { void handleRestore(); }}
           isRestoring={isRestoring}
         />
-      )}
+      </View>
       {page === 1 && (
         <PageB
           onContinue={() => goPage(2)}
@@ -942,6 +958,17 @@ const styles = StyleSheet.create({
   paywallWrap: {
     flex: 1,
   },
+  paywallPage: {
+    flex: 1,
+  },
+  paywallPageHidden: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0,
+  },
   pageWrap: {
     flex: 1,
     justifyContent: "space-between",
@@ -1018,6 +1045,10 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     lineHeight: 34,
   },
+  pageBLottie: {
+    width: 220,
+    height: 220,
+  },
   pageBImage: {
     width: 100,
     height: 100,
@@ -1038,7 +1069,7 @@ const styles = StyleSheet.create({
   pageCContent: {
     flexGrow: 1,
     gap: 14,
-    paddingBottom: 16,
+    paddingBottom: 0,
   },
   pageCLoader: {
     flex: 1,
@@ -1126,25 +1157,30 @@ const styles = StyleSheet.create({
   timelineRow: {
     flexDirection: "row",
     gap: 14,
-    marginBottom: 4,
+    marginBottom: 0,
   },
   timelineIconWrap: {
     alignItems: "center",
-    width: 36,
+    width: 44,
+    alignSelf: "stretch",
   },
   timelineIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
   },
   timelineLine: {
-    width: 2,
-    flex: 1,
-    minHeight: 20,
-    marginVertical: 4,
-    alignSelf: "center",
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    width: 14,
+    left: 15,
+  },
+  timelineLineEnd: {
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
   },
   timelineText: {
     flex: 1,
@@ -1225,6 +1261,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     gap: 4,
+    paddingBottom: 10,
   },
   linkText: {
     fontSize: 12,
