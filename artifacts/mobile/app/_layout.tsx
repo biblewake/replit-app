@@ -26,6 +26,7 @@ import {
 } from "@/lib/backgroundAlarmCheck";
 import {
   getLaunchPayload,
+  initAlarmKit,
 } from "@/lib/alarmKitScheduler";
 import {
   SubscriptionProvider,
@@ -151,6 +152,8 @@ function RootLayoutNav() {
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   useEffect(() => {
     if (Platform.OS !== "ios") return;
+
+    initAlarmKit();
 
     const handleForeground = () => {
       // Reschedule — guards against OS notification purge after reboot.
