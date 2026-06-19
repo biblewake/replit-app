@@ -58,6 +58,8 @@ import {
   SNOOZE_RISING,
 } from "@/components/onboarding/content";
 import { ONBOARDING_ANSWERS_KEY } from "@/services/onboardingSync";
+import { initializeRevenueCat } from "@/lib/revenuecat";
+import { useQueryClient } from "@tanstack/react-query";
 
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
 
@@ -133,6 +135,7 @@ export default function OnboardingNavigator() {
   const router = useRouter();
   const { completeOnboarding, session } = useAuth();
   const { addAlarm } = useAlarms();
+  const queryClient = useQueryClient();
 
   // DEV: set to 0 for full onboarding, 30 to jump straight to the paywall
   const [step, setStep] = useState(0);
@@ -474,6 +477,11 @@ export default function OnboardingNavigator() {
             <AnalysisScreen
               onDone={() => {
                 void persistAnswers();
+                // Initialize RevenueCat now so that by the time the user taps
+                // through AccountScreen → Paywall Pages A and B to reach Page C,
+                // the SDK is already configured and the offerings fetch has resolved.
+                initializeRevenueCat();
+                void queryClient.invalidateQueries({ queryKey: ["revenuecat"] });
                 goNext();
               }}
             />

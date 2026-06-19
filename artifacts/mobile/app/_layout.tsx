@@ -279,6 +279,10 @@ function RootLayoutNav() {
   // Without this guard, the (tabs) stack briefly flashes before the navigation
   // effect fires its redirect — visible as a "home screen flash" on first launch.
   if (onboardingComplete === null) return null;
+  // Also block while subscription status is still resolving for post-onboarding,
+  // non-anonymous users. Without this, the tab layout flashes for one frame
+  // before the paywall redirect fires when isSubscribed turns false.
+  if (onboardingComplete && !isAnonymous && subscriptionLoading) return null;
 
   return (
     <Stack screenOptions={{ headerShown: false }}>

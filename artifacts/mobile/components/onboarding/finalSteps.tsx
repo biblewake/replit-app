@@ -22,9 +22,8 @@ import * as Haptics from "expo-haptics";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { OL, ONBOARDING_ORANGE } from "@/components/onboarding/primitives";
-import { initializeRevenueCat, useSubscription } from "@/lib/revenuecat";
+import { useSubscription } from "@/lib/revenuecat";
 import type { PurchasesPackage } from "react-native-purchases";
-import { useQueryClient } from "@tanstack/react-query";
 
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
 
@@ -150,6 +149,27 @@ export function AnalysisScreen({ onDone }: { onDone: () => void }) {
 export function AccountScreen({ onContinue }: { onContinue: () => void }) {
   const { signInWithGoogle, signInWithApple, signInAnonymously, session, isGuest } = useAuth();
   const [busy, setBusy] = useState<null | "google" | "apple" | "anon">(null);
+
+  // Capture the session that existed at mount. Auto-advance must only fire for
+  // sign-ins that happen *after* this screen appears, not for pre-existing sessions.
+  const sessionAtMount = useRef(session);
+  const hasPreExistingSession = Boolean(
+    sessionAtMount.current && !sessionAtMount.current.user?.is_anonymous
+  );
+
+  // Track when the user explicitly chose "Use a different account" so we can
+  // swap from the "Continue as …" UI to the normal sign-in buttons (UI only).
+  const [dismissedPreExisting, setDismissedPreExisting] = useState(false);
+
+  const showPreExisting = hasPreExistingSession && !dismissedPreExisting;
+
+  // Gate auto-advance behind this ref. Starts true when there is no pre-existing
+  // session. When a pre-existing session exists, it flips to true only after the
+  // sign-out triggered by "Use a different account" has fully propagated (session
+  // goes null/anonymous). This prevents the advance from firing while the old
+  // session is still in memory right after dismissal.
+  const readyToAdvance = useRef(!hasPreExistingSession);
+
   // Sign out any STALE anonymous session left over from a previous install.
   // We only sign out if the session was created more than 5 seconds ago —
   // this prevents the signout from racing with a freshly-arrived Google PKCE
@@ -170,10 +190,19 @@ export function AccountScreen({ onContinue }: { onContinue: () => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Advance only when a real (non-anonymous) signed-in session exists, or the
-  // user explicitly chose guest mode.
-  // Primary path: AuthContext propagates the session update via props.
+  // Watch for sign-out to complete after dismissal so we can unlock advance.
   useEffect(() => {
+    if (readyToAdvance.current) return; // already unlocked
+    if (!session || session.user?.is_anonymous) {
+      readyToAdvance.current = true; // sign-out propagated — now ready
+    }
+  }, [session]);
+
+  // Advance only when a real (non-anonymous) signed-in session arrives AND
+  // we are ready (either no pre-existing session, or sign-out has completed).
+  // Deps intentionally exclude readyToAdvance (it is a ref, read inline).
+  useEffect(() => {
+    if (!readyToAdvance.current) return;
     if ((session && !session.user?.is_anonymous) || isGuest) onContinue();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, isGuest]);
@@ -181,12 +210,17 @@ export function AccountScreen({ onContinue }: { onContinue: () => void }) {
   // Fallback path: subscribe directly to Supabase auth state changes so that
   // PKCE session delivery (Google sign-in) triggers onContinue() even if the
   // AuthContext → AccountScreen prop chain has a timing gap.
+  // Sign-out events also flip readyToAdvance so both paths stay in sync.
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
-        if (newSession && !newSession.user?.is_anonymous) {
-          onContinue();
+        if (!newSession || newSession.user?.is_anonymous) {
+          // Sign-out completed — unlock advance for subsequent sign-ins.
+          readyToAdvance.current = true;
+          return;
         }
+        if (!readyToAdvance.current) return; // blocked: pre-existing session not yet cleared
+        onContinue();
       }
     );
     return () => subscription.unsubscribe();
@@ -230,66 +264,97 @@ export function AccountScreen({ onContinue }: { onContinue: () => void }) {
         </Text>
       </View>
 
-      <View style={styles.authButtons}>
-        {/* Apple — black, shown on iOS only */}
-        {Platform.OS === "ios" ? (
+      {showPreExisting ? (
+        <>
+          {/* Pre-existing real session: show "Continue as" + switch option */}
+          <View style={styles.authButtons}>
+            <Pressable
+              onPress={() => { onContinue(); }}
+              style={({ pressed }) => [
+                styles.authBtn,
+                { backgroundColor: ONBOARDING_ORANGE, opacity: pressed ? 0.88 : 1 },
+              ]}
+            >
+              <Text style={[styles.authBtnText, { color: "#FFFFFF" }]}>
+                Continue as {sessionAtMount.current?.user?.email ?? ""}
+              </Text>
+            </Pressable>
+          </View>
+          <Pressable
+            onPress={() => {
+              setDismissedPreExisting(true);
+              supabase.auth.signOut().catch(() => {});
+            }}
+            hitSlop={10}
+            style={({ pressed }) => [styles.anonLink, { opacity: pressed ? 0.6 : 1 }]}
+          >
+            <Text style={styles.anonLinkText}>Use a different account</Text>
+          </Pressable>
+        </>
+      ) : (
+        <>
+          <View style={styles.authButtons}>
+            {/* Apple — black, shown on iOS only */}
+            {Platform.OS === "ios" ? (
+              <Pressable
+                disabled={busy !== null}
+                onPress={() => run("apple")}
+                style={({ pressed }) => [
+                  styles.authBtn,
+                  { backgroundColor: "#000000", opacity: pressed ? 0.88 : 1 },
+                ]}
+              >
+                {busy === "apple" ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="logo-apple" size={22} color="#FFFFFF" />
+                    <Text style={[styles.authBtnText, { color: "#FFFFFF" }]}>
+                      Continue with Apple
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+            ) : null}
+
+            {/* Google — white with border, colored "G" */}
+            <Pressable
+              disabled={busy !== null}
+              onPress={() => run("google")}
+              style={({ pressed }) => [
+                styles.authBtn,
+                styles.googleBtn,
+                { opacity: pressed ? 0.88 : 1 },
+              ]}
+            >
+              {busy === "google" ? (
+                <ActivityIndicator color={OL.foreground} />
+              ) : (
+                <>
+                  <Image source={require("../../assets/images/google_icon.png")} style={styles.googleIcon} />
+                  <Text style={[styles.authBtnText, { color: OL.foreground }]}>
+                    Continue with Google
+                  </Text>
+                </>
+              )}
+            </Pressable>
+          </View>
+
+          {/* Anonymous skip link */}
           <Pressable
             disabled={busy !== null}
-            onPress={() => run("apple")}
-            style={({ pressed }) => [
-              styles.authBtn,
-              { backgroundColor: "#000000", opacity: pressed ? 0.88 : 1 },
-            ]}
+            onPress={() => { void runAnon(); }}
+            hitSlop={10}
+            style={({ pressed }) => [styles.anonLink, { opacity: pressed ? 0.6 : 1 }]}
           >
-            {busy === "apple" ? (
-              <ActivityIndicator color="#FFFFFF" />
+            {busy === "anon" ? (
+              <ActivityIndicator size="small" color={OL.mutedForeground} />
             ) : (
-              <>
-                <Ionicons name="logo-apple" size={22} color="#FFFFFF" />
-                <Text style={[styles.authBtnText, { color: "#FFFFFF" }]}>
-                  Continue with Apple
-                </Text>
-              </>
+              <Text style={styles.anonLinkText}>Continue without an account</Text>
             )}
           </Pressable>
-        ) : null}
-
-        {/* Google — white with border, colored "G" */}
-        <Pressable
-          disabled={busy !== null}
-          onPress={() => run("google")}
-          style={({ pressed }) => [
-            styles.authBtn,
-            styles.googleBtn,
-            { opacity: pressed ? 0.88 : 1 },
-          ]}
-        >
-          {busy === "google" ? (
-            <ActivityIndicator color={OL.foreground} />
-          ) : (
-            <>
-              <Image source={require("../../assets/images/google_icon.png")} style={styles.googleIcon} />
-              <Text style={[styles.authBtnText, { color: OL.foreground }]}>
-                Continue with Google
-              </Text>
-            </>
-          )}
-        </Pressable>
-      </View>
-
-      {/* Anonymous skip link — always visible */}
-      <Pressable
-        disabled={busy !== null}
-        onPress={() => { void runAnon(); }}
-        hitSlop={10}
-        style={({ pressed }) => [styles.anonLink, { opacity: pressed ? 0.6 : 1 }]}
-      >
-        {busy === "anon" ? (
-          <ActivityIndicator size="small" color={OL.mutedForeground} />
-        ) : (
-          <Text style={styles.anonLinkText}>Continue without an account</Text>
-        )}
-      </Pressable>
+        </>
+      )}
 
     </View>
   );
@@ -747,17 +812,10 @@ function PageC({
 export function Paywall({ onComplete }: { onComplete: () => void }) {
   const [page, setPage] = useState(0);
   const fade = useRef(new Animated.Value(1)).current;
-  const queryClient = useQueryClient();
   const { offerings, purchasePackage, restore, isPurchasing, isRestoring } = useSubscription();
 
-  // Lazy init: only call Purchases.configure() when the user actually reaches
-  // the onboarding paywall. The rcInitialized guard makes this safe to call
-  // on every mount. Invalidate RC queries so any cached null values are
-  // refetched now that the SDK is ready.
-  useEffect(() => {
-    initializeRevenueCat();
-    void queryClient.invalidateQueries({ queryKey: ["revenuecat"] });
-  }, [queryClient]);
+  // RC is now initialized earlier (step 28 onDone) so by the time the user
+  // reaches Page C the offerings fetch has already resolved. No init needed here.
 
   const annualPkg = offerings?.current?.availablePackages.find(
     (p) => p.identifier === "$rc_annual",

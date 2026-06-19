@@ -96,16 +96,14 @@ function useSubscriptionContext() {
   const offeringsQuery = useQuery({
     queryKey: ["revenuecat", "offerings"],
     queryFn: async () => {
-      if (!rcInitialized) return null;
+      if (!rcInitialized) throw new Error("RevenueCat is not yet initialized");
       const Purchases = getPurchases();
-      if (!Purchases) return null;
-      try {
-        return await Purchases.getOfferings();
-      } catch {
-        return null;
-      }
+      if (!Purchases) throw new Error("RevenueCat is not available on this platform");
+      return await Purchases.getOfferings();
     },
     staleTime: 300 * 1000,
+    retry: 3,
+    retryDelay: 2000,
   });
 
   const purchaseMutation = useMutation({
