@@ -1,0 +1,65 @@
+### What's Going Wrong
+
+Replit's diagnosis is completely accurate, and the added context from Claude is right on the mark. You are stuck in a **silent failure loop**.
+
+Because `ensureConfigured()` is failing internally—either due to the App Group setup or a native lifecycle mismatch—it causes `ak.requestAuthorization()` to throw a native exception. Since that exception is wrapped in a `catch` block that blindly returns `"denied"`, the application behaves as if the user explicitly clicked "Don't Allow." Your `persistAlarmKitAuthStatus("denied")` function fires, the UI advances to the next step via `onContinue()`, and the permission dialog never renders.
+
+### Are you using `react-native-ios-alarmkit`?
+
+No, you are **not** using the `react-native-ios-alarmkit` package.
+
+If you look at line 133 in your `alarmKitScheduler.ts` file, your project is explicitly requiring a different module:
+
+```typescript
+return require("expo-alarm-kit") as ExpoAlarmKitModule;
+
+```
+
+However, the Medium article you linked about `react-native-ios-alarmkit` is still highly relevant. Both packages are wrappers around Apple's underlying iOS 26 AlarmKit framework. This means the system-level configuration requirements mentioned in the article still apply to your app, specifically the `Info.plist` usage description.
+
+---
+
+### The Fix
+
+#### 1. Update `requestAlarmKitPermission`
+
+You need to decouple the App Group configuration from the permission request so it doesn't block the UI, and add logging so you aren't blind to native crashes.
+
+Update the function in `alarmKitScheduler.ts` (around line 175):
+
+```typescript
+export async function requestAlarmKitPermission(): Promise<AuthorizationStatus | "unavailable"> {
+  const ak = getAk();
+  if (!ak) return "unavailable";
+
+  // Removed ensureConfigured() from here.
+  // App Group configuration should only happen when scheduling the alarm.
+
+  try {
+    return await ak.requestAuthorization();
+  } catch (error) {
+    // Surface the error instead of silently swallowing it
+    console.error("[AlarmKit] requestAuthorization threw:", error);
+    return "denied";
+  }
+}
+
+```
+
+#### 2. Clear the Cached "Denied" State
+
+As Claude noted, because your app has been silently returning `"denied"`, your `AsyncStorage` has likely cached this failure under the `AK_AUTH_DENIED_KEY`.
+
+Even after you apply the code fix above, iOS will not show the dialog again if your app's local storage thinks you already declined it. To properly test this, you must **delete the app from your device/simulator and install a fresh build**. This will wipe the `AsyncStorage` state and ensure the permission can be requested cleanly.
+
+#### 3. Verify your `Info.plist`
+
+Since iOS 26 strictly requires it, double-check your `app.json` (if using Expo managed workflow) or `Info.plist` (if using bare workflow) to ensure you have the required usage string:
+
+```xml
+<key>NSAlarmKitUsageDescription</key>
+<string>This app needs access to alarms to wake you up on time.</string>
+
+```
+
+If this specific key is missing from your configuration, `requestAuthorization()` will automatically throw a native OS error under the hood. This missing key would perfectly explain the silent catch block failure you are experiencing.
