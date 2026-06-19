@@ -6,6 +6,7 @@ import {
   useFonts,
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -69,6 +70,27 @@ if (Platform.OS !== "web" && typeof ErrorUtils !== "undefined") {
 }
 
 const queryClient = new QueryClient();
+
+// ── AlarmKit stale-denied migration ──────────────────────────────────────────
+// Prior builds called configure() before requestAuthorization(), which could
+// leave the native module in a bad state and cause requestAuthorization() to
+// throw silently. That exception was caught and returned as "denied", so
+// AK_AUTH_DENIED_KEY was written even though the dialog never appeared.
+// On first launch of a fixed build, clear any stale "denied" flag so the
+// dialog can be shown properly.
+
+const AK_MIGRATION_V1_KEY = "@bible_wake_ak_migration_v1";
+
+async function clearStaleAlarmKitDenied() {
+  try {
+    const done = await AsyncStorage.getItem(AK_MIGRATION_V1_KEY);
+    if (done) return;
+    await AsyncStorage.removeItem("@bible_wake_ak_auth_denied");
+    await AsyncStorage.setItem(AK_MIGRATION_V1_KEY, "1");
+  } catch {
+    // best-effort
+  }
+}
 
 /**
  * Expo Go SDK 53 forces New Architecture on, which crashes the gesture-handler
@@ -322,6 +344,9 @@ function RootLayout() {
   // ensures the React/Hermes runtime is fully up before any native calls fire.
   useEffect(() => {
     if (Platform.OS === "web") return;
+
+    // Clear any stale AlarmKit "denied" flag written by the buggy configure()-before-auth path.
+    clearStaleAlarmKitDenied().catch(() => {});
 
     // Configure foreground notification presentation.
     try {

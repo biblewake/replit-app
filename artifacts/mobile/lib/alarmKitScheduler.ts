@@ -242,16 +242,13 @@ export async function initAlarmKit(): Promise<void> {
 export async function requestAlarmKitPermission(): Promise<AuthorizationStatus | "unavailable"> {
   const ak = getAk();
   if (!ak) return "unavailable";
-  // NOTE: configure() failure does NOT block the permission dialog here.
-  // requestAuthorization() works independently of the App Group — the system
-  // prompt can still be shown even when configure() returns false. Only
-  // scheduleAlarmKit() requires a successful configure() (for the launch payload
-  // to be delivered). We still call ensureConfigured() for the side-effect of
-  // caching the result and emitting a console.warn when it fails.
-  ensureConfigured();
+  // configure() is only needed for scheduling, NOT for authorization.
+  // Calling it here can leave the native module in a bad state and cause
+  // requestAuthorization() to throw silently, preventing the dialog from appearing.
   try {
     return await ak.requestAuthorization();
-  } catch {
+  } catch (error) {
+    console.error("[AlarmKit] requestAuthorization threw:", error);
     return "denied";
   }
 }
