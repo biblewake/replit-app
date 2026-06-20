@@ -16,6 +16,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { useAuth } from "@/context/AuthContext";
 import { useAlarms } from "@/context/AlarmContext";
+import { useRatingRequest } from "@/hooks/useRatingRequest";
 import { supabase } from "@/lib/supabase";
 import { BibleVerse } from "@/constants/verses";
 import {
@@ -136,6 +137,7 @@ export default function OnboardingNavigator() {
   const { completeOnboarding, session, onboardingComplete } = useAuth();
   const { addAlarm } = useAlarms();
   const queryClient = useQueryClient();
+  const { promptOnOnboardingComplete } = useRatingRequest();
 
   // If onboarding is already complete, skip straight to the paywall (step 30)
   // so returning non-subscribed users see only Pages A/B/C, not the full quiz.
@@ -230,7 +232,10 @@ export default function OnboardingNavigator() {
     }
     await completeOnboarding();
     router.replace("/(tabs)");
-  }, [draft, addAlarm, completeOnboarding, router]);
+    setTimeout(() => {
+      void promptOnOnboardingComplete();
+    }, 1500);
+  }, [draft, addAlarm, completeOnboarding, router, promptOnOnboardingComplete]);
 
   // ── Progress + continue-enabled ──────────────────────────────────────────
   const progress = step / TOTAL_STEPS;

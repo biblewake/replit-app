@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
+import { useRatingRequest } from "@/hooks/useRatingRequest";
 import ReciteVisible from "./ReciteVisible";
 import ReciteFromMemory from "./ReciteFromMemory";
 import AnalyzingVerse from "./AnalyzingVerse";
@@ -51,6 +52,7 @@ export default function RecitalFlow({
   onAlarmStop,
 }: RecitalFlowProps) {
   const { streak, incrementStreak, alarms } = useAlarms();
+  const { promptOnFirstAlarmDismissal } = useRatingRequest();
   const [step, setStep] = useState<Step>(
     type === "wakeup" ? "wakeUpPhrase" : "reciteVisible"
   );
@@ -141,6 +143,7 @@ export default function RecitalFlow({
   };
 
   const handleStreakContinue = () => {
+    void promptOnFirstAlarmDismissal();
     setStep("verseOfDay");
   };
 
