@@ -302,30 +302,33 @@ function RootLayoutNav() {
 
   // Block rendering until auth/onboarding state is resolved.
   // This must come AFTER all hooks (Rules of Hooks: no early return before hooks).
-  // Without this guard, the (tabs) stack briefly flashes before the navigation
-  // effect fires its redirect — visible as a "home screen flash" on first launch.
+  // Each guard below corresponds to a redirect in the useEffect above. Returning
+  // null here prevents the (tabs) stack from rendering even for a single frame
+  // before the navigation effect fires, eliminating the "home screen flash".
   if (onboardingComplete === null) return null;
-  // Also block while subscription status is still resolving for post-onboarding,
-  // non-anonymous users. Without this, the tab layout flashes for one frame
-  // before the paywall redirect fires when isSubscribed turns false.
-  if (onboardingComplete && !isAnonymous && subscriptionLoading) {
+  if (onboardingComplete === false) return null;
+  if (isAnonymous) return null;
+  // Subscription state is still loading — show a neutral spinner so we never
+  // render tabs (which would flash) while we wait for the query to settle.
+  if (subscriptionLoading) {
     return (
       <View style={{ flex: 1, backgroundColor: "#ffffff", alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator size="large" color="#F97316" />
       </View>
     );
   }
+  if (!isSubscribed) return null;
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen
         name="onboarding"
-        options={{ headerShown: false, animation: "fade" }}
+        options={{ headerShown: false, animation: "none" }}
       />
       <Stack.Screen
         name="paywall"
-        options={{ headerShown: false, animation: "fade" }}
+        options={{ headerShown: false, animation: "none" }}
       />
       <Stack.Screen
         name="alarm-ringing"
