@@ -150,77 +150,32 @@ export function AccountScreen({ onContinue }: { onContinue: () => void }) {
   const { signInWithGoogle, signInWithApple, signInAnonymously, session, isGuest } = useAuth();
   const [busy, setBusy] = useState<null | "google" | "apple" | "anon">(null);
 
-  // Capture the session that existed at mount. Auto-advance must only fire for
-  // sign-ins that happen *after* this screen appears, not for pre-existing sessions.
-  const sessionAtMount = useRef(session);
-  const hasPreExistingSession = Boolean(
-    sessionAtMount.current && !sessionAtMount.current.user?.is_anonymous
-  );
-
-  // Track when the user explicitly chose "Use a different account" so we can
-  // swap from the "Continue as …" UI to the normal sign-in buttons (UI only).
-  const [dismissedPreExisting, setDismissedPreExisting] = useState(false);
-
-  const showPreExisting = hasPreExistingSession && !dismissedPreExisting;
-
-  // Gate auto-advance behind this ref. Starts true when there is no pre-existing
-  // session. When a pre-existing session exists, it flips to true only after the
-  // sign-out triggered by "Use a different account" has fully propagated (session
-  // goes null/anonymous). This prevents the advance from firing while the old
-  // session is still in memory right after dismissal.
-  const readyToAdvance = useRef(!hasPreExistingSession);
-
-  // Sign out any STALE anonymous session left over from a previous install.
-  // We only sign out if the session was created more than 5 seconds ago —
-  // this prevents the signout from racing with a freshly-arrived Google PKCE
-  // session. The PKCE exchange fires onAuthStateChange which creates a new
-  // real session; if we blindly sign it out here the user gets stuck on this
-  // screen even after a successful Google sign-in.
+  // If a valid non-anonymous session already exists on mount, advance immediately.
+  // This covers the case where the user re-enters onboarding with an existing account.
   useEffect(() => {
-    if (session?.user?.is_anonymous === true) {
-      const createdAt = session.user.created_at
-        ? new Date(session.user.created_at).getTime()
-        : 0;
-      const ageMs = Date.now() - createdAt;
-      if (ageMs > 5000) {
-        supabase.auth.signOut().catch(() => {});
-      }
+    if (session && !session.user?.is_anonymous) {
+      onContinue();
     }
     // Run once on mount only
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Watch for sign-out to complete after dismissal so we can unlock advance.
+  // Advance when a real (non-anonymous) session arrives after mount, or when
+  // the guest flag is set (non-Supabase dev path).
   useEffect(() => {
-    if (readyToAdvance.current) return; // already unlocked
-    if (!session || session.user?.is_anonymous) {
-      readyToAdvance.current = true; // sign-out propagated — now ready
-    }
-  }, [session]);
-
-  // Advance only when a real (non-anonymous) signed-in session arrives AND
-  // we are ready (either no pre-existing session, or sign-out has completed).
-  // Deps intentionally exclude readyToAdvance (it is a ref, read inline).
-  useEffect(() => {
-    if (!readyToAdvance.current) return;
     if ((session && !session.user?.is_anonymous) || isGuest) onContinue();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, isGuest]);
 
-  // Fallback path: subscribe directly to Supabase auth state changes so that
-  // PKCE session delivery (Google sign-in) triggers onContinue() even if the
+  // Fallback: subscribe directly to Supabase auth state changes so that PKCE
+  // session delivery (Google sign-in) triggers onContinue() even if the
   // AuthContext → AccountScreen prop chain has a timing gap.
-  // Sign-out events also flip readyToAdvance so both paths stay in sync.
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
-        if (!newSession || newSession.user?.is_anonymous) {
-          // Sign-out completed — unlock advance for subsequent sign-ins.
-          readyToAdvance.current = true;
-          return;
+        if (newSession && !newSession.user?.is_anonymous) {
+          onContinue();
         }
-        if (!readyToAdvance.current) return; // blocked: pre-existing session not yet cleared
-        onContinue();
       }
     );
     return () => subscription.unsubscribe();
@@ -245,6 +200,10 @@ export function AccountScreen({ onContinue }: { onContinue: () => void }) {
     setBusy("anon");
     try {
       await signInAnonymously();
+      // Call onContinue() directly — do not rely on the reactive useEffect.
+      // The anonymous Supabase session sets user.is_anonymous === true, which
+      // would not satisfy the useEffect condition above.
+      onContinue();
     } catch {
       // surfaced by AuthContext
     } finally {
@@ -264,97 +223,66 @@ export function AccountScreen({ onContinue }: { onContinue: () => void }) {
         </Text>
       </View>
 
-      {showPreExisting ? (
-        <>
-          {/* Pre-existing real session: show "Continue as" + switch option */}
-          <View style={styles.authButtons}>
-            <Pressable
-              onPress={() => { onContinue(); }}
-              style={({ pressed }) => [
-                styles.authBtn,
-                { backgroundColor: ONBOARDING_ORANGE, opacity: pressed ? 0.88 : 1 },
-              ]}
-            >
-              <Text style={[styles.authBtnText, { color: "#FFFFFF" }]}>
-                Continue as {sessionAtMount.current?.user?.email ?? ""}
-              </Text>
-            </Pressable>
-          </View>
-          <Pressable
-            onPress={() => {
-              setDismissedPreExisting(true);
-              supabase.auth.signOut().catch(() => {});
-            }}
-            hitSlop={10}
-            style={({ pressed }) => [styles.anonLink, { opacity: pressed ? 0.6 : 1 }]}
-          >
-            <Text style={styles.anonLinkText}>Use a different account</Text>
-          </Pressable>
-        </>
-      ) : (
-        <>
-          <View style={styles.authButtons}>
-            {/* Apple — black, shown on iOS only */}
-            {Platform.OS === "ios" ? (
-              <Pressable
-                disabled={busy !== null}
-                onPress={() => run("apple")}
-                style={({ pressed }) => [
-                  styles.authBtn,
-                  { backgroundColor: "#000000", opacity: pressed ? 0.88 : 1 },
-                ]}
-              >
-                {busy === "apple" ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Ionicons name="logo-apple" size={22} color="#FFFFFF" />
-                    <Text style={[styles.authBtnText, { color: "#FFFFFF" }]}>
-                      Continue with Apple
-                    </Text>
-                  </>
-                )}
-              </Pressable>
-            ) : null}
-
-            {/* Google — white with border, colored "G" */}
-            <Pressable
-              disabled={busy !== null}
-              onPress={() => run("google")}
-              style={({ pressed }) => [
-                styles.authBtn,
-                styles.googleBtn,
-                { opacity: pressed ? 0.88 : 1 },
-              ]}
-            >
-              {busy === "google" ? (
-                <ActivityIndicator color={OL.foreground} />
-              ) : (
-                <>
-                  <Image source={require("../../assets/images/google_icon.png")} style={styles.googleIcon} />
-                  <Text style={[styles.authBtnText, { color: OL.foreground }]}>
-                    Continue with Google
-                  </Text>
-                </>
-              )}
-            </Pressable>
-          </View>
-
-          {/* Anonymous skip link */}
+      <View style={styles.authButtons}>
+        {/* Apple — black, shown on iOS only */}
+        {Platform.OS === "ios" ? (
           <Pressable
             disabled={busy !== null}
-            onPress={() => { void runAnon(); }}
-            hitSlop={10}
-            style={({ pressed }) => [styles.anonLink, { opacity: pressed ? 0.6 : 1 }]}
+            onPress={() => run("apple")}
+            style={({ pressed }) => [
+              styles.authBtn,
+              { backgroundColor: "#000000", opacity: pressed ? 0.88 : 1 },
+            ]}
           >
-            {busy === "anon" ? (
-              <ActivityIndicator size="small" color={OL.mutedForeground} />
+            {busy === "apple" ? (
+              <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.anonLinkText}>Continue without an account</Text>
+              <>
+                <Ionicons name="logo-apple" size={22} color="#FFFFFF" />
+                <Text style={[styles.authBtnText, { color: "#FFFFFF" }]}>
+                  Continue with Apple
+                </Text>
+              </>
             )}
           </Pressable>
-        </>
-      )}
+        ) : null}
+
+        {/* Google — white with border, colored "G" */}
+        <Pressable
+          disabled={busy !== null}
+          onPress={() => run("google")}
+          style={({ pressed }) => [
+            styles.authBtn,
+            styles.googleBtn,
+            { opacity: pressed ? 0.88 : 1 },
+          ]}
+        >
+          {busy === "google" ? (
+            <ActivityIndicator color={OL.foreground} />
+          ) : (
+            <>
+              <Image source={require("../../assets/images/google_icon.png")} style={styles.googleIcon} />
+              <Text style={[styles.authBtnText, { color: OL.foreground }]}>
+                Continue with Google
+              </Text>
+            </>
+          )}
+        </Pressable>
+      </View>
+
+      {/* Anonymous skip link */}
+      <Pressable
+        disabled={busy !== null}
+        onPress={() => { void runAnon(); }}
+        hitSlop={10}
+        style={({ pressed }) => [styles.anonLink, { opacity: pressed ? 0.6 : 1 }]}
+      >
+        {busy === "anon" ? (
+          <ActivityIndicator size="small" color={OL.mutedForeground} />
+        ) : (
+          <Text style={styles.anonLinkText}>Continue without an account</Text>
+        )}
+      </Pressable>
 
     </View>
   );

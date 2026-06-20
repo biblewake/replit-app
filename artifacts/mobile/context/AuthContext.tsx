@@ -311,9 +311,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
       if (!data.url) throw new Error("No OAuth URL returned");
 
-      // Open the OAuth page. On success the OS delivers a biblewake:// deep
-      // link with ?code=… which _layout.tsx handles via exchangeCodeForSession.
-      await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      // Open the OAuth page. On iOS, ASWebAuthenticationSession returns the
+      // redirect URL (including ?code=…) directly via the promise — it does NOT
+      // fire the global Linking event that _layout.tsx listens on. We must read
+      // the result here and exchange the code ourselves.
+      // _layout.tsx's Linking listener remains as a fallback for cold-launch
+      // deep links (e.g. Android, or if the app was terminated mid-flow).
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      if (result.type === "success" && result.url) {
+        await supabase.auth.exchangeCodeForSession(result.url);
+      }
     } catch (error) {
       console.error("[BibleWake] Google sign-in error:", error);
       const message =
