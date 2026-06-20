@@ -13,15 +13,15 @@ import { initializeRevenueCat, useSubscription } from "@/lib/revenuecat";
 const FEATURES = [
   {
     title: "Dismiss by Reciting Verses",
-    body: "Recite your verse to turn off the alarm — starting every morning with God's Word on your lips.",
+    body: "Start every morning with God's Word on your lips to turn off alarm",
   },
   {
     title: "Track Your Scripture Growth",
-    body: "Build a personal library of memorized scriptures and watch your faith foundation grow over time.",
+    body: "Keep track of your memorized scriptures and growth stats.",
   },
   {
     title: "Alarm Built for Your Faith",
-    body: "Every alarm is paired with scripture, making your wake-up a purposeful moment of devotion.",
+    body: "Turn your wake-up into a purposeful moment of devotion.",
   },
 ];
 

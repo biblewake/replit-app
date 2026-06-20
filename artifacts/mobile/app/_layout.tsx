@@ -12,7 +12,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import Constants from "expo-constants";
 import React, { useEffect, useRef } from "react";
-import { AppState, AppStateStatus, Appearance, Linking, Platform, View } from "react-native";
+import { ActivityIndicator, AppState, AppStateStatus, Appearance, Linking, Platform, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -160,7 +160,11 @@ function RootLayoutNav() {
     if (subscriptionLoading) return;
 
     if (!isSubscribed) {
-      if (!inPaywall) router.replace("/paywall");
+      // Send to onboarding (which jumps to the paywall at step 30) unless the
+      // user is already inside onboarding or on the standalone /paywall screen.
+      // The standalone paywall must remain reachable from Settings and other
+      // surfaces, so inPaywall is treated as a safe landing spot too.
+      if (!inOnboarding && !inPaywall) router.replace("/onboarding");
       return;
     }
 
@@ -304,7 +308,13 @@ function RootLayoutNav() {
   // Also block while subscription status is still resolving for post-onboarding,
   // non-anonymous users. Without this, the tab layout flashes for one frame
   // before the paywall redirect fires when isSubscribed turns false.
-  if (onboardingComplete && !isAnonymous && subscriptionLoading) return null;
+  if (onboardingComplete && !isAnonymous && subscriptionLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#ffffff", alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="large" color="#F97316" />
+      </View>
+    );
+  }
 
   return (
     <Stack screenOptions={{ headerShown: false }}>

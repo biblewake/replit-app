@@ -133,12 +133,13 @@ function WelcomeScreen() {
 /* ── Main navigator ──────────────────────────────────────────────────────── */
 export default function OnboardingNavigator() {
   const router = useRouter();
-  const { completeOnboarding, session } = useAuth();
+  const { completeOnboarding, session, onboardingComplete } = useAuth();
   const { addAlarm } = useAlarms();
   const queryClient = useQueryClient();
 
-  // DEV: set to 0 for full onboarding, 30 to jump straight to the paywall
-  const [step, setStep] = useState(0);
+  // If onboarding is already complete, skip straight to the paywall (step 30)
+  // so returning non-subscribed users see only Pages A/B/C, not the full quiz.
+  const [step, setStep] = useState(() => (onboardingComplete ? 30 : 0));
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [draft, setDraft] = useState<AlarmDraft>(DEFAULT_DRAFT);
   const [hasSignature, setHasSignature] = useState(false);
