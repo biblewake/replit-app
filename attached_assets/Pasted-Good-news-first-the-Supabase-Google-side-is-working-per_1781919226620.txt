@@ -1,0 +1,45 @@
+Good news first — the Supabase/Google side is working perfectly. Bad news — the failure has moved to the client.
+
+---
+
+**What the logs actually show:**
+
+1. `/auth/v1/authorize` → 302 → correctly redirects to Google with PKCE params
+2. `/auth/v1/callback` → 302 → Google sends the code back, Supabase correctly redirects to `biblewake:///` with the auth code attached
+
+Both of these succeeding means Supabase, Google Cloud Console, and your redirect URL config are all correct now. The `redirectTo` fix from task 167 is working — `biblewake:///` is exactly what `Linking.createURL("")` produces.
+
+---
+
+**The problem is now entirely client-side.**
+
+The browser sheet closing immediately is actually expected behavior — that is `ASWebAuthenticationSession` detecting the matching custom scheme and auto-closing. The real issue is what happens *after* it closes.
+
+**The likely bug:** `WebBrowser.openAuthSessionAsync()` on iOS captures the redirect URL internally and returns it in its own resolved promise — it does **not** go through the app's global `Linking` "url" event listener the way a normal deep link does. If your code calls `openAuthSessionAsync` and discards the result, expecting the `_layout.tsx` PKCE deep-link handler to catch it separately, that handler will likely never fire. The code never gets extracted, `exchangeCodeForSession` never runs, and the user is left exactly where they started — which matches "the popup closed and nothing happened."
+
+---
+
+**What to tell Replit to check in `AuthContext.tsx`:**
+
+The OAuth call needs to read the result of `openAuthSessionAsync` directly, not rely solely on the passive Linking listener:
+
+```javascript
+const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo)
+
+if (result.type === 'success' && result.url) {
+  const url = new URL(result.url)
+  const code = url.searchParams.get('code')
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    if (error) console.error('Exchange failed:', error.message)
+  }
+}
+```
+
+If the existing code is just doing `await WebBrowser.openAuthSessionAsync(data.url, redirectTo)` and stopping there, that is the bug.
+
+---
+
+**One more thing worth checking:**
+
+You mentioned a `200 POST` on `/auth/v1/signup` around the same time. That endpoint is not part of the normal OAuth flow — OAuth goes through `/authorize` → `/callback` → `/token`, never `/signup`. If something else in the app (a guest account creation path, for example) is also firing a signup call around the same time, it is worth confirming that is not interfering with or racing against the OAuth session.

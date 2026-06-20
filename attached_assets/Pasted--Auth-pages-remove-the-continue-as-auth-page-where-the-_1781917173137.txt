@@ -1,0 +1,278 @@
+# Auth pages
+- remove the "continue as.." auth page, where the use can change account. I understand the user will have the previous supabase session, which is fine, user can always log out later
+- Clicked continue without an account and it was loading forever
+- Clicked continue with the google, after the web pop-up, it immediately closed
+- are
+# Continue with google
+- got 302 GET logs on /auth/v1/authorize and /auth/v1/callback and 200 POST on /auth/v1/signup
+
+logs:
+{
+  "event_message": "GET | 302 | https://cmaysraaclfvofiynctl.supabase.co/auth/v1/authorize?provider=google&redirect_to=biblewake%3A%2F%2F%2F&code_challenge=.gHEIUpBO-Ok_mm-xo7.PGNmHzny5aEyXjjj71mSPtAT9mn7t_bZQ4wY&code_challenge_method=plain | Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Mobile/15E148 Safari/604.1",
+  "id": "f478b15b-67f0-4755-9505-691bba92bdf0",
+  "metadata": [
+    {
+      "load_balancer_experimental_routing": null,
+      "load_balancer_geo_aware_info": [],
+      "load_balancer_redirect_identifier": null,
+      "logflare_worker": [],
+      "request": [
+        {
+          "cf": [
+            {
+              "asOrganization": "Boycom Cablevision",
+              "asn": null,
+              "botManagement": [
+                {
+                  "corporateProxy": null,
+                  "detectionIds": [],
+                  "ja3Hash": "94f0e94ff0087a03f09b681a965a4d96",
+                  "ja4": "q13d0312h3_55b375c5d22e_151122171f7d",
+                  "ja4Signals": [],
+                  "jsDetection": [],
+                  "score": null,
+                  "staticResource": null,
+                  "verifiedBot": null
+                }
+              ],
+              "city": "Poplar Bluff",
+              "clientAcceptEncoding": null,
+              "clientTcpRtt": null,
+              "clientTrustScore": 98,
+              "colo": "STL",
+              "continent": null,
+              "country": "US",
+              "edgeRequestKeepAliveStatus": null,
+              "httpProtocol": "HTTP/3",
+              "isEUCountry": null,
+              "latitude": null,
+              "longitude": null,
+              "metroCode": null,
+              "postalCode": "63901",
+              "region": "Missouri",
+              "regionCode": null,
+              "requestPriority": null,
+              "timezone": "America/Chicago",
+              "tlsCipher": null,
+              "tlsClientAuth": [],
+              "tlsClientCiphersSha1": null,
+              "tlsClientExtensionsSha1": null,
+              "tlsClientExtensionsSha1Le": null,
+              "tlsClientHelloLength": null,
+              "tlsClientRandom": null,
+              "tlsExportedAuthenticator": [],
+              "tlsVersion": null,
+              "verifiedBotCategory": null
+            }
+          ],
+          "headers": [
+            {
+              "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+              "cf_cache_status": null,
+              "cf_connecting_ip": "192.129.113.46",
+              "cf_ipcountry": "US",
+              "cf_ray": "a0e67e709ebb7a57",
+              "content_length": null,
+              "content_location": null,
+              "content_range": null,
+              "content_type": null,
+              "date": null,
+              "host": "cmaysraaclfvofiynctl.supabase.co",
+              "prefer": null,
+              "range": null,
+              "referer": null,
+              "sb_forwarded_for": null,
+              "sb_gateway_mode": null,
+              "sb_gateway_version": null,
+              "traceparent": null,
+              "transfer_encoding": null,
+              "user_agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Mobile/15E148 Safari/604.1",
+              "x_amz_content_sha256": null,
+              "x_amz_date": null,
+              "x_client_info": null,
+              "x_forwarded_for": null,
+              "x_forwarded_host": null,
+              "x_forwarded_proto": "https",
+              "x_forwarded_user_agent": null,
+              "x_kong_proxy_latency": null,
+              "x_kong_upstream_latency": null,
+              "x_real_ip": "192.129.113.46"
+            }
+          ],
+          "host": "cmaysraaclfvofiynctl.supabase.co",
+          "method": "GET",
+          "path": "/auth/v1/authorize",
+          "port": null,
+          "protocol": "https:",
+          "sb": [],
+          "search": "?provider=google&redirect_to=biblewake%3A%2F%2F%2F&code_challenge=.gHEIUpBO-Ok_mm-xo7.PGNmHzny5aEyXjjj71mSPtAT9mn7t_bZQ4wY&code_challenge_method=plain",
+          "url": "https://cmaysraaclfvofiynctl.supabase.co/auth/v1/authorize?provider=google&redirect_to=biblewake%3A%2F%2F%2F&code_challenge=.gHEIUpBO-Ok_mm-xo7.PGNmHzny5aEyXjjj71mSPtAT9mn7t_bZQ4wY&code_challenge_method=plain"
+        }
+      ],
+      "response": [
+        {
+          "headers": [
+            {
+              "cf_cache_status": "DYNAMIC",
+              "cf_ray": "a0e67e70aaa17a57-STL",
+              "content_length": null,
+              "content_location": null,
+              "content_range": null,
+              "content_type": "text/plain",
+              "date": "Sat, 20 Jun 2026 00:00:33 GMT",
+              "proxy_status": null,
+              "sb_error_code": null,
+              "sb_gateway_mode": null,
+              "sb_gateway_version": "1",
+              "sb_request_id": null,
+              "server_timing": null,
+              "transfer_encoding": "chunked",
+              "x_kong_proxy_latency": null,
+              "x_kong_upstream_latency": null,
+              "x_sb_error_code": null
+            }
+          ],
+          "origin_time": 168,
+          "status_code": 302
+        }
+      ]
+    }
+  ],
+  "timestamp": 1781913633380000
+}
+
+and 
+
+{
+  "event_message": "GET | 302 | https://cmaysraaclfvofiynctl.supabase.co/auth/v1/callback?state=6ab6bbb4-198f-42b7-949e-df2048df2ebc&iss=https%3A%2F%2Faccounts.google.com&code=4%2F0AdkVLPwmaH_jjki-uizILf8n5FxXHyl06YYke-3msMWg0jp50KoLzUYoM14v9TawQbDffw&scope=email+profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+openid&authuser=0&prompt=none | Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Mobile/15E148 Safari/604.1",
+  "id": "c268993f-783a-4368-9176-21dcf2ef35d3",
+  "metadata": [
+    {
+      "load_balancer_experimental_routing": null,
+      "load_balancer_geo_aware_info": [],
+      "load_balancer_redirect_identifier": null,
+      "logflare_worker": [],
+      "request": [
+        {
+          "cf": [
+            {
+              "asOrganization": "Boycom Cablevision",
+              "asn": null,
+              "botManagement": [
+                {
+                  "corporateProxy": null,
+                  "detectionIds": [],
+                  "ja3Hash": "94f0e94ff0087a03f09b681a965a4d96",
+                  "ja4": "q13d0312h3_55b375c5d22e_151122171f7d",
+                  "ja4Signals": [],
+                  "jsDetection": [],
+                  "score": null,
+                  "staticResource": null,
+                  "verifiedBot": null
+                }
+              ],
+              "city": "Poplar Bluff",
+              "clientAcceptEncoding": null,
+              "clientTcpRtt": null,
+              "clientTrustScore": 97,
+              "colo": "STL",
+              "continent": null,
+              "country": "US",
+              "edgeRequestKeepAliveStatus": null,
+              "httpProtocol": "HTTP/3",
+              "isEUCountry": null,
+              "latitude": null,
+              "longitude": null,
+              "metroCode": null,
+              "postalCode": "63901",
+              "region": "Missouri",
+              "regionCode": null,
+              "requestPriority": null,
+              "timezone": "America/Chicago",
+              "tlsCipher": null,
+              "tlsClientAuth": [],
+              "tlsClientCiphersSha1": null,
+              "tlsClientExtensionsSha1": null,
+              "tlsClientExtensionsSha1Le": null,
+              "tlsClientHelloLength": null,
+              "tlsClientRandom": null,
+              "tlsExportedAuthenticator": [],
+              "tlsVersion": null,
+              "verifiedBotCategory": null
+            }
+          ],
+          "headers": [
+            {
+              "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+              "cf_cache_status": null,
+              "cf_connecting_ip": "192.129.113.46",
+              "cf_ipcountry": "US",
+              "cf_ray": "a0e67e742fe77a57",
+              "content_length": null,
+              "content_location": null,
+              "content_range": null,
+              "content_type": null,
+              "date": null,
+              "host": "cmaysraaclfvofiynctl.supabase.co",
+              "prefer": null,
+              "range": null,
+              "referer": null,
+              "sb_forwarded_for": null,
+              "sb_gateway_mode": null,
+              "sb_gateway_version": null,
+              "traceparent": null,
+              "transfer_encoding": null,
+              "user_agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Mobile/15E148 Safari/604.1",
+              "x_amz_content_sha256": null,
+              "x_amz_date": null,
+              "x_client_info": null,
+              "x_forwarded_for": null,
+              "x_forwarded_host": null,
+              "x_forwarded_proto": "https",
+              "x_forwarded_user_agent": null,
+              "x_kong_proxy_latency": null,
+              "x_kong_upstream_latency": null,
+              "x_real_ip": "192.129.113.46"
+            }
+          ],
+          "host": "cmaysraaclfvofiynctl.supabase.co",
+          "method": "GET",
+          "path": "/auth/v1/callback",
+          "port": null,
+          "protocol": "https:",
+          "sb": [],
+          "search": "?state=6ab6bbb4-198f-42b7-949e-df2048df2ebc&iss=https%3A%2F%2Faccounts.google.com&code=4%2F0AdkVLPwmaH_jjki-uizILf8n5FxXHyl06YYke-3msMWg0jp50KoLzUYoM14v9TawQbDffw&scope=email+profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+openid&authuser=0&prompt=none",
+          "url": "https://cmaysraaclfvofiynctl.supabase.co/auth/v1/callback?state=6ab6bbb4-198f-42b7-949e-df2048df2ebc&iss=https%3A%2F%2Faccounts.google.com&code=4%2F0AdkVLPwmaH_jjki-uizILf8n5FxXHyl06YYke-3msMWg0jp50KoLzUYoM14v9TawQbDffw&scope=email+profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+openid&authuser=0&prompt=none"
+        }
+      ],
+      "response": [
+        {
+          "headers": [
+            {
+              "cf_cache_status": "DYNAMIC",
+              "cf_ray": "a0e67e743e927a57-STL",
+              "content_length": "78",
+              "content_location": null,
+              "content_range": null,
+              "content_type": "text/plain",
+              "date": "Sat, 20 Jun 2026 00:00:34 GMT",
+              "proxy_status": null,
+              "sb_error_code": null,
+              "sb_gateway_mode": null,
+              "sb_gateway_version": "1",
+              "sb_request_id": null,
+              "server_timing": null,
+              "transfer_encoding": null,
+              "x_kong_proxy_latency": null,
+              "x_kong_upstream_latency": null,
+              "x_sb_error_code": null
+            }
+          ],
+          "origin_time": 291,
+          "status_code": 302
+        }
+      ]
+    }
+  ],
+  "timestamp": 1781913633950000
+}

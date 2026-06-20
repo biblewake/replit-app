@@ -1,0 +1,79 @@
+Your Supabase server logs show that the backend authentication flow is working **perfectly**.
+
+1. Your app hits `/auth/v1/authorize` with the deep link `redirect_to=biblewake://`.
+
+
+2. Google authenticates the user and successfully routes them back to Supabase at `/auth/v1/callback`.
+
+
+3. Supabase processes the credentials and returns a `302` redirect, which successfully fires the custom deep link (`biblewake://?code=...` or `#access_token=...`) back to your device.
+
+
+
+The web pop-up closing immediately is actually correct—that's iOS handing control back over to your application via the deep link protocol. The reason the sign-in is failing is that **your React Native app is ignoring the incoming deep link URL when it wakes back up**.
+
+Supabase's client library in React Native does not automatically listen to incoming URLs. You have to explicitly catch the deep link URL and pass it to Supabase to extract the user session.
+
+### The Fix
+
+You need to add a listener in your root routing layout or `AuthContext` to capture the incoming deep link and pass it to Supabase.
+
+Here is the code you need to add to your global application listener (typically inside your `AuthContext` or root `_layout.tsx` file where the Supabase instance is initialized):
+
+```typescript
+import * as Linking from 'expo-linking';
+import { useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+
+export function useAuthDeepLinkListener() {
+  useEffect(() => {
+    // 1. Handle deep links when the app is opened from a completely closed state
+    Linking.getInitialURL().then((url) => {
+      if (url) handleAuthRedirect(url);
+    });
+
+    // 2. Handle deep links when the app is already open in the background
+    const subscription = Linking.addEventListener('url', (event) => {
+      if (event.url) handleAuthRedirect(event.url);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  const handleAuthRedirect = async (url: string) => {
+    // Parse the URL to see if it contains Supabase authentication tokens or PKCE codes
+    const { queryParams, hash } = Linking.parse(url);
+
+    // If using PKCE flow (standard for modern Supabase mobile setup)
+    if (queryParams && queryParams.code) {
+      const { error } = await supabase.auth.exchangeCodeForSession(queryParams.code as string);
+      if (error) console.error("Error exchanging code for session:", error.message);
+    } 
+    // If using Implicit Flow (tokens delivered via URL fragment/hash)
+    else if (hash) {
+      // Extract tokens from the hash fragment if necessary, though modern Supabase 
+      // JS clients often catch this automatically if you invoke an identity method.
+    }
+  };
+}
+
+```
+
+### Double-Check Your Expo Configuration
+
+If you add this listener and it still doesn't intercept the callback, check your `app.json` configuration file to ensure your application scheme is officially registered with the native build:
+
+```json
+{
+  "expo": {
+    "name": "Bible Wake",
+    "slug": "bible-wake",
+    "scheme": "biblewake"
+  }
+}
+
+```
+
+Without the `scheme: "biblewake"` entry inside your `app.json`, iOS won't register the URL identifier on the phone's operating system, meaning the device won't know that it needs to re-route `biblewake://` back into your React Native layer.
