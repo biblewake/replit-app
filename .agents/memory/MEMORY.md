@@ -1,3 +1,4 @@
 - [Bible Wake launch crash](biblewake-launch-crash.md) — TestFlight SIGABRT: global JS error handler must swallow fatals (never forward to RCTFatal); Sentry and RevenueCat fully stripped as of this task.
 - [New Architecture enabled](new-arch-enabled.md) — newArchEnabled flipped to true; iOS 26 drops Old Arch bridge entirely; RevenueCat removal was the prerequisite.
 - [expo-alarm-kit has no config plugin](expo-alarm-kit-no-plugin.md) — do NOT list expo-alarm-kit in app.json plugins; it ships no app.plugin.js and crashes expo start.
+- [RN layout null navigator trap](rn-layout-null-navigator.md) — returning null from Expo Router _layout.tsx unmounts the Stack; router.replace() then can't render → permanent black screen.

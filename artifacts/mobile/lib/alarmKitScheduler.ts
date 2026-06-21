@@ -11,7 +11,7 @@
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Platform } from "react-native";
+import { NativeModules, Platform } from "react-native";
 import type { LaunchPayload, AuthorizationStatus } from "expo-alarm-kit";
 
 import { Alarm } from "@/context/AlarmContext";
@@ -148,6 +148,11 @@ type ExpoAlarmKitModule = typeof import("expo-alarm-kit");
 
 function getAk(): ExpoAlarmKitModule | null {
   if (Platform.OS !== "ios") return null;
+  // Pre-check: on New Architecture (JSI), requireNativeModule throws an ObjC
+  // exception when the module isn't linked — uncatchable by JS try/catch.
+  // NativeModules.ExpoAlarmKit is undefined in Expo Go and in any device build
+  // that was compiled before expo-alarm-kit was added as a native dependency.
+  if (!NativeModules.ExpoAlarmKit) return null;
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     return require("expo-alarm-kit") as ExpoAlarmKitModule;

@@ -30,6 +30,7 @@ import {
   initAlarmKit,
 } from "@/lib/alarmKitScheduler";
 import {
+  initializeRevenueCat,
   SubscriptionProvider,
   useSubscription,
 } from "@/lib/revenuecat";
@@ -186,7 +187,9 @@ function RootLayoutNav() {
   useEffect(() => {
     if (Platform.OS !== "ios") return;
 
-    initAlarmKit();
+    initAlarmKit().catch((e) => {
+      if (__DEV__) console.warn("[AlarmKit] init failed:", e);
+    });
 
     const handleForeground = () => {
       // Reschedule — guards against OS notification purge after reboot.
@@ -300,24 +303,24 @@ function RootLayoutNav() {
     return () => subscription.remove();
   }, [router]);
 
-  // Block rendering until auth/onboarding state is resolved.
-  // This must come AFTER all hooks (Rules of Hooks: no early return before hooks).
-  // Each guard below corresponds to a redirect in the useEffect above. Returning
-  // null here prevents the (tabs) stack from rendering even for a single frame
-  // before the navigation effect fires, eliminating the "home screen flash".
+  // Block rendering while initial auth/onboarding state is being read from
+  // AsyncStorage. This is a very brief window (< 100 ms) before the persisted
+  // flag loads — returning null here avoids a one-frame flash of stale content.
+  // NOTE: do NOT return null for any state that depends on navigation redirects
+  // (onboardingComplete===false, isAnonymous, !isSubscribed). Returning null
+  // unmounts the Stack navigator, which prevents router.replace() from rendering
+  // its destination — the permanent black screen bug. Let the useEffect handle
+  // all post-load redirects while the Stack stays mounted.
   if (onboardingComplete === null) return null;
-  if (onboardingComplete === false) return null;
-  if (isAnonymous) return null;
   // Subscription state is still loading — show a neutral spinner so we never
   // render tabs (which would flash) while we wait for the query to settle.
-  if (subscriptionLoading) {
+  if (onboardingComplete && !isAnonymous && subscriptionLoading) {
     return (
       <View style={{ flex: 1, backgroundColor: "#ffffff", alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator size="large" color="#F97316" />
       </View>
     );
   }
-  if (!isSubscribed) return null;
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
@@ -357,6 +360,14 @@ function RootLayout() {
   // ensures the React/Hermes runtime is fully up before any native calls fire.
   useEffect(() => {
     if (Platform.OS === "web") return;
+
+    // Initialize RevenueCat early so returning subscribed users get correct
+    // subscription status on cold launch without going through onboarding/paywall.
+    // Then invalidate cached queries so they re-run with RC initialized — the
+    // customerInfo query resolves with null when rcInitialized=false, so it needs
+    // a forced refetch rather than waiting for its normal staleTime to expire.
+    initializeRevenueCat();
+    queryClient.invalidateQueries({ queryKey: ["revenuecat"] });
 
     // Clear any stale AlarmKit "denied" flag written by the buggy configure()-before-auth path.
     clearStaleAlarmKitDenied().catch(() => {});
