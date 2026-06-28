@@ -1,0 +1,70 @@
+This is a classic integration conflict happening entirely within **the App**. Your Supabase backend is performing flawlessly.
+
+The `404 flow_state_not_found` error means that Supabase received a request to exchange an authentication code, but that specific code's single-use lifecycle was already dead or consumed.
+
+---
+
+### What Is Happening Under the Hood
+
+1. **The Auto-Login Trigger:** When you click "Continue with Google," the browser pop-up opens. Because your device's browser already has an active, cached Google session, Google bypasses the account-picker screen entirely and completes the login instantly. This is why the window vanishes right away.
+2. **The Double-Exchange Race Condition:** When the browser closes and hands control back to your app via `biblewake://`, **two separate parts of your app are trying to exchange the exact same code at the same time**.
+3. **The Crash:** One request hits `/auth/v1/token` a millisecond faster and successfully consumes the code. The second request hits the server right behind it, finds that the code has already been used and destroyed, and throws the `404 flow_state_not_found` error. This second failing request breaks your JavaScript execution chain and freezes your UI.
+
+---
+
+### How to Fix It
+
+This double-handling typically happens if you have a global deep link listener (like an `url` event listener) running at the same time as an explicit `WebBrowser.openAuthSessionAsync()` promise handler.
+
+You need to ensure that **only one** place handles the URL token exchange. Here is how to structure your Google sign-in function cleanly using Expo's standard layout to prevent double-firing:
+
+```typescript
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
+import { supabase } from '@/lib/supabase';
+
+// WebBrowser needs this to correctly handle the browser hand-off closure on iOS
+WebBrowser.maybeCompleteAuthSession();
+
+export async function signInWithGoogle() {
+  try {
+    // 1. Generate the authentication URL from Supabase
+    const redirectUrl = Linking.createURL('/auth/v1/callback'); 
+    
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirectUrl,
+        skipBrowserRedirect: true, // Crucial: Stops Supabase from handling the redirect itself
+      },
+    });
+
+    if (error) throw error;
+
+    // 2. Open the browser session and await the result directly here
+    const result = await WebBrowser.openAuthSessionAsync(
+      data.url,
+      redirectUrl
+    );
+
+    // 3. Handle the result right inside this block ONLY
+    if (result.type === 'success' && result.url) {
+      const parsed = Linking.parse(result.url);
+      const code = parsed.queryParams?.code;
+
+      if (code) {
+        // This is the single, controlled exchange call
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code as string);
+        if (exchangeError) throw exchangeError;
+      }
+    }
+  } catch (err) {
+    console.error("Google Auth Error:", err);
+  }
+}
+
+```
+
+### What to check next:
+
+If you already have a global deep link routing system set up elsewhere (such as in an `useEffect` hook inside your `_layout.tsx` or `AuthContext.tsx`), check to see if it is explicitly matching paths containing `code=`. If it is, **remove the manual `exchangeCodeForSession` logic from that global listener** and let the specific login button function handle its own promise lifecycle.

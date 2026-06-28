@@ -1,0 +1,85 @@
+Found the root cause. Here is the full breakdown after researching the `expo-alarm-kit` package source and documentation:
+
+---
+
+**The real problem is `configure()` failing silently before `requestAuthorization()`.**
+
+From the expo-alarm-kit README:
+
+> `configure(appGroupIdentifier: string): boolean` — Initializes the module. **Must be called before other methods.**
+
+The module's native code uses `UserDefaults(suiteName: appGroupIdentifier)` internally. If `configure()` fails, the module is in an uninitialised state, and `requestAuthorization()` will throw. That throw is caught in your code and returned as `"denied"` — silent skip, no dialog.
+
+---
+
+**Why is `configure()` failing despite the App Group being registered?**
+
+The App Group being registered at Apple Developer Portal is only step one. It also needs to be **included in your EAS provisioning profile**. These are two separate things.
+
+To verify and fix this, tell Replit to:
+
+**Step 1 — Force a provisioning profile regeneration:**
+
+In your `eas.json`, add:
+```json
+"ios": {
+  "credentialsSource": "remote",
+  "autoIncrement": true
+}
+```
+
+Then run:
+```bash
+eas credentials --platform ios
+```
+
+Select your app, then regenerate the Distribution Certificate and Provisioning Profile. This forces EAS to create a new profile that explicitly includes the App Group entitlement.
+
+**Step 2 — Add `expo-alarm-kit` to your plugins array in `app.json`:**
+
+Looking at your `app.json`, `expo-alarm-kit` is NOT in your plugins array. While it auto-links as an Expo module, adding it explicitly ensures any config plugin it provides runs during prebuild:
+
+```json
+"plugins": [
+  "expo-alarm-kit",
+  ...other plugins
+]
+```
+
+**Step 3 — Remove `ensureConfigured()` from `requestAlarmKitPermission()` AND add explicit logging:**
+
+```javascript
+export async function requestAlarmKitPermission(): Promise<AuthorizationStatus | "unavailable"> {
+  const ak = getAk();
+  if (!ak) {
+    console.error("[AlarmKit] Module not available — getAk() returned null")
+    return "unavailable"
+  }
+  try {
+    const status = await ak.requestAuthorization()
+    console.log("[AlarmKit] requestAuthorization status:", status)
+    return status
+  } catch (e) {
+    console.error("[AlarmKit] requestAuthorization threw:", e)
+    return "denied"
+  }
+}
+```
+
+**Step 4 — Clear the cached denied state:**
+
+Your `AK_AUTH_DENIED_KEY` in AsyncStorage might already be set to `"true"` from a previous failed attempt. This won't block `requestAuthorization()` itself, but add this temporarily to rule it out:
+
+```javascript
+await AsyncStorage.removeItem("@bible_wake_ak_auth_denied")
+```
+
+---
+
+**On `react-native-ios-alarmkit`:**
+
+You are NOT using it — you are using `expo-alarm-kit` (nickdeupree's package). They are different packages. Stick with `expo-alarm-kit` since it is an official Expo module and is more compatible with your Expo managed workflow. `react-native-ios-alarmkit` is a minimal bare React Native package with far less documentation and support.
+
+---
+
+**Bottom line:** The provisioning profile regeneration is the most critical step. The App Group entitlement must be in the profile EAS uses to sign the TestFlight build, not just registered at Apple Developer Portal. Force a credential regeneration, rebuild, and the `configure()` call should succeed, unblocking `requestAuthorization()`.

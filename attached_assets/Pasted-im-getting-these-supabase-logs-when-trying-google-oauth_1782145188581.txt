@@ -1,0 +1,301 @@
+im getting these supabase logs when trying google oauth in the app:
+
+auth  logs:
+/token | request completed
+/token | 404: invalid flow state, no valid flow state found
+/callback | request completed
+/authorize | Redirecting to external provider
+
+API GATEWAY:
+400 POST /auth/v1/token
+302 GET /auth/v1/callback
+302 GET /auth/v1/authorize
+
+
+/token | request completed
+{
+  "event_message": "{\"component\":\"api\",\"duration\":1285897,\"error_code\":\"flow_state_not_found\",\"grant_type\":\"pkce\",\"level\":\"info\",\"method\":\"POST\",\"msg\":\"request completed\",\"path\":\"/token\",\"referer\":\"biblewake://\",\"remote_addr\":\"192.129.113.46\",\"request_id\":\"019eeff2-3698-7f4a-b942-4f8de2019af9\",\"status\":404,\"time\":\"2026-06-22T15:28:09Z\"}",
+  "id": "c53109ef-ef1e-4191-aeb4-5f8437f2936f",
+  "metadata": [
+    {
+      "host": "db-cmaysraaclfvofiynctl",
+      "limit_conn_max_idle_time": null,
+      "component": "api",
+      "_SYSTEMD_CGROUP": null,
+      "grant_type": "pkce",
+      "request_id": "019eeff2-3698-7f4a-b942-4f8de2019af9",
+      "mail_from": null,
+      "message": null,
+      "_SOURCE_REALTIME_TIMESTAMP": null,
+      "PRIORITY": null,
+      "_AUDIT_LOGINUID": null,
+      "signal_enabled": null,
+      "panic": null,
+      "metering": null,
+      "UNIT": null,
+      "event": null,
+      "SYSLOG_FACILITY": null,
+      "msg": "request completed",
+      "mail_type": null,
+      "grace_period_duration": null,
+      "EXECUTABLE": null,
+      "config_conn_max_lifetime": null,
+      "user_id": null,
+      "_CMDLINE": null,
+      "action": null,
+      "notify_enabled": null,
+      "poller_interval": null,
+      "auth_event": [],
+      "signal_number": null,
+      "level": "info",
+      "_PID": null,
+      "path": "/token",
+      "duration": "1285897",
+      "_COMM": null,
+      "config_max_pool_size": null,
+      "sso_provider_id": null,
+      "header": null,
+      "_MACHINE_ID": null,
+      "web3_domain": null,
+      "login_method": null,
+      "limit_strategy": null,
+      "_STREAM_ID": null,
+      "long_wait_duration_samples": null,
+      "config_conn_max_idle_time": null,
+      "source_type": null,
+      "_LINE_BREAK": null,
+      "web3_address": null,
+      "_EXE": null,
+      "_AUDIT_SESSION": null,
+      "_TRANSPORT": null,
+      "x_forwarded_proto": null,
+      "time": null,
+      "mail_to": null,
+      "_GID": null,
+      "stack": null,
+      "x_forwarded_host": null,
+      "limit_conn_max_lifetime": null,
+      "saml_entity_id": null,
+      "worker_type": null,
+      "poller_enabled": null,
+      "status": "404",
+      "_UID": null,
+      "valid_until": null,
+      "web3_uri": null,
+      "method": "POST",
+      "limit_max_idle_conns": null,
+      "CODE_FILE": null,
+      "remote_addr": "192.129.113.46",
+      "provider": null,
+      "_SYSTEMD_UNIT": null,
+      "issuer": null,
+      "error": null,
+      "limit_max_open_conns": null,
+      "client_id": null,
+      "config_conn_percentage": null,
+      "MESSAGE_ID": null,
+      "url": null,
+      "referer": "biblewake://",
+      "_SYSTEMD_INVOCATION_ID": null,
+      "CODE_FUNC": null,
+      "_BOOT_ID": null,
+      "INVOCATION_ID": null,
+      "__MONOTONIC_TIMESTAMP": null,
+      "web3_chain": null,
+      "timestamp": null,
+      "__REALTIME_TIMESTAMP": null,
+      "over_2_waiting_samples": null,
+      "immediate_login_after_signup": null,
+      "CODE_LINE": null,
+      "_SYSTEMD_SLICE": null,
+      "count": null,
+      "instance_id": null,
+      "args": [],
+      "server_max_conns": null,
+      "SYSLOG_IDENTIFIER": null,
+      "config_max_idle_pool_size": null,
+      "metadata": [],
+      "auth_audit_event": [],
+      "_CAP_EFFECTIVE": null,
+      "factor_id": null,
+      "_SELINUX_CONTEXT": null,
+      "expires_in": null,
+      "version": null,
+      "project": null
+    }
+  ],
+  "timestamp": 1782142089000000
+}
+
+
+404 POST/auth/v1/token
+error_code: flow_state_not_found
+meaing: PKCE flow state to which the API request relates no longer exists. Flow states expire after a while and are progressively cleaned up, which can cause this error. Retried requests can cause this error, as the previous request likely destroyed the flow state. Ask the user to sign in again.
+event_message
+POST | 404 | https://cmaysraaclfvofiynctl.supabase.co/auth/v1/token?grant_type=pkce | BibleWake/43 CFNetwork/3860.500.112 Darwin/25.4.0
+
+{
+  "event_message": "POST | 404 | https://cmaysraaclfvofiynctl.supabase.co/auth/v1/token?grant_type=pkce | BibleWake/43 CFNetwork/3860.500.112 Darwin/25.4.0",
+  "id": "d9721ccd-302a-4f35-8c37-29fcfe5b4826",
+  "metadata": [
+    {
+      "load_balancer_experimental_routing": null,
+      "load_balancer_geo_aware_info": [],
+      "load_balancer_redirect_identifier": null,
+      "logflare_worker": [],
+      "request": [
+        {
+          "cf": [
+            {
+              "asOrganization": "Boycom Cablevision",
+              "asn": null,
+              "botManagement": [
+                {
+                  "corporateProxy": null,
+                  "detectionIds": [],
+                  "ja3Hash": "2f9431e877b01e163774ae4ae0df9ded",
+                  "ja4": "q13d0311h3_55b375c5d22e_f2a83c8e78ae",
+                  "ja4Signals": [],
+                  "jsDetection": [],
+                  "score": null,
+                  "staticResource": null,
+                  "verifiedBot": null
+                }
+              ],
+              "city": "Poplar Bluff",
+              "clientAcceptEncoding": null,
+              "clientTcpRtt": null,
+              "clientTrustScore": 79,
+              "colo": "STL",
+              "continent": null,
+              "country": "US",
+              "edgeRequestKeepAliveStatus": null,
+              "httpProtocol": "HTTP/3",
+              "isEUCountry": null,
+              "latitude": null,
+              "longitude": null,
+              "metroCode": null,
+              "postalCode": "63901",
+              "region": "Missouri",
+              "regionCode": null,
+              "requestPriority": null,
+              "timezone": "America/Chicago",
+              "tlsCipher": null,
+              "tlsClientAuth": [],
+              "tlsClientCiphersSha1": null,
+              "tlsClientExtensionsSha1": null,
+              "tlsClientExtensionsSha1Le": null,
+              "tlsClientHelloLength": null,
+              "tlsClientRandom": null,
+              "tlsExportedAuthenticator": [],
+              "tlsVersion": null,
+              "verifiedBotCategory": null
+            }
+          ],
+          "headers": [
+            {
+              "accept": "*/*",
+              "cf_cache_status": null,
+              "cf_connecting_ip": "192.129.113.46",
+              "cf_ipcountry": "US",
+              "cf_ray": "a0fc47f75f4e5b32",
+              "content_length": "146",
+              "content_location": null,
+              "content_range": null,
+              "content_type": "application/json;charset=UTF-8",
+              "date": null,
+              "host": "cmaysraaclfvofiynctl.supabase.co",
+              "prefer": null,
+              "range": null,
+              "referer": null,
+              "sb_forwarded_for": null,
+              "sb_gateway_mode": null,
+              "sb_gateway_version": null,
+              "traceparent": null,
+              "transfer_encoding": null,
+              "user_agent": "BibleWake/43 CFNetwork/3860.500.112 Darwin/25.4.0",
+              "x_amz_content_sha256": null,
+              "x_amz_date": null,
+              "x_client_info": "supabase-js-react-native/2.106.2",
+              "x_forwarded_for": null,
+              "x_forwarded_host": null,
+              "x_forwarded_proto": "https",
+              "x_forwarded_user_agent": null,
+              "x_kong_proxy_latency": null,
+              "x_kong_upstream_latency": null,
+              "x_real_ip": "192.129.113.46"
+            }
+          ],
+          "host": "cmaysraaclfvofiynctl.supabase.co",
+          "method": "POST",
+          "path": "/auth/v1/token",
+          "port": null,
+          "protocol": "https:",
+          "sb": [
+            {
+              "apikey": [
+                {
+                  "apikey": [
+                    {
+                      "error": null,
+                      "hash": "MU37_cd4Ch5GDwOXFJyNmoIF-m15wqiddIf-tro7m08",
+                      "prefix": "sb_publishable_8TV1R"
+                    }
+                  ],
+                  "authorization": [
+                    {
+                      "error": null,
+                      "hash": "MU37_cd4Ch5GDwOXFJyNmoIF-m15wqiddIf-tro7m08",
+                      "prefix": "sb_publishable_8TV1R"
+                    }
+                  ]
+                }
+              ],
+              "auth_user": null,
+              "aws_v4": [],
+              "jwt": []
+            }
+          ],
+          "search": "?grant_type=pkce",
+          "url": "https://cmaysraaclfvofiynctl.supabase.co/auth/v1/token?grant_type=pkce"
+        }
+      ],
+      "response": [
+        {
+          "headers": [
+            {
+              "cf_cache_status": "DYNAMIC",
+              "cf_ray": "a0fc47f83a6b5b32-STL",
+              "content_length": "89",
+              "content_location": null,
+              "content_range": null,
+              "content_type": "application/json",
+              "date": "Mon, 22 Jun 2026 15:28:09 GMT",
+              "proxy_status": null,
+              "sb_error_code": null,
+              "sb_gateway_mode": null,
+              "sb_gateway_version": "1",
+              "sb_request_id": null,
+              "server_timing": null,
+              "transfer_encoding": null,
+              "x_kong_proxy_latency": null,
+              "x_kong_upstream_latency": null,
+              "x_sb_error_code": "flow_state_not_found"
+            }
+          ],
+          "origin_time": 175,
+          "status_code": 404
+        }
+      ]
+    }
+  ],
+  "timestamp": 1782142088856000
+}
+
+
+how it appears in the app:
+- i click continue with google, i get the confirmation dialog: BibleWake  wants to use <supabase project url>.supabase.co to Sign In
+- I click continue, the web browser pop-up appears, loading accounts.google.com, but it immediately dissapears before anything happens
+
+where is the problem? supabase or the app?
+i've tried multiple times, doesnt work

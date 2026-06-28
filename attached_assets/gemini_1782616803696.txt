@@ -1,0 +1,94 @@
+This is a classic React Native Native Module gotcha. You provided excellent context, and looking closely at your code, I can pinpoint exactly why the dialog is silently skipping.
+
+Claude’s diagnosis is partially correct, but it’s diagnosing a problem you haven't even reached yet.
+
+Here is exactly what is happening under the hood, why Claude was slightly off, and how to fix it so your dialog finally shows up.
+
+### The Actual Root Cause
+
+The silent skip is happening because of a single line of code in your **`alarmKitScheduler.ts`** file inside the `getAk()` function:
+
+```typescript
+if (!NativeModules.ExpoAlarmKit) return null; 
+
+```
+
+**Here is why this breaks your app:**
+Modern Expo modules (written using the newer Expo Modules API/JSI) **do not** register themselves in the old React Native `NativeModules` object. They use a completely different runtime bridge.
+
+Because `expo-alarm-kit` is likely a modern module, `NativeModules.ExpoAlarmKit` is evaluating to `undefined`. This triggers a chain reaction:
+
+1. `getAk()` immediately returns `null`.
+2. `requestAlarmKitPermission()` sees `!ak` and returns `"unavailable"`.
+3. Your `PermissionScreen` (in `permissionSteps.tsx`) sees `"unavailable"` and intentionally executes a silent skip: `// "unavailable" (simulator / pre-iOS 26) — advance silently`.
+
+Claude thought `configure()` was failing, but if you look at your own `requestAlarmKitPermission()` function, you aren't even calling `configure()` there! The execution never even makes it to the authorization request because the `NativeModules` check kills it first.
+
+### Step 1: Fix the Code (`alarmKitScheduler.ts`)
+
+Remove the `NativeModules` guard. Rely entirely on the `try/catch` block to handle missing modules. Update your `getAk()` function to look like this:
+
+```typescript
+function getAk(): ExpoAlarmKitModule | null {
+  if (Platform.OS !== "ios") return null;
+  
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return require("expo-alarm-kit") as ExpoAlarmKitModule;
+  } catch (error) {
+    console.warn("[AlarmKit] Could not require expo-alarm-kit:", error);
+    return null;
+  }
+}
+
+```
+
+Make sure to also add the logging Claude suggested in `requestAlarmKitPermission()` so you can actually see what the API returns in your terminal:
+
+```typescript
+export async function requestAlarmKitPermission(): Promise<AuthorizationStatus | "unavailable"> {
+  const ak = getAk();
+  if (!ak) {
+    console.error("[AlarmKit] Module not available — getAk() returned null");
+    return "unavailable";
+  }
+  try {
+    const status = await ak.requestAuthorization();
+    console.log("[AlarmKit] requestAuthorization status:", status);
+    return status;
+  } catch (error) {
+    console.error("[AlarmKit] requestAuthorization threw:", error);
+    return "denied";
+  }
+}
+
+```
+
+### Step 2: Prevent the Downstream Error (Claude was right about this)
+
+Once you fix the code above, the button will successfully call the native iOS module. **However, Claude is 100% correct about your Provisioning Profile.** Apple's AlarmKit and App Groups require specific entitlements baked into the Provisioning Profile. Even if you registered the App Group on the Apple Developer Portal, your EAS build won't know about it unless you force EAS to fetch a fresh profile. If you don't do this, `ak.requestAuthorization()` or `configure()` will likely crash or throw an error.
+
+To ensure your app is built with the correct permissions:
+
+1. **Clear your app's local storage** (or at least run `await AsyncStorage.removeItem("@bible_wake_ak_auth_denied")` temporarily) so the app doesn't think you already denied the permission during your testing.
+2. **Update your `app.json**` to explicitly include the plugin, just to be safe during prebuilds. Find your `plugins` array and add `"expo-alarm-kit"`:
+```json
+"plugins": [
+  "expo-dev-client",
+  "expo-alarm-kit",
+  // ... your other plugins
+]
+
+```
+
+
+3. **Force a profile regeneration** via EAS CLI in your Replit terminal:
+```bash
+eas credentials --platform ios
+
+```
+
+
+*Follow the prompts to select your iOS app, and choose the option to **Remove** and then **Recreate** your Distribution Provisioning Profile.*
+
+Once you push this new code and EAS compiles the updated provisioning profile, clicking that button will successfully hit the native module and trigger the iOS permission dialog.
