@@ -41,8 +41,6 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import * as SecureStore from "expo-secure-store";
-import { Platform } from "react-native";
 
 // ── Resolve environment variables ─────────────────────────────────────────────
 // Support both the task-specified names (SUPABASE_URL / SUPABASE_ANON_KEY) and
@@ -90,30 +88,9 @@ export const isSupabaseConfigured = Boolean(supabaseUrl) && Boolean(supabaseAnon
 console.log(`[BibleWake] Supabase configured: ${isSupabaseConfigured}, url prefix: ${supabaseUrl?.slice(0, 20) ?? "unset"}`);
 
 // ── Session storage adapter ───────────────────────────────────────────────────
-/**
- * ExpoSecureStoreAdapter — encrypted keychain on native, AsyncStorage on web.
- * (SecureStore is not available on web, so we fall back gracefully.)
- */
-const ExpoSecureStoreAdapter = {
-  getItem: async (key: string): Promise<string | null> => {
-    if (Platform.OS === "web") return AsyncStorage.getItem(key);
-    return SecureStore.getItemAsync(key);
-  },
-  setItem: async (key: string, value: string): Promise<void> => {
-    if (Platform.OS === "web") {
-      await AsyncStorage.setItem(key, value);
-      return;
-    }
-    await SecureStore.setItemAsync(key, value);
-  },
-  removeItem: async (key: string): Promise<void> => {
-    if (Platform.OS === "web") {
-      await AsyncStorage.removeItem(key);
-      return;
-    }
-    await SecureStore.deleteItemAsync(key);
-  },
-};
+// AsyncStorage lives in the app sandbox and is wiped on uninstall, so session
+// lifetime naturally matches the app's lifetime (unlike SecureStore / Keychain,
+// which iOS preserves across uninstalls).
 
 // ── Supabase client ───────────────────────────────────────────────────────────
 /**
@@ -124,7 +101,7 @@ const ExpoSecureStoreAdapter = {
 export const supabase: SupabaseClient = isSupabaseConfigured
   ? createClient(supabaseUrl!, supabaseAnonKey!, {
       auth: {
-        storage: ExpoSecureStoreAdapter,
+        storage: AsyncStorage,
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: false,

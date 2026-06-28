@@ -12,7 +12,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import Constants from "expo-constants";
 import React, { useEffect, useRef } from "react";
-import { ActivityIndicator, AppState, AppStateStatus, Appearance, Linking, Platform, View } from "react-native";
+import { ActivityIndicator, AppState, AppStateStatus, Appearance, Platform, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -225,32 +225,6 @@ function RootLayoutNav() {
     );
     return () => subscription.remove();
   }, [router]); // router is stable but listed to satisfy exhaustive-deps
-
-  // ── PKCE OAuth callback — handles biblewake://?code=… deep links ─────────
-  // When Supabase redirects back after Google/Apple sign-in it appends a
-  // one-time `code` query param. We exchange it here for a real session.
-  // The flowType: "pkce" option in lib/supabase.ts tells Supabase to expect
-  // this code instead of returning tokens in the URL fragment.
-  useEffect(() => {
-    if (Platform.OS === "web") return;
-
-    const handleUrl = ({ url }: { url: string }) => {
-      if (url.includes("?code=") || url.includes("&code=")) {
-        supabase.auth.exchangeCodeForSession(url).catch((err) => {
-          console.error("[BibleWake] PKCE code exchange failed:", err);
-        });
-      }
-    };
-
-    // Handle the case where the app was opened cold via the deep link.
-    Linking.getInitialURL()
-      .then((url) => { if (url) handleUrl({ url }); })
-      .catch(() => {});
-
-    // Handle deep links received while the app is already running.
-    const subscription = Linking.addEventListener("url", handleUrl);
-    return () => subscription.remove();
-  }, []);
 
   // ── Cold-launch: app opened by tapping an alarm notification (Android) ────
   useEffect(() => {
