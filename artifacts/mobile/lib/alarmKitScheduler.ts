@@ -11,7 +11,7 @@
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { NativeModules, Platform } from "react-native";
+import { Platform } from "react-native";
 import type { LaunchPayload, AuthorizationStatus } from "expo-alarm-kit";
 
 import { Alarm } from "@/context/AlarmContext";
@@ -148,11 +148,11 @@ type ExpoAlarmKitModule = typeof import("expo-alarm-kit");
 
 function getAk(): ExpoAlarmKitModule | null {
   if (Platform.OS !== "ios") return null;
-  // Pre-check: on New Architecture (JSI), requireNativeModule throws an ObjC
-  // exception when the module isn't linked — uncatchable by JS try/catch.
-  // NativeModules.ExpoAlarmKit is undefined in Expo Go and in any device build
-  // that was compiled before expo-alarm-kit was added as a native dependency.
-  if (!NativeModules.ExpoAlarmKit) return null;
+  // expo-alarm-kit uses the JSI-based Expo Modules API (requireNativeModule),
+  // which does NOT register itself in the legacy NativeModules bridge object.
+  // Checking NativeModules.ExpoAlarmKit therefore always returns undefined and
+  // causes the permission dialog to never appear. Rely solely on the try/catch
+  // around require() to detect a missing module.
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     return require("expo-alarm-kit") as ExpoAlarmKitModule;
@@ -246,12 +246,17 @@ export async function initAlarmKit(): Promise<void> {
  */
 export async function requestAlarmKitPermission(): Promise<AuthorizationStatus | "unavailable"> {
   const ak = getAk();
-  if (!ak) return "unavailable";
+  if (!ak) {
+    console.log("[AlarmKit] Module not available — getAk() returned null");
+    return "unavailable";
+  }
   // configure() is only needed for scheduling, NOT for authorization.
   // Calling it here can leave the native module in a bad state and cause
   // requestAuthorization() to throw silently, preventing the dialog from appearing.
   try {
-    return await ak.requestAuthorization();
+    const status = await ak.requestAuthorization();
+    console.log("[AlarmKit] requestAuthorization status:", status);
+    return status;
   } catch (error) {
     console.error("[AlarmKit] requestAuthorization threw:", error);
     return "denied";
