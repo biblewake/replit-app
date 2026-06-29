@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useRef } from "react";
 import { AppState, type AppStateStatus, Platform } from "react-native";
 import type PurchasesType from "react-native-purchases";
 import type { CustomerInfo, PurchasesPackage } from "react-native-purchases";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Constants from "expo-constants";
 
 const REVENUECAT_TEST_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY;
@@ -87,6 +87,7 @@ async function safeGetCustomerInfo(): Promise<CustomerInfo | null> {
 }
 
 function useSubscriptionContext() {
+  const queryClient = useQueryClient();
   const customerInfoQuery = useQuery({
     queryKey: ["revenuecat", "customer-info"],
     queryFn: safeGetCustomerInfo,
@@ -155,7 +156,15 @@ function useSubscriptionContext() {
 
   const purchasePackage = async (pkg: PurchasesPackage): Promise<CustomerInfo | null> => {
     const info = await purchaseMutation.mutateAsync(pkg);
-    if (info) await customerInfoQuery.refetch();
+    if (info) {
+      // Synchronously seed the cache so isSubscribed flips to true on the
+      // very next React render — before onComplete() triggers navigation.
+      // Without this, the async refetch schedules a re-render that may not
+      // have landed by the time the gatekeeper effect in _layout.tsx fires,
+      // causing it to see stale isSubscribed=false and redirect back to Page A.
+      queryClient.setQueryData(["revenuecat", "customer-info"], info);
+      await customerInfoQuery.refetch();
+    }
     return info;
   };
 

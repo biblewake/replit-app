@@ -764,8 +764,13 @@ export function Paywall({ onComplete }: { onComplete: () => void }) {
   // Purchase and restore — called only from Page C (PaywallBottom).
   const handlePurchase = async (pkg: PurchasesPackage) => {
     try {
-      await purchasePackage(pkg);
-      onComplete();
+      const info = await purchasePackage(pkg);
+      // Only advance when the purchase actually completed (non-null CustomerInfo).
+      // A null return means the user cancelled or RevenueCat silently surfaced an
+      // already-owned receipt — in those cases the cache/gatekeeper will redirect
+      // automatically once isSubscribed settles, so calling onComplete() here with
+      // stale state would cause the redirect-to-Page-A race condition.
+      if (info) onComplete();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Something went wrong.";
       Alert.alert("Purchase Failed", msg);
