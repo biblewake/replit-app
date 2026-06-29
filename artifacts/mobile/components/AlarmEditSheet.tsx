@@ -1302,7 +1302,7 @@ export default function AlarmEditSheet({
               disabled={isSaving}
             >
               <Text style={[styles.saveBtnText, { color: colors.primaryForeground }]}>
-                {isSaving ? "Checking permissions…" : "Save Alarm"}
+                Save Alarm
               </Text>
             </Pressable>
             {onDelete && (

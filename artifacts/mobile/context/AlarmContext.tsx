@@ -18,7 +18,7 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { Platform } from "react-native";
+import { Alert, Platform } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { pickRandomVerseBackground } from "@/lib/wakeHistory";
 import {
@@ -64,23 +64,6 @@ function generateId(): string {
   return Date.now().toString() + Math.random().toString(36).substr(2, 9);
 }
 
-const SAMPLE_ALARMS: Alarm[] = [
-  {
-    id: "sample1",
-    hour: 11,
-    minute: 43,
-    isPM: false,
-    days: [false, true, true, true, false, false, false],
-    name: "Morning Alarm",
-    verseRef: "John 3:16",
-    verseText:
-      "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.",
-    enabled: true,
-    alarmType: "verse",
-    scheduleType: "scheduled",
-    wakeUpCheck: false,
-  },
-];
 
 export interface AddAlarmResult {
   success: boolean;
@@ -249,14 +232,14 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
         .then(({ data, error }) => {
           if (error || !data) {
             return AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
-              setAlarms(raw ? JSON.parse(raw) : SAMPLE_ALARMS);
+              setAlarms(raw ? JSON.parse(raw) : []);
             });
           }
-          setAlarms(data.length > 0 ? data.map(rowToAlarm) : SAMPLE_ALARMS);
+          setAlarms(data.length > 0 ? data.map(rowToAlarm) : []);
         })
         .catch(() => {
           AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
-            setAlarms(raw ? JSON.parse(raw) : SAMPLE_ALARMS);
+            setAlarms(raw ? JSON.parse(raw) : []);
           });
         })
         .finally(() => setLoaded(true));
@@ -286,12 +269,12 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
         AsyncStorage.getItem(LAST_WAKE_DATE_KEY),
       ])
         .then(([data, streakVal, longestVal, lastWakeDateVal]) => {
-          setAlarms(data ? JSON.parse(data) : SAMPLE_ALARMS);
+          setAlarms(data ? JSON.parse(data) : []);
           if (streakVal !== null) setStreak(parseInt(streakVal, 10));
           if (longestVal !== null) setLongestStreak(parseInt(longestVal, 10));
           if (lastWakeDateVal !== null) setLastWakeDate(lastWakeDateVal);
         })
-        .catch(() => setAlarms(SAMPLE_ALARMS))
+        .catch(() => setAlarms([]))
         .finally(() => setLoaded(true));
     }
   }, [userId]);
@@ -367,7 +350,15 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
       const result: AlarmKitScheduleResult = await scheduleAlarmKit(alarm).catch(
         () => "error" as AlarmKitScheduleResult
       );
-      if (result === "denied") setAlarmKitDenied(true);
+      if (result === "denied") {
+        setAlarmKitDenied(true);
+      } else if (result === "error") {
+        Alert.alert(
+          "Alarm Scheduling Failed",
+          "Bible Wake couldn't schedule your alarm with AlarmKit. Please check that Alarm access is allowed for Bible Wake in iOS Settings → Privacy & Security → Alarms.",
+          [{ text: "OK" }]
+        );
+      }
     } else {
       scheduleAlarmNotifications(alarm).catch(() => {});
     }

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import * as Notifications from "expo-notifications";
 import * as StoreReview from "expo-store-review";
@@ -68,6 +69,9 @@ export function PermissionScreen({
           },
         });
       } else if (kind === "alarm") {
+        // Set the flag BEFORE requesting permission so the foreground listener
+        // in useAlarmPermission knows it is safe to check from this point on.
+        await AsyncStorage.setItem("@bible_wake_has_prompted_alarm", "true").catch(() => {});
         const status = await requestAlarmKitPermission();
         if (status !== "unavailable") {
           await persistAlarmKitAuthStatus(status);
