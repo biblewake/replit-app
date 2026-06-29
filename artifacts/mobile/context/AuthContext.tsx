@@ -274,13 +274,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   /**
    * GOOGLE SIGN-IN — uses PKCE flow via Supabase OAuth.
    *
-   * After the browser redirect, the OS delivers a biblewake:// deep link
-   * containing ?code=… which _layout.tsx exchanges for a session via
-   * supabase.auth.exchangeCodeForSession(url).
+   * After the browser redirect, the OS delivers a biblewake://oauth-callback
+   * deep link containing ?code=… which we parse here and exchange for a
+   * session via supabase.auth.exchangeCodeForSession(code).
+   *
+   * Using the specific path (oauth-callback) instead of the root scheme
+   * prevents iOS from handing a stale biblewake:// deep link from a previous
+   * cancelled attempt to the browser session, which would close it instantly.
    *
    * ── External configuration required (cannot be done in code) ────────────────
    *   1. Supabase Dashboard → Auth → URL Configuration → Redirect URLs
-   *      → add:  biblewake://
+   *      → add:  biblewake://oauth-callback
    *   2. Google Cloud Console → APIs & Services → Credentials
    *      → OAuth 2.0 client → Authorized redirect URIs
    *      → add:  https://<your-supabase-project>.supabase.co/auth/v1/callback
@@ -294,7 +298,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     try {
-      const redirectTo = Linking.createURL("/", { scheme: "biblewake" });
+      const redirectTo = Linking.createURL("oauth-callback", { scheme: "biblewake" });
 
       if (__DEV__) {
         console.log("[BibleWake] Google OAuth redirectTo:", redirectTo);
@@ -312,12 +316,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!data.url) throw new Error("No OAuth URL returned");
 
       // Open the OAuth page. On iOS, ASWebAuthenticationSession returns the
-      // redirect URL (including ?code=…) directly via the promise — we exchange
-      // the code here. On Android, openAuthSessionAsync also resolves with the
-      // redirect URL, so this single handler covers both platforms.
+      // redirect URL (including ?code=…) directly via the promise — we parse
+      // the code out and exchange only that string. On Android,
+      // openAuthSessionAsync also resolves with the redirect URL, so this
+      // single handler covers both platforms.
       const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
       if (result.type === "success" && result.url) {
-        await supabase.auth.exchangeCodeForSession(result.url);
+        const parsed = Linking.parse(result.url);
+        const code = parsed.queryParams?.code;
+        if (!code || typeof code !== "string") {
+          throw new Error("OAuth redirect did not contain an authorization code.");
+        }
+        await supabase.auth.exchangeCodeForSession(code);
       }
     } catch (error) {
       console.error("[BibleWake] Google sign-in error:", error);
