@@ -1,0 +1,42 @@
+You are absolutely right to be cautious here. While Replit successfully identified the surface-level symptoms, its proposed solutions for the iOS 26 AlarmKit permissions have a massive UX flaw that goes against Apple's guidelines.
+
+Here is a breakdown of what Replit got right, the critical mistake in its plan, and exactly how you should fix these bugs instead.
+
+### 🔴 The Red Flag: Replit's Permission Plan
+
+Replit wants to add a **direct, unconditional `ak.requestAuthorization()` call on every app-foreground event** in your `useAlarmPermission` hook.
+
+**Do not do this.**
+
+While it's true that iOS will just return the cached status if the user has already made a decision, calling `requestAuthorization()` unconditionally means that a brand-new user who installs your app, opens it, and immediately backgrounds it to answer a text message will be hit with the iOS Alarm permission prompt the second they return to your app—before they even start the onboarding flow!
+
+Apple explicitly rejects apps that spam permission prompts out of context.
+
+**The Correct Fix for Permission Syncing:**
+Instead of unconditionally requesting authorization, you should only check the live status on foreground **IF** the user has already passed step 25 of your onboarding. You can track this by setting a simple flag in `AsyncStorage` (e.g., `@bible_wake_has_prompted_alarm`) the first time they tap the button in `PermissionScreen`. Your `AppState` foreground listener should only run the check if that flag exists.
+
+### 🟢 What Replit Got Right (Safe to Apply)
+
+Replit was spot-on regarding the UI bugs. You can confidently apply these fixes:
+
+* **The Double Delete Dialog:** You currently have an `Alert.alert` firing inside `handleDelete` in your `alarms.tsx` file, and a second `Alert.alert` attached to the delete button inside `AlarmEditSheet.tsx`. Replit is correct to remove the one in `alarms.tsx` so that it directly calls `deleteAlarm(editingAlarm.id)` without a second confirmation.
+
+
+* **The "Checking permissions..." Button Text:** Replit correctly identified that the `Save Alarm` button in `AlarmEditSheet.tsx` uses a ternary operator to change its text while saving. Locking the text to just "Save Alarm" while keeping the disabled state tied to `isSaving` is standard and safe UI practice.
+
+
+* **The 11:43 AM Sample Alarm:** Hardcoding a fallback alarm when Supabase returns 0 rows confuses authenticated users. Defaulting to an empty array `[]` is the correct approach.
+
+### 🟡 The Missing Context: The Onboarding Bug
+
+Replit's plan states: *"No alarm permission dialog on onboarding — requestAlarmKitPermission() silently returns 'unavailable' when getAk() fails."*
+
+Because Replit didn't realize we already fixed the `NativeModules.ExpoAlarmKit` bug in `alarmKitScheduler.ts` during our last debugging session, it is trying to solve a problem that you've already patched! Now that `getAk()` correctly loads the module via a standard `try/catch` `require`, the permission dialog on Step 25 will work perfectly.
+
+### 🔧 How to Proceed
+
+1. **Reject Replit's unconditional foreground check** in `useAlarmPermission.ts`.
+2. **Approve the UI fixes** for the double-delete dialog, the button text, and removing the 11:43 AM dummy alarm.
+3. **Add error handling for scheduling:** Replit is right that if `scheduleAlarmKit` returns `"error"`, the UI currently swallows it and pretends the alarm is set. Exposing that error to the user with a Toast or Alert is a necessary safety net.
+
+Since a few files failed to upload (`useAlarmPermission.ts` and `backgroundAlarmCheck.ts`), do you want me to write out the exact, safe code for your `useAlarmPermission` hook so it accurately catches revoked permissions without spamming new users?

@@ -1,0 +1,136 @@
+I have exactly what I need. I've reviewed the code you pasted and checked the documentation for `expo-alarm-kit` to verify the API shape.
+
+You're right to be cautious. The `expo-alarm-kit` package is indeed the correct package to use for iOS 26 AlarmKit integration in a managed Expo workflow, but it requires careful handling around Apple's strict permission guidelines. The links you provided highlight this—Apple explicitly warns against prompting users for AlarmKit access before they actually need it.
+
+Here is the exact code to fix your bugs safely, conforming to both the package API and Apple's UX guidelines.
+
+### 1. Fix `useAlarmPermission.ts`
+
+The problem with Replit's plan is that it would unconditionally prompt the user. We only want to check the live AlarmKit status *if the user has already seen the onboarding prompt*. We do this by checking a flag (`@bible_wake_has_prompted_alarm`).
+
+Update your `useAlarmPermission.ts` to look like this:
+
+```typescript
+import { useEffect, useState, useRef } from "react";
+import { AppState, AppStateStatus, PermissionsAndroid, Platform } from "react-native";
+import * as Notifications from "expo-notifications";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { syncAlarmKitAuthIfDenied } from "@/lib/alarmKitScheduler";
+
+// We expose a helper so the onboarding screen can set this flag when the user taps "Allow"
+export const ALARM_PROMPT_FLAG = "@bible_wake_has_prompted_alarm";
+
+export function useAlarmPermission(): {
+  hasPermission: boolean;
+  hasExactAlarmPermission: boolean;
+  alarmKitAuthorized: boolean;
+} {
+  const [hasPermission, setHasPermission] = useState(true);
+  const [hasExactAlarmPermission, setHasExactAlarmPermission] = useState(true);
+  const [alarmKitAuthorized, setAlarmKitAuthorized] = useState(true);
+  
+  // Use a ref to prevent overlapping state updates during rapid foregrounding
+  const isChecking = useRef(false);
+
+  const checkPermission = async () => {
+    if (isChecking.current) return;
+    isChecking.current = true;
+
+    try {
+      // 1. Check Standard Notifications
+      try {
+        const result = await Notifications.getPermissionsAsync();
+        const status = (result as unknown as { granted?: boolean }).granted;
+        setHasPermission(status !== false);
+      } catch {
+        setHasPermission(true);
+      }
+
+      // 2. Check Android Exact Alarms
+      if (Platform.OS === "android" && Number(Platform.Version) >= 31) {
+        try {
+          const granted = await PermissionsAndroid.check(
+            "android.permission.SCHEDULE_EXACT_ALARM" as Parameters<typeof PermissionsAndroid.check>[0]
+          );
+          setHasExactAlarmPermission(granted);
+        } catch {
+          setHasExactAlarmPermission(true);
+        }
+      }
+
+      // 3. Check iOS 26 AlarmKit SAFELY
+      if (Platform.OS === "ios") {
+        try {
+          // ONLY check live status if the user has already passed the onboarding prompt.
+          // This prevents the OS dialog from ambushing brand-new users before they are ready.
+          const hasPrompted = await AsyncStorage.getItem(ALARM_PROMPT_FLAG);
+          
+          if (hasPrompted === "true") {
+             const denied = await syncAlarmKitAuthIfDenied();
+             setAlarmKitAuthorized(!denied);
+          } else {
+             // If they haven't been prompted yet, we assume authorized=true to not block UI 
+             // prematurely. The actual request happens at step 25.
+             setAlarmKitAuthorized(true);
+          }
+        } catch {
+           setAlarmKitAuthorized(true);
+        }
+      }
+    } finally {
+      isChecking.current = false;
+    }
+  };
+
+  useEffect(() => {
+    checkPermission();
+
+    const sub = AppState.addEventListener("change", (state: AppStateStatus) => {
+      if (state === "active") {
+        checkPermission();
+      }
+    });
+
+    return () => sub.remove();
+  }, []);
+
+  return { hasPermission, hasExactAlarmPermission, alarmKitAuthorized };
+}
+
+```
+
+### 2. Update the Onboarding Step
+
+To make the above hook work, you need to tell the app that the user has reached the permission step.
+
+In your `permissionSteps.tsx`, update the `alarm` block inside the `request` function:
+
+```typescript
+// Inside permissionSteps.tsx -> request() function:
+
+} else if (kind === "alarm") {
+  // 1. Set the flag so our foreground listener knows it's safe to check from now on
+  await AsyncStorage.setItem("@bible_wake_has_prompted_alarm", "true");
+  
+  // 2. Request the actual permission
+  const status = await requestAlarmKitPermission();
+  if (status !== "unavailable") {
+    await persistAlarmKitAuthStatus(status);
+  }
+} 
+
+```
+
+### 3. Review `backgroundAlarmCheck.ts`
+
+Your `backgroundAlarmCheck.ts` looks fundamentally solid for what it needs to do. It correctly pulls from `AsyncStorage`, filters enabled alarms, and calls `scheduleAlarmKit` with `{ skipAuth: true }`.
+
+The `{ skipAuth: true }` parameter is exactly what you need here. It ensures that if the background task runs on a device where permissions were revoked, it fails silently in the background rather than attempting to pop a system dialog while the phone is locked.
+
+### Summary of Approvals for Replit
+
+You can tell Replit:
+
+1. **Apply the UI Fixes:** Yes, fix the double delete dialog, fix the "Checking permissions..." button text, and remove the 11:43 AM fallback alarm.
+2. **Handle the Scheduling Error:** Yes, add UI feedback if `scheduleAlarmKit` returns `"error"`.
+3. **DO NOT apply the unconditional `ak.requestAuthorization()` check:** Tell Replit to use the flagged approach I provided above for `useAlarmPermission.ts` instead.
