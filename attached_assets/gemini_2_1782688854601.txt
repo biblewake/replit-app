@@ -1,0 +1,153 @@
+my question:
+for Step 2: Update AuthContext.tsx
+
+The current google auth code is:
+  /**
+   * GOOGLE SIGN-IN — uses PKCE flow via Supabase OAuth.
+   *
+   * After the browser redirect, the OS delivers a biblewake:// deep link
+   * containing ?code=… which _layout.tsx exchanges for a session via
+   * supabase.auth.exchangeCodeForSession(url).
+   *
+   * ── External configuration required (cannot be done in code) ────────────────
+   *   1. Supabase Dashboard → Auth → URL Configuration → Redirect URLs
+   *      → add:  biblewake://
+   *   2. Google Cloud Console → APIs & Services → Credentials
+   *      → OAuth 2.0 client → Authorized redirect URIs
+   *      → add:  https://<your-supabase-project>.supabase.co/auth/v1/callback
+   *   3. Supabase Dashboard → Auth → Providers → Google → Enable
+   *      → paste the Client ID and Secret from step 2
+   * ────────────────────────────────────────────────────────────────────────────
+   */
+  const signInWithGoogle = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      Alert.alert("Sign-in unavailable", "Supabase is not configured in this build.");
+      return;
+    }
+    try {
+      const redirectTo = Linking.createURL("/", { scheme: "biblewake" });
+
+      if (__DEV__) {
+        console.log("[BibleWake] Google OAuth redirectTo:", redirectTo);
+      }
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo,
+          skipBrowserRedirect: true,
+        },
+      });
+
+      if (error) throw error;
+      if (!data.url) throw new Error("No OAuth URL returned");
+
+      // Open the OAuth page. On iOS, ASWebAuthenticationSession returns the
+      // redirect URL (including ?code=…) directly via the promise — we exchange
+      // the code here. On Android, openAuthSessionAsync also resolves with the
+      // redirect URL, so this single handler covers both platforms.
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      if (result.type === "success" && result.url) {
+        await supabase.auth.exchangeCodeForSession(result.url);
+      }
+    } catch (error) {
+      console.error("[BibleWake] Google sign-in error:", error);
+      const message =
+        error instanceof Error ? error.message : "An unexpected error occurred.";
+      Alert.alert("Sign-in failed", message);
+    }
+  }, []);
+
+
+And my current redirect URLs are:
+
+- biblewake://
+- com.tinochiwara.biblewake://auth/callback
+- biblewake://auth/callback
+- biblewake://oauth-callback
+
+
+Will step 2 still work? or some adjusting is needed, and is your diagnosis still accurate
+
+
+
+claude's response:
+Yes, my diagnosis is still 100% accurate, and the instant browser close is the undeniable proof of the stale deep-link trap.
+
+However, looking at your current code, there is actually a **second fatal bug** hiding in plain sight that my Step 2 code fixes.
+
+Take a close look at this line in your current implementation:
+
+```typescript
+await supabase.auth.exchangeCodeForSession(result.url);
+
+```
+
+**This is invalid.** `exchangeCodeForSession` strictly requires the raw code string (e.g., `1234abc...`), but you are passing the *entire URL* (e.g., `biblewake://?code=1234abc...`). When Supabase receives the full URL as the code, it searches its database for a flow state matching that exact giant string, fails to find it, and throws that `404: invalid flow state` error you saw in the logs.
+
+Because you already have `biblewake://oauth-callback` registered in your Supabase dashboard, you are perfectly positioned to fix both the OS loop and the URL extraction issue right now.
+
+Here is exactly how you should rewrite that function:
+
+```typescript
+  const signInWithGoogle = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      Alert.alert("Sign-in unavailable", "Supabase is not configured in this build.");
+      return;
+    }
+    try {
+      // FIX 1: Change the path to bypass stuck root deep links in the OS.
+      // This maps directly to 'biblewake://oauth-callback' in your Supabase dashboard.
+      const redirectTo = Linking.createURL("oauth-callback", { scheme: "biblewake" });
+
+      if (__DEV__) {
+        console.log("[BibleWake] Google OAuth redirectTo:", redirectTo);
+      }
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo,
+          skipBrowserRedirect: true,
+        },
+      });
+
+      if (error) throw error;
+      if (!data.url) throw new Error("No OAuth URL returned");
+
+      // Open the OAuth page. Because 'redirectTo' is now unique, the browser
+      // will not instantly close due to a stale 'biblewake://' intent.
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      
+      if (result.type === "success" && result.url) {
+        
+        // FIX 2: Safely extract just the code using expo-linking
+        const parsedUrl = Linking.parse(result.url);
+        
+        // PKCE flows put the code in the query params.
+        const code = parsedUrl.queryParams?.code as string | undefined;
+
+        if (code) {
+          // Pass ONLY the code string, not the full URL
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) throw exchangeError;
+          
+          // Session successfully established!
+        } else {
+          throw new Error("Authentication failed: No code returned from Google.");
+        }
+      }
+    } catch (error) {
+      console.error("[BibleWake] Google sign-in error:", error);
+      const message =
+        error instanceof Error ? error.message : "An unexpected error occurred.";
+      Alert.alert("Sign-in failed", message);
+    }
+  }, []);
+
+```
+
+### Why this guarantees a fix:
+
+1. **The Instant Close is Fixed:** By asking `WebBrowser` to listen specifically for `biblewake://oauth-callback`, it will blindly ignore the poisoned `biblewake://?code=old_code` stuck in your iOS intent queue and stay open until Google redirects back.
+2. **The 404 is Fixed:** Using `Linking.parse(result.url).queryParams?.code` extracts just the `1234abc` part and feeds it to Supabase. Supabase will recognize the code, find the PKCE flow state, and successfully return your user session.

@@ -1,0 +1,87 @@
+That immediate browser disappearance is the ultimate smoking gun, but Claude’s diagnosis slightly misread the mechanism of *why* it’s happening. Replit’s attempt to remove the global listener didn't work because the issue isn't double-handling in your JavaScript—**the issue is a cascading stale deep link stuck in the OS.**
+
+Here is exactly what is happening in that 1-second window and how to permanently break the loop.
+
+### The "Stale Code" Loop (Why the browser instantly closes)
+
+In React Native/Expo, if an OAuth flow fails, is cancelled, or crashes, the OS (iOS/Android) often holds onto the resulting deep link (e.g., `biblewake://?code=OLD_CODE`) in its intent queue.
+
+When you tap "Continue with Google":
+
+1. Your app tells Supabase to start a new flow (Flow State B).
+2. Your app opens the `WebBrowser` and tells it to wait for `biblewake://`.
+3. **The Trap:** The millisecond the browser opens, the OS hands it the stuck deep link from your *previous* attempt (`biblewake://?code=OLD_CODE`).
+4. The `WebBrowser` thinks the auth is complete! It immediately aborts the browser window (hence the instant close) and hands your app `OLD_CODE`.
+5. Your app sends `OLD_CODE` to Supabase. Supabase says, "This code is dead/invalid," and throws the **`404 flow_state_not_found`**.
+6. Meanwhile, in the background, Google actually processed your new login and sent back `NEW_CODE`... which now gets stuck in the OS queue, waiting to ruin your next attempt.
+
+You are always exchanging the code from the *previous* attempt.
+
+### How to Fix It (The Path Bypass)
+
+To break this loop, you need to stop asking `WebBrowser` to listen to the root scheme (`biblewake://`) and instead give it a specific, unique path. This forces the browser to ignore the stuck deep link and stay open until the *fresh* OAuth redirect comes back.
+
+#### Step 1: Update your Supabase Dashboard
+
+Go to your Supabase project dashboard:
+
+1. Navigate to **Authentication** -> **URL Configuration**.
+2. Under **Redirect URLs**, add this exact URI: `biblewake://oauth-callback` (make sure it is saved).
+
+#### Step 2: Update `AuthContext.tsx`
+
+Rewrite your `signInWithGoogle` function to use this specific path, safely parse the URL, and explicitly disable the default Supabase browser redirect (which conflicts with React Native).
+
+Replace your existing Google sign-in function with this:
+
+```typescript
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
+
+// ... inside your AuthContext
+
+const signInWithGoogle = async () => {
+  try {
+    // 1. Force a specific path to bypass stuck root deep links in the OS
+    const redirectTo = Linking.createURL('/oauth-callback');
+
+    // 2. Start OAuth flow
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+        skipBrowserRedirect: true, // CRITICAL: Stops Supabase from fighting WebBrowser in RN
+      },
+    });
+
+    if (error) throw error;
+
+    if (data?.url) {
+      // 3. Open browser. It will now ignore stuck 'biblewake://' links
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+
+      if (result.type === 'success' && result.url) {
+        // 4. Safely extract the code using expo-linking (handles hashes/fragments correctly)
+        const parsedUrl = Linking.parse(result.url);
+        const code = parsedUrl.queryParams?.code as string | undefined;
+
+        if (code) {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) throw exchangeError;
+          
+          // Session successfully established!
+        }
+      }
+    }
+  } catch (e) {
+    console.error("Google OAuth Error:", e);
+  }
+};
+
+```
+
+### Why this works:
+
+* **`Linking.createURL('/oauth-callback')`**: The browser is now listening strictly for `biblewake://oauth-callback`. It will ignore the poisoned `biblewake://?code=...` stuck in your system.
+* **`skipBrowserRedirect: true`**: This stops the Supabase JS client from attempting to polyfill `window.location.assign` in the background, which silently destroys flow states in React Native.
+* **`Linking.parse(result.url)`**: Grabbing the code via string splitting often grabs trailing `#_=_` fragments appended by Google/Apple, which also causes 404s. `expo-linking` parses it safely.
