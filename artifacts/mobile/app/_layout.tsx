@@ -118,7 +118,7 @@ function GestureWrapper({ children }: { children: React.ReactNode }) {
 
 
 function RootLayoutNav() {
-  const { onboardingComplete, isAnonymous } = useAuth();
+  const { onboardingComplete, isAnonymous, user, isGuest } = useAuth();
   const { isSubscribed, isLoading: subscriptionLoading } = useSubscription();
   const segments = useSegments();
   const router = useRouter();
@@ -148,6 +148,14 @@ function RootLayoutNav() {
       return;
     }
 
+    // Onboarding complete but no session — user just signed out.
+    // Send them to the sign-in step (step 29) of onboarding instead of
+    // restarting the full quiz from step 0.
+    if (!user && !isGuest) {
+      if (!inOnboarding) router.replace("/onboarding?step=29");
+      return;
+    }
+
     // Onboarding complete — block anonymous (guest) users from the main app.
     // Anonymous Supabase sessions and the in-memory guest flag both count here.
     // Redirect to onboarding so the user can sign in with Google or Apple.
@@ -173,7 +181,7 @@ function RootLayoutNav() {
     if (inOnboarding || inPaywall) {
       router.replace("/(tabs)");
     }
-  }, [onboardingComplete, isAnonymous, isSubscribed, subscriptionLoading, segments, router]);
+  }, [onboardingComplete, isAnonymous, user, isGuest, isSubscribed, subscriptionLoading, segments, router]);
 
   // ── iOS: foreground handler — reschedule alarms + check AlarmKit payload ──
   // Combined into one AppState listener to handle both cold launch and warm

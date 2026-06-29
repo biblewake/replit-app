@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   ActivityIndicator,
+  AppState,
+  AppStateStatus,
   Linking,
   Platform,
   Pressable,
@@ -11,6 +13,7 @@ import {
   Text,
   View,
 } from "react-native";
+import * as Notifications from "expo-notifications";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -124,7 +127,8 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const isNativeTabs = useIsNativeTabs();
 
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const [troubleshootVisible, setTroubleshootVisible] = useState(false);
   const [translationSheetVisible, setTranslationSheetVisible] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -134,6 +138,34 @@ export default function SettingsScreen() {
   // Determine current translation: from profile if logged in, fallback to AsyncStorage default
   const [localTranslation, setLocalTranslation] = useState<string | null>(null);
   const currentTranslation = profile?.preferred_translation ?? localTranslation ?? "NIV";
+
+  // Read real notification permission status on mount and on app foreground
+  useEffect(() => {
+    let mounted = true;
+    const checkPermission = async () => {
+      try {
+        const { status } = await Notifications.getPermissionsAsync();
+        if (mounted) setNotificationsEnabled(status === "granted");
+      } catch {
+        // best-effort
+      }
+    };
+
+    checkPermission();
+
+    const sub = AppState.addEventListener("change", (nextState: AppStateStatus) => {
+      const prev = appStateRef.current;
+      appStateRef.current = nextState;
+      if (nextState === "active" && (prev === "background" || prev === "inactive")) {
+        checkPermission();
+      }
+    });
+
+    return () => {
+      mounted = false;
+      sub.remove();
+    };
+  }, []);
 
   // Load local translation for guest users on mount
   React.useEffect(() => {
@@ -398,9 +430,10 @@ export default function SettingsScreen() {
                 onValueChange={(v) => {
                   Haptics.selectionAsync();
                   setNotificationsEnabled(v);
-                  if (v) {
-                    openAppSettings();
+                  if (!v) {
+                    Notifications.cancelAllScheduledNotificationsAsync().catch(() => {});
                   }
+                  Linking.openURL("app-settings:").catch(() => {});
                 }}
                 trackColor={{ false: colors.border, true: colors.blue }}
                 thumbColor="#fff"

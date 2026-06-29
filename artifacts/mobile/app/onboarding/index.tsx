@@ -9,7 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -138,10 +138,18 @@ export default function OnboardingNavigator() {
   const { addAlarm } = useAlarms();
   const queryClient = useQueryClient();
   const { promptOnOnboardingComplete } = useRatingRequest();
+  const { step: stepParam } = useLocalSearchParams<{ step?: string }>();
 
   // If onboarding is already complete, skip straight to the paywall (step 30)
   // so returning non-subscribed users see only Pages A/B/C, not the full quiz.
-  const [step, setStep] = useState(() => (onboardingComplete ? 30 : 0));
+  // A `step` search param (e.g. from logout redirect) overrides the default.
+  const [step, setStep] = useState(() => {
+    if (stepParam) {
+      const parsed = parseInt(stepParam as string, 10);
+      if (!isNaN(parsed)) return parsed;
+    }
+    return onboardingComplete ? 30 : 0;
+  });
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [draft, setDraft] = useState<AlarmDraft>(DEFAULT_DRAFT);
   const [hasSignature, setHasSignature] = useState(false);
