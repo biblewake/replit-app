@@ -194,6 +194,11 @@ function RootLayoutNav() {
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   useEffect(() => {
     if (Platform.OS !== "ios") return;
+    // expo-alarm-kit is a custom native module — not available in Expo Go.
+    // Calling require("expo-alarm-kit") in Expo Go fires a [GlobalHandler] FATAL
+    // log even though the try/catch in getAk() handles the error, because Expo
+    // Go's require machinery also notifies ErrorUtils before the catch runs.
+    if (isExpoGo) return;
 
     initAlarmKit().catch((e) => {
       if (__DEV__) console.warn("[AlarmKit] init failed:", e);

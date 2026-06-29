@@ -18,7 +18,7 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { Alert, Platform } from "react-native";
+import { Platform } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { pickRandomVerseBackground } from "@/lib/wakeHistory";
 import {
@@ -90,6 +90,16 @@ interface AlarmContextType {
   alarmKitDenied: boolean;
   /** Call after the user dismisses the denied-permission sheet to reset the flag. */
   clearAlarmKitDenied: () => void;
+  /**
+   * iOS 26+: true when AlarmKit scheduling returned "error" or "unavailable" —
+   * meaning configure() failed (App Group not set up) or the native module is
+   * missing from the build. Alarms are saved but will not ring. Surface a
+   * persistent banner on the Alarms tab so the user knows something is wrong.
+   * Always false on Android.
+   */
+  alarmKitConfigureError: boolean;
+  /** Dismiss the configure-error banner. */
+  clearAlarmKitConfigureError: () => void;
 }
 
 const AlarmContext = createContext<AlarmContextType>({
@@ -105,6 +115,8 @@ const AlarmContext = createContext<AlarmContextType>({
   isLoaded: false,
   alarmKitDenied: false,
   clearAlarmKitDenied: () => {},
+  alarmKitConfigureError: false,
+  clearAlarmKitConfigureError: () => {},
 });
 
 // ── Supabase helpers ───────────────────────────────────────────────────────────
@@ -195,6 +207,7 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
   const [lastWakeDate, setLastWakeDate] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [alarmKitDenied, setAlarmKitDenied] = useState(false);
+  const [alarmKitConfigureError, setAlarmKitConfigureError] = useState(false);
 
   // ── iOS legacy notification migration (runs once on first AlarmKit launch) ────
   useEffect(() => {
@@ -352,12 +365,15 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
       );
       if (result === "denied") {
         setAlarmKitDenied(true);
-      } else if (result === "error") {
-        Alert.alert(
-          "Alarm Scheduling Failed",
-          "Bible Wake couldn't schedule your alarm with AlarmKit. Please check that Alarm access is allowed for Bible Wake in iOS Settings → Privacy & Security → Alarms.",
-          [{ text: "OK" }]
-        );
+      } else if (result === "error" || result === "unavailable") {
+        // "error"       → configure() returned false (App Group not registered in
+        //                 the provisioning profile — one-time manual setup needed).
+        // "unavailable" → native module missing from the build (should not happen
+        //                 on a production device build, but surfaces gracefully).
+        // In both cases the alarm is saved but will not ring. Surface a persistent
+        // banner instead of a transient Alert so the user can see the state at any
+        // time without dismissing something.
+        setAlarmKitConfigureError(true);
       }
     } else {
       scheduleAlarmNotifications(alarm).catch(() => {});
@@ -606,6 +622,8 @@ export function AlarmProvider({ children }: { children: React.ReactNode }) {
         isLoaded: loaded,
         alarmKitDenied,
         clearAlarmKitDenied: () => setAlarmKitDenied(false),
+        alarmKitConfigureError,
+        clearAlarmKitConfigureError: () => setAlarmKitConfigureError(false),
       }}
     >
       {children}

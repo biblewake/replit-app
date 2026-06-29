@@ -29,7 +29,7 @@ export default function AlarmsScreen() {
   const insets = useSafeAreaInsets();
   const isNativeTabs = useIsNativeTabs();
   const router = useRouter();
-  const { alarms, addAlarm, updateAlarm, deleteAlarm, toggleAlarm, alarmKitDenied, clearAlarmKitDenied } = useAlarms();
+  const { alarms, addAlarm, updateAlarm, deleteAlarm, toggleAlarm, alarmKitDenied, clearAlarmKitDenied, alarmKitConfigureError, clearAlarmKitConfigureError } = useAlarms();
   const { hasPermission, hasExactAlarmPermission, alarmKitAuthorized } = useAlarmPermission();
   // On iOS 26+, AlarmKit authorization is the relevant gate; on Android, exact-alarm permission.
   const allPermissionsGranted =
@@ -226,6 +226,21 @@ export default function AlarmsScreen() {
       <View style={[styles.header, { paddingTop }]}>
         <Text style={[styles.title, { color: colors.foreground }]}>Alarms</Text>
       </View>
+
+      {/* iOS AlarmKit configure-error banner — shown when scheduling returns
+          "error" (App Group not set up) or "unavailable" (module missing).
+          Alarms are saved but will not ring until the issue is resolved. */}
+      {Platform.OS === "ios" && alarmKitConfigureError && (
+        <Pressable
+          onPress={clearAlarmKitConfigureError}
+          style={styles.configureErrorBanner}
+        >
+          <Ionicons name="warning-outline" size={16} color="#FFFFFF" style={styles.configureErrorIcon} />
+          <Text style={styles.configureErrorText}>
+            Alarms may not ring. Tap to dismiss — contact support if this persists.
+          </Text>
+        </Pressable>
+      )}
 
       <FlatList
         data={alarms}
@@ -461,5 +476,23 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.22,
     shadowRadius: 12,
     elevation: 10,
+  },
+  configureErrorBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#D97706",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  configureErrorIcon: {
+    flexShrink: 0,
+  },
+  configureErrorText: {
+    flex: 1,
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    lineHeight: 18,
   },
 });
