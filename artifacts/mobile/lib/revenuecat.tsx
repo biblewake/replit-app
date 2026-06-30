@@ -26,14 +26,20 @@ function getPurchases(): typeof PurchasesType | null {
 }
 
 function getRevenueCatApiKey(): string | null {
-  // In dev / Expo Go / web, use the test key if available.
-  if (__DEV__ || Platform.OS === "web" || Constants.executionEnvironment === "storeClient") {
+  // Expo Go (storeClient) and web can only use a test key.
+  if (Platform.OS === "web" || Constants.executionEnvironment === "storeClient") {
     return REVENUECAT_TEST_API_KEY ?? null;
   }
 
-  // In production builds, use the platform-specific key.
-  if (Platform.OS === "ios") return REVENUECAT_IOS_API_KEY ?? null;
-  if (Platform.OS === "android") return REVENUECAT_ANDROID_API_KEY ?? null;
+  // For both dev and production native builds, use the platform-specific key.
+  // EAS secrets (EXPO_PUBLIC_REVENUECAT_IOS/ANDROID_API_KEY) are baked into
+  // every EAS build (dev client, preview, production) — they are always present
+  // in native builds. Apple/Google's sandbox environment is used automatically
+  // in development builds, so there is no risk of polluting production data.
+  // A separate REVENUECAT_TEST_API_KEY is only needed for Expo Go, which can't
+  // use the production keys.
+  if (Platform.OS === "ios") return REVENUECAT_IOS_API_KEY ?? REVENUECAT_TEST_API_KEY ?? null;
+  if (Platform.OS === "android") return REVENUECAT_ANDROID_API_KEY ?? REVENUECAT_TEST_API_KEY ?? null;
 
   return REVENUECAT_TEST_API_KEY ?? null;
 }

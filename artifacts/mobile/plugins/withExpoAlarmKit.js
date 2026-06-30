@@ -109,11 +109,36 @@ function withExpoAlarmKitPodfile(config) {
   ]);
 }
 
-// ── Step 3: Link AlarmKit.framework in the Xcode project ─────────────────────
+// ── Step 3: Set deployment target + link AlarmKit.framework ──────────────────
 function withAlarmKitFramework(config) {
   return withXcodeProject(config, (cfg) => {
     const xcodeProject = cfg.modResults;
 
+    // Set IPHONEOS_DEPLOYMENT_TARGET = 26.0 on ALL build configurations.
+    // app.json's ios.deploymentTarget is not always reliable across SDK/Expo
+    // versions — setting it directly here is the only guaranteed path.
+    // Without this, Xcode defaults to 15.1 (Expo template default), which
+    // causes "compiling for iOS 15.x, but module requires iOS 26.0" errors.
+    const buildConfigs = xcodeProject.pbxXCBuildConfigurationSection();
+    let patchedCount = 0;
+    Object.values(buildConfigs).forEach((entry) => {
+      if (
+        entry &&
+        typeof entry === "object" &&
+        entry.buildSettings &&
+        typeof entry.buildSettings === "object"
+      ) {
+        entry.buildSettings.IPHONEOS_DEPLOYMENT_TARGET = "26.0";
+        patchedCount++;
+      }
+    });
+    if (patchedCount > 0) {
+      console.log(
+        `[withExpoAlarmKit] Set IPHONEOS_DEPLOYMENT_TARGET=26.0 on ${patchedCount} build configs`
+      );
+    }
+
+    // Link AlarmKit.framework (podspec also declares it, but belt-and-suspenders).
     const fileRefs =
       xcodeProject.hash?.project?.objects?.["PBXFileReference"] ?? {};
     const alreadyLinked = Object.values(fileRefs).some(
