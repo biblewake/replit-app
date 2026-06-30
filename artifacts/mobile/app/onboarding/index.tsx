@@ -239,11 +239,15 @@ export default function OnboardingNavigator() {
       // alarm creation failure should not block finishing onboarding
     }
     await completeOnboarding();
+    // Invalidate all cached queries so data loads immediately when the tabs
+    // mount — without this, stale null results from the pre-auth phase would
+    // linger until the app backgrounds and comes back to the foreground.
+    void queryClient.invalidateQueries();
     router.replace("/(tabs)");
     setTimeout(() => {
       void promptOnOnboardingComplete();
     }, 1500);
-  }, [draft, addAlarm, completeOnboarding, router, promptOnOnboardingComplete]);
+  }, [draft, addAlarm, completeOnboarding, queryClient, router, promptOnOnboardingComplete]);
 
   // ── Progress + continue-enabled ──────────────────────────────────────────
   const progress = step / TOTAL_STEPS;

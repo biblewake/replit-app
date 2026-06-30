@@ -36,10 +36,13 @@ export async function syncOnboardingAnswers(
         { onConflict: "user_id", ignoreDuplicates: false }
       );
 
-    if (!error) {
+    if (error) {
+      console.warn("[onboardingSync] upsert failed:", error.message ?? String(error));
+    } else {
       await AsyncStorage.removeItem(ONBOARDING_ANSWERS_KEY);
     }
-  } catch {
+  } catch (err) {
     // Network or storage error — leave the local copy in place for next launch.
+    console.warn("[onboardingSync] sync error:", err);
   }
 }

@@ -123,6 +123,32 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
 
+  // ── Query cache lifecycle: clear on sign-out, invalidate on sign-in ─────────
+  // prevUserIdRef starts as `undefined` (uninitialized sentinel) so the first
+  // render is skipped and we only react to actual transitions.
+  const prevUserIdRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    const currUserId = user?.id ?? null;
+    if (prevUserIdRef.current === undefined) {
+      // First render — record initial value, no action needed.
+      prevUserIdRef.current = currUserId;
+      return;
+    }
+    if (prevUserIdRef.current !== currUserId) {
+      if (!currUserId) {
+        // User signed out — wipe ALL cached query data so the next account
+        // sees no stale streak, alarm, or profile data from the previous session.
+        queryClient.clear();
+      } else {
+        // User signed in (or switched accounts) — force an immediate refetch of
+        // all active queries so tabs load data on first render without waiting
+        // for the staleTime to expire.
+        void queryClient.invalidateQueries();
+      }
+      prevUserIdRef.current = currUserId;
+    }
+  }, [user]);
+
   useEffect(() => {
     if (onboardingComplete === null) return; // still resolving the flag
 

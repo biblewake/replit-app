@@ -428,6 +428,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setProfile(null);
+    setIsGuest(false);
+    try {
+      await AsyncStorage.removeItem(ONBOARDING_COMPLETE_KEY);
+    } catch {
+      // non-fatal
+    }
+    setOnboardingComplete(false);
   }, []);
 
   const isAnonymous = isGuest || (user?.is_anonymous === true);
