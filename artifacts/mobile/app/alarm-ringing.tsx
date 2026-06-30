@@ -69,6 +69,18 @@ export default function AlarmRingingScreen() {
   // and the user already slid to stop at the native level — skip our ringing screen.
   const fromAlarmKit = params.fromAlarmKit === "true";
   const [phase, setPhase] = useState<"ringing" | "recital">(fromAlarmKit ? "recital" : "ringing");
+
+  // For AlarmKit launches with non-verse / non-wakeup alarms, no recitation is needed.
+  // Navigate home immediately; the native alarm UI was the full experience.
+  useEffect(() => {
+    if (!fromAlarmKit) return;
+    const needsRecital = alarm?.alarmType === "verse" || alarm?.wakeUpCheck;
+    if (!needsRecital) {
+      router.replace("/(tabs)");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const soundRef = useRef<Audio.Sound | null>(null);
 
   const thumbX = useRef(new Animated.Value(0)).current;
