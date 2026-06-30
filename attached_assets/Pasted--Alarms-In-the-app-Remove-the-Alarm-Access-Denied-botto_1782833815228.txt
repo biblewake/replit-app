@@ -1,0 +1,26 @@
+## Alarms
+# In the app
+- Remove the Alarm Access Denied bottom sheet.
+- Instead I like the little error/warning pop-up you have that shows up when the user tries to save the alarm and they dont have alarm permissions enabled.
+- after deleting the app anbd logging back into an account, it does automatically load the alarms and streak. It actually loads after I get out of the app and come back in. This also happens after onboarding, its like not everything has loaded properly or even load the data fro supabase, and I have the leave the app and open it up again for everything to load properly. This also happened when I wanted to log out, it glitched, but only worked after and let the app and re-opened it.
+
+# Verse Background images
+- all this time we were using a placeholder for today’s verse background when we should be pulling the image from public.verse_background_images using the row marked is_active is True. There will always one row with is_active is True
+- the image style would be from the url and would be cover style (not contain or fit), when shared, the shared image should be the full image from the url plus the verse text and version tag
+- use Times New Roman for the verse text, also align the text left, and verse reference e.g. John 3:16
+- remove the “Bible Wake” lable from the today’s verse container
+
+# Alarm ringing
+- When the alarm rings its great, only 4 issues:
+1. The ios Alarm ringing UI doesnt use the sound I picked, it uses ios default sound
+2. After sliding "Sliding to stop" i see another alarm ringing UI, but this time its our custom one. The ios Alarm Ringing UI is all thats needed, not two alarm ringing UI. Note, our alarm ringing UI does have the right alarm sound playing as I had picked.
+3. Would it be possible to remove the "Snooze" button, and just have the "slide to stop"? If so, remove the "Snooze" button from the ios Alarm UI
+- this applies to both verse alarm and normal alarm
+4. Wake-up check didn’t work, it basically  supposed to be like another normal alarm with a phrase to turn it off
+
+# RevenueCat
+- I'm currently on a plan in the app, is there a way to cancel it and expire the 3-day trial. When i hit cancel subscriptions in settings, it takes me to the ios subscriptions page, which i think is fine when its actually in production/distribution. How can handle it when in tesflight
+- i need to be able to test the hard paywall after trial expires
+- What i want actaully happends on the paywall part 3. When i hit the continue, as iOS dialog pops that says "You're currently subscribed to this" with a manage and ok. Whenn i hit manage,  i see the my sunscription in iOS, on which I was able to cancel. This is not necessarily a big deal, i think revenuecat is working fine actually.
+
+Solve problems accordindly and make accurate tasks. Ask me questions for clarity if you need.
