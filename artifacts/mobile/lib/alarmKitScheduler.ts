@@ -202,13 +202,14 @@ function ensureConfigured(): boolean {
  * Derive the AlarmKit soundName from a Bible Wake sound ID.
  *
  * Sound IDs follow the pattern "<category>_<filename_stem>", e.g.:
- *   "bright_chirps"        → "chirps"
- *   "calm_morning_chirp"   → "morning_chirp"
- *   "energetic_pop_it_up"  → "pop_it_up"
+ *   "bright_chirps"        → "chirps.mp3"
+ *   "calm_morning_chirp"   → "morning_chirp.mp3"
+ *   "energetic_pop_it_up"  → "pop_it_up.mp3"
  *
- * withAlarmSounds.js flattens all .mp3 files from assets/sounds/ to the
- * app bundle root, so AlarmKit needs just the stem — no path prefix and no
- * file extension.
+ * withAlarmSounds.js flattens all .mp3 files from assets/sounds/ into
+ * the iOS app bundle root as native resources (no subdirectory). AlarmKit's
+ * AlertSound.named() — like UNNotificationSound.named() — requires the
+ * filename WITH extension (e.g. "chirps.mp3"), not just the stem.
  *
  * Returns undefined if soundId is falsy so that AlarmKit falls back to its
  * built-in default tone.
@@ -216,8 +217,8 @@ function ensureConfigured(): boolean {
 function soundNameFromSoundId(soundId: string | undefined): string | undefined {
   if (!soundId) return undefined;
   const idx = soundId.indexOf("_");
-  if (idx === -1) return soundId;
-  return soundId.slice(idx + 1);
+  const stem = idx === -1 ? soundId : soundId.slice(idx + 1);
+  return `${stem}.mp3`;
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
