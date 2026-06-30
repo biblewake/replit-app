@@ -13,6 +13,7 @@ import VerseCard from "@/components/VerseCard";
 import { useAlarms } from "@/context/AlarmContext";
 import { supabase } from "@/lib/supabase";
 import { recordWakeEvent } from "@/lib/wakeHistory";
+import { useActiveVerseBackground } from "@/hooks/useActiveVerseBackground";
 
 type Step =
   | "reciteVisible"
@@ -72,6 +73,7 @@ export default function RecitalFlow({
 
   const alarm = alarms.find((a) => a.id === alarmId);
   const effectiveVerseMode = verseMode ?? alarm?.verseMode ?? "memory";
+  const { data: activeBackgroundUrl } = useActiveVerseBackground();
 
   const persistWakeEvent = async (opts: {
     recitalSuccess?: boolean;
@@ -216,6 +218,7 @@ export default function RecitalFlow({
             reference={verseReference}
             text={verseText}
             version={verseVersion}
+            backgroundImageUrl={activeBackgroundUrl ?? null}
             showShare
             isFinalStep
             onContinue={onDismiss}

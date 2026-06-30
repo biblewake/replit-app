@@ -17,6 +17,7 @@ import { router, useFocusEffect } from "expo-router";
 
 import { useColors } from "@/hooks/useColors";
 import { useIsNativeTabs } from "@/hooks/useIsNativeTabs";
+import { useActiveVerseBackground } from "@/hooks/useActiveVerseBackground";
 import { useAlarms } from "@/context/AlarmContext";
 import { useAlarmPermission } from "@/hooks/useAlarmPermission";
 import { useAuth } from "@/context/AuthContext";
@@ -30,7 +31,6 @@ import { supabase } from "@/lib/supabase";
 interface TodayVerseState {
   ref: string;
   text: string;
-  backgroundImageUrl?: string | null;
   found: boolean;
 }
 
@@ -78,6 +78,7 @@ export default function HomeScreen() {
   const [showAddAlarm, setShowAddAlarm] = useState(false);
   const [editingAlarm, setEditingAlarm] = useState<import("@/context/AlarmContext").Alarm | null>(null);
   const [todayVerse, setTodayVerse] = useState<TodayVerseState | null>(null);
+  const { data: activeBackgroundUrl } = useActiveVerseBackground();
 
   const todayIndex = new Date().getDay();
   const nextAlarm = getNextAlarm();
@@ -102,7 +103,7 @@ export default function HomeScreen() {
 
       const { data } = await supabase
         .from("wake_history")
-        .select("verse_ref, verse_text, verse_background_image_id")
+        .select("verse_ref, verse_text")
         .eq("user_id", user.id)
         .eq("recital_success", true)
         .gte("dismissed_at", todayStart.toISOString())
@@ -111,23 +112,9 @@ export default function HomeScreen() {
         .limit(1);
 
       if (data && data.length > 0 && data[0].verse_ref) {
-        const backgroundImageId = data[0].verse_background_image_id ?? null;
-
-        // Resolve the background image URL if an ID is present
-        let backgroundImageUrl: string | null = null;
-        if (backgroundImageId) {
-          const { data: imgData } = await supabase
-            .from("verse_background_images")
-            .select("url")
-            .eq("id", backgroundImageId)
-            .single();
-          backgroundImageUrl = imgData?.url ?? null;
-        }
-
         setTodayVerse({
           ref: data[0].verse_ref,
           text: data[0].verse_text ?? "",
-          backgroundImageUrl,
           found: true,
         });
       } else {
@@ -392,7 +379,7 @@ export default function HomeScreen() {
             reference={todayVerse.ref}
             text={todayVerse.text}
             version={translation}
-            backgroundImageUrl={todayVerse.backgroundImageUrl}
+            backgroundImageUrl={activeBackgroundUrl ?? null}
             showShare
             flat
           />
@@ -421,6 +408,7 @@ export default function HomeScreen() {
               reference={nextVerseRef}
               text={nextVerseText}
               version={translation}
+              backgroundImageUrl={activeBackgroundUrl ?? null}
               showShare
               flat
             />

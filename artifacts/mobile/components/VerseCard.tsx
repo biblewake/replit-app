@@ -93,10 +93,9 @@ export default function VerseCard({
   const cardInner = (
     <View style={styles.cardInner}>
       <View style={styles.verseContent}>
-        <Text style={styles.reference}>✦ {reference} ✦</Text>
         <Text style={styles.verseText}>{text}</Text>
+        <Text style={styles.reference}>{reference}</Text>
       </View>
-      <Text style={styles.appTag}>Bible Wake</Text>
     </View>
   );
 
@@ -210,29 +209,22 @@ const styles = StyleSheet.create({
   },
   verseContent: {
     gap: 16,
-    alignItems: "center",
+    alignItems: "flex-start",
   },
   reference: {
     fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
-    color: "rgba(255,255,255,0.6)",
-    textAlign: "center",
-    letterSpacing: 0.8,
+    fontFamily: Platform.select({ ios: "TimesNewRomanPS-ItalicMT", android: "serif", default: "serif" }),
+    fontStyle: Platform.OS === "android" ? "italic" : undefined,
+    color: "rgba(255,255,255,0.7)",
+    textAlign: "left",
+    letterSpacing: 0.4,
   },
   verseText: {
-    fontSize: 20,
-    fontFamily: "Inter_400Regular",
+    fontSize: 21,
+    fontFamily: Platform.select({ ios: "TimesNewRomanPSMT", android: "serif", default: "serif" }),
     color: "#FFFFFF",
-    textAlign: "center",
-    lineHeight: 32,
-  },
-  appTag: {
-    fontSize: 12,
-    fontFamily: "Inter_500Medium",
-    color: "rgba(255,255,255,0.3)",
-    textAlign: "center",
-    letterSpacing: 1.5,
-    textTransform: "uppercase",
+    textAlign: "left",
+    lineHeight: 33,
   },
   continueBtn: {
     backgroundColor: "#1C1C1E",
