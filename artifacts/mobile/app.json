@@ -17,7 +17,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.tinochiwara.biblewake",
       "buildNumber": "10",
-      "deploymentTarget": "26.1",
+      "deploymentTarget": "26.0",
       "infoPlist": {
         "UIBackgroundModes": [
           "audio",
