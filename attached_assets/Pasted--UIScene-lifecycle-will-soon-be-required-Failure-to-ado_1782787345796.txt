@@ -1,0 +1,113 @@
+`UIScene` lifecycle will soon be required. Failure to adopt will result in an assert in the future.
+_setUpFeatureFlags called with release level 2
+EXTaskService: Restoring tasks configuration: {
+    mainApplication =     {
+        tasks =         {
+            "BACKGROUND_ALARM_CHECK" =             {
+                consumerClass = "ExpoBackgroundFetch.BackgroundFetchTaskConsumer";
+                consumerVersion = 0;
+                name = "BACKGROUND_ALARM_CHECK";
+                options =                 {
+                    minimumInterval = 3600;
+                    startOnBoot = 1;
+                    stopOnTerminate = 0;
+                };
+            };
+        };
+    };
+}
+🟢 Registering module 'ExpoModulesCoreJSLogger'
+🟢 Registering module 'ExpoFetchModule'
+🟢 Registering module 'ExpoAppleAuthentication'
+🟢 Registering module 'ExpoApplication'
+🟢 Registering module 'ExpoAsset'
+🟢 Registering module 'ExpoVideoView'
+🟢 Registering module 'ExpoBackgroundFetch'
+🟢 Registering module 'ExpoBlurView'
+🟢 Registering module 'ExpoCamera'
+🟢 Registering module 'ExponentConstants'
+🟢 Registering module 'ExpoCrypto'
+🟢 Registering module 'FileSystem'
+🟢 Registering module 'ExponentFileSystem'
+🟢 Registering module 'ExpoFontLoader'
+🟢 Registering module 'ExpoFontUtils'
+🟢 Registering module 'ExpoHaptics'
+🟢 Registering module 'ExpoImage'
+🟢 Registering module 'ExpoKeepAwake'
+🟢 Registering module 'ExpoLinearGradient'
+🟢 Registering module 'ExpoLinking'
+🟢 Registering module 'ExpoBackgroundNotificationTasksModule'
+🟢 Registering module 'ExpoBadgeModule'
+🟢 Registering module 'ExpoNotificationCategoriesModule'
+🟢 Registering module 'ExpoNotificationsEmitter'
+🟢 Registering module 'ExpoNotificationsHandlerModule'
+🟢 Registering module 'ExpoNotificationPermissionsModule'
+🟢 Registering module 'ExpoNotificationPresenter'
+🟢 Registering module 'ExpoPushTokenManager'
+🟢 Registering module 'ExpoNotificationScheduler'
+🟢 Registering module 'NotificationsServerRegistrationModule'
+🟢 Registering module 'ExpoHead'
+🟢 Registering module 'ExpoRouterNativeLinkPreview'
+🟢 Registering module 'ExpoSecureStore'
+🟢 Registering module 'ExpoSharing'
+🟢 Registering module 'ExpoSplashScreen'
+🟢 Registering module 'ExpoStoreReview'
+🟢 Registering module 'SymbolModule'
+🟢 Registering module 'ExpoSystemUI'
+🟢 Registering module 'ExpoTrackingTransparency'
+🟢 Registering module 'ExpoWebBrowser'
+🟢 Creating JS object for module 'ExponentConstants'
+🟢 Creating JS object for module 'ExpoRouterNativeLinkPreview'
+Unbalanced calls start/end for tag 20
+Unbalanced calls start/end for tag 19
+🟢 Creating JS object for module 'ExpoSplashScreen'
+Running "main"
+🟢 Creating JS object for module 'ExpoBlurView'
+🟢 Creating JS object for module 'SymbolModule'
+🟢 Creating JS object for module 'ExpoApplication'
+🟢 Creating JS object for module 'NotificationsServerRegistrationModule'
+🟢 Creating JS object for module 'ExpoPushTokenManager'
+🟢 Creating JS object for module 'ExpoBadgeModule'
+🟢 Creating JS object for module 'ExpoNotificationsEmitter'
+🟢 Creating JS object for module 'ExpoNotificationsHandlerModule'
+[BibleWake] ⚠️  Supabase secrets are not configured.
+The app will run in guest-only mode (local AsyncStorage) until you add:
+  • EXPO_PUBLIC_SUPABASE_URL (or SUPABASE_URL)
+  • EXPO_PUBLIC_SUPABASE_ANON_KEY (or SUPABASE_ANON_KEY)
+Add them via Replit Secrets → see artifacts/mobile/lib/supabase.ts for details.
+[BibleWake] Supabase configured: false, url prefix: unset
+🟢 Creating JS object for module 'ExpoAppleAuthentication'
+🟢 Creating JS object for module 'ExpoWebBrowser'
+🟢 Creating JS object for module 'ExpoLinking'
+🟢 Creating JS object for module 'ExpoFontLoader'
+🟢 Creating JS object for module 'ExpoAsset'
+expo-background-fetch: This library is deprecated. Use expo-background-task instead.
+🟢 Creating JS object for module 'ExpoBackgroundFetch'
+Reading from public effective user settings.
+🟢 Creating JS object for module 'ExpoLinearGradient'
+🟢 Creating JS object for module 'ExpoVideoView'
+[expo-av]: Expo AV has been deprecated and will be removed in SDK 54. Use the `expo-audio` and `expo-video` packages to replace the required functionality.
+CoreUI: CUIThemeStore: No theme registered with id=0
+CoreUI: CUIThemeStore: No theme registered with id=0
+🟢 Creating JS object for module 'ExpoNotificationPermissionsModule'
+🟢 Creating JS object for module 'ExpoCamera'
+<<<< FigApplicationStateMonitor >>>> signalled err=-19431 at <>:474
+<<<< FigApplicationStateMonitor >>>> signalled err=-19431 at <>:474
+WARNING: Logging before InitGoogleLogging() is written to STDERR
+I0629 21:40:44.299958 1805643776 UIManagerBinding.cpp:135] instanceHandle is null, event of type topLoad will be dropped
+I0629 21:40:44.300060 1805643776 UIManagerBinding.cpp:135] instanceHandle is null, event of type topLoadEnd will be dropped
+I0629 21:40:44.300199 1805643776 UIManagerBinding.cpp:135] instanceHandle is null, event of type topHeaderHeightChange will be dropped
+I0629 21:40:44.300524 1805643776 UIManagerBinding.cpp:135] instanceHandle is null, event of type topDidDisappear will be dropped
+🟢 Creating JS object for module 'ExpoHaptics'
+Reporter disconnected or already stopped. { func=stop, reporterID=87170656239618 }
+Message send exceeds rate-limit threshold and will be dropped. { reporterID=87170656239618, rateLimit=32hz }
+Message send exceeds rate-limit threshold and will be dropped. { reporterID=87170656239618, rateLimit=32hz }
+Message send exceeds rate-limit threshold and will be dropped. { reporterID=87170656239618, rateLimit=32hz }
+Message send exceeds rate-limit threshold and will be dropped. { reporterID=87170656239618, rateLimit=32hz }
+Message send exceeds rate-limit threshold and will be dropped. { reporterID=87170656239618, rateLimit=32hz }
+Message send exceeds rate-limit threshold and will be dropped. { reporterID=87170656239618, rateLimit=32hz }
+Message send exceeds rate-limit threshold and will be dropped. { reporterID=87170656239618, rateLimit=32hz }
+Message send exceeds rate-limit threshold and will be dropped. { reporterID=87170656239618, rateLimit=32hz }
+🟢 Creating JS object for module 'ExpoTrackingTransparency'
+I0629 21:41:25.728453 1805643776 UIManagerBinding.cpp:135] instanceHandle is null, event of type topMomentumScrollEnd will be dropped
+[AlarmKit] Module not available — getAk() returned null

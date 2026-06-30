@@ -17,7 +17,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.tinochiwara.biblewake",
       "buildNumber": "10",
-      "deploymentTarget": "26.0",
+      "deploymentTarget": "26.1",
       "infoPlist": {
         "UIBackgroundModes": [
           "audio",
@@ -99,7 +99,8 @@
         }
       ],
       "./plugins/withBootReceiver",
-      "./plugins/withAlarmSounds"
+      "./plugins/withAlarmSounds",
+      "./plugins/withExpoAlarmKit"
     ],
     "experiments": {
       "typedRoutes": true,

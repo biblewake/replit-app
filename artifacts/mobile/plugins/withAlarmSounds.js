@@ -107,7 +107,7 @@ function withRegisterSounds(config) {
     const existingGroup = xcodeProject.pbxGroupByName(ALARM_SOUNDS_DIR);
     if (existingGroup) {
       // pbxGroupByName returns the group object; we need its key (UUID).
-      const section = xcodeProject.pbxGroupSection();
+      const section = xcodeProject.hash.project.objects["PBXGroup"] || {};
       groupUuid = Object.keys(section).find(
         (k) =>
           !k.endsWith("_comment") &&
