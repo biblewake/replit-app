@@ -1,3 +1,15 @@
+diff --git a/expo-module.config.json b/expo-module.config.json
+--- a/expo-module.config.json
++++ b/expo-module.config.json
+@@ -1,6 +1,7 @@
+ {
+   "platforms": ["apple"],
+   "apple": {
+-    "modules": ["ExpoAlarmKitModule"]
++    "modules": ["ExpoAlarmKitModule"],
++    "podspecPath": "ios/ExpoAlarmKit.podspec"
+   }
+ }
 diff --git a/ios/ExpoAlarmKit.podspec b/ios/ExpoAlarmKit.podspec
 --- a/ios/ExpoAlarmKit.podspec
 +++ b/ios/ExpoAlarmKit.podspec

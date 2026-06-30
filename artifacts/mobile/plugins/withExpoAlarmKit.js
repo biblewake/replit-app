@@ -1,49 +1,40 @@
 /**
  * withExpoAlarmKit — Expo config plugin for expo-alarm-kit / AlarmKit integration.
  *
- * Does four things during `expo prebuild`:
+ * The pnpm patch (patches/expo-alarm-kit@0.1.11.patch) handles pod installation:
+ *  - expo-module.config.json: adds podspecPath so use_expo_modules! finds the pod
+ *  - ios/ExpoAlarmKit.podspec: lowers minimum 26.1→26.0, adds s.frameworks='AlarmKit'
+ *  - ios/ExpoAlarmKitModule.swift: fixes AlarmPresentation.Alert stopButton compile error
  *
- * 1. Sets ios.deploymentTarget = "26.0" in Podfile.properties.json so the Podfile
- *    picks up the right platform (the Podfile default is 15.1 without this).
+ * This plugin does NOT add an explicit pod line — that would duplicate the one
+ * that use_expo_modules!/autolinking adds from the pnpm store path, causing:
+ *   [!] There are multiple dependencies with different sources for `ExpoAlarmKit`
  *
- * 2. Adds an explicit `pod 'ExpoAlarmKit', :path => '...'` line inside the
- *    target block so CocoaPods always installs the pod — independent of whether
- *    expo-modules-autolinking finds the package via the pnpm patch.
- *
- * 3. Injects Ruby into the existing `post_install` block so that — at
- *    `pod install` time — the "Generate Expo Modules Provider" build-phase
- *    command gets `--packages expo-alarm-kit` prepended.  This makes Expo's
- *    autolinking code-generator include ExpoAlarmKitModule.self in the
- *    generated ExpoModulesProvider.swift at Xcode build time.
- *
- * 4. Links AlarmKit.framework directly in the Xcode project via withXcodeProject
- *    so the Swift import compiles even when CocoaPods xcconfig linkage is not
- *    propagated to the app target.
- *
- * Run order during prebuild:
- *   withExpoAlarmKitPodfile  (withDangerousMod — runs after all other mods)
- *   withAlarmKitFramework    (withXcodeProject — runs before dangerous mods)
+ * What this plugin does instead:
+ *  1. Sets ios.deploymentTarget = "26.0" in Podfile.properties.json
+ *     (Podfile defaults to 15.1 without this, causing the pod to be skipped)
+ *  2. Injects Ruby into post_install to patch the "Generate Expo Modules Provider"
+ *     build phase with --packages expo-alarm-kit (safety net for ExpoModulesProvider.swift)
+ *  3. Links AlarmKit.framework directly in the Xcode project
  */
 
 const { withDangerousMod, withXcodeProject } = require("@expo/config-plugins");
 const fs = require("fs");
 const path = require("path");
 
-const POD_NAME = "ExpoAlarmKit";
 const PKG_NAME = "expo-alarm-kit";
 const FRAMEWORK = "AlarmKit.framework";
-
-const POD_MARKER = "# expo-alarm-kit: explicit pod (withExpoAlarmKit)";
 const POST_MARKER = "# expo-alarm-kit: build-phase patch (withExpoAlarmKit)";
 
-// ── Step 1-3: Podfile + Podfile.properties.json ──────────────────────────────
+// ── Step 1+2: Podfile.properties.json + post_install patch ───────────────────
 function withExpoAlarmKitPodfile(config) {
   return withDangerousMod(config, [
     "ios",
     async (cfg) => {
       const iosDir = cfg.modRequest.platformProjectRoot;
 
-      // ── 1. Set deployment target ─────────────────────────────────────────
+      // 1. Write ios.deploymentTarget = "26.0" so the Podfile platform line
+      //    resolves to 26.0 instead of the default 15.1.
       const propsPath = path.join(iosDir, "Podfile.properties.json");
       let props = {};
       try {
@@ -61,41 +52,13 @@ function withExpoAlarmKitPodfile(config) {
         );
       }
 
-      // ── 2 + 3. Modify Podfile ────────────────────────────────────────────
+      // 2. Inject build-phase patching into the existing post_install block.
+      //    Inserts AFTER the closing `)` of react_native_post_install(...).
+      //    This ensures expo-alarm-kit is passed to --packages in the
+      //    Generate Expo Modules Provider build phase script at Xcode build time.
       const podfilePath = path.join(iosDir, "Podfile");
       let podfile = fs.readFileSync(podfilePath, "utf8");
 
-      // 2. Add explicit pod line before the `post_install` block.
-      //    Skip if autolinking already added an ExpoAlarmKit entry (e.g. when
-      //    the pnpm patch still contains podspecPath in expo-module.config.json).
-      //    Adding a second entry with a different :path causes a CocoaPods error.
-      const podAlreadyPresent = podfile.includes(`pod '${POD_NAME}'`);
-      if (!podfile.includes(POD_MARKER) && !podAlreadyPresent) {
-        const podLine =
-          `\n  ${POD_MARKER}\n` +
-          `  pod '${POD_NAME}', :path => '../node_modules/${PKG_NAME}/ios'\n`;
-
-        // Insert right before `  post_install do` (which is inside the target block)
-        const postInstallIdx = podfile.indexOf("\n  post_install do");
-        if (postInstallIdx !== -1) {
-          podfile =
-            podfile.slice(0, postInstallIdx) +
-            "\n" +
-            podLine +
-            podfile.slice(postInstallIdx);
-        } else {
-          // Fallback: append before the last bare `end` in the file
-          podfile = podfile.replace(/(\nend\s*)$/, `\n${podLine}\nend\n`);
-        }
-        console.log(`[withExpoAlarmKit] Added ${POD_NAME} pod to Podfile`);
-      } else if (podAlreadyPresent && !podfile.includes(POD_MARKER)) {
-        console.log(
-          `[withExpoAlarmKit] ${POD_NAME} already in Podfile via autolinking — skipping explicit pod line`
-        );
-      }
-
-      // 3. Inject build-phase patching into the existing post_install block.
-      //    We insert AFTER the closing `)` of react_native_post_install(...).
       if (!podfile.includes(POST_MARKER)) {
         const rubySnippet = [
           "",
@@ -120,8 +83,8 @@ function withExpoAlarmKitPodfile(config) {
           "",
         ].join("\n");
 
-        // Match the multiline react_native_post_install(...) call followed by `  end`
-        // Pattern: 4-space-indented call, any content, then `    )` on its own line, then `  end`
+        // Match the multiline react_native_post_install(...) call, then insert
+        // our snippet before the closing `end` of the post_install block.
         const rnPostRegex =
           /([ \t]+react_native_post_install\([\s\S]*?\n[ \t]+\)[ \t]*\n)([ \t]*end\b)/;
 
@@ -137,15 +100,16 @@ function withExpoAlarmKitPodfile(config) {
         console.log(
           `[withExpoAlarmKit] Injected ${PKG_NAME} build-phase patch into post_install`
         );
+
+        fs.writeFileSync(podfilePath, podfile, "utf8");
       }
 
-      fs.writeFileSync(podfilePath, podfile, "utf8");
       return cfg;
     },
   ]);
 }
 
-// ── Step 4: Link AlarmKit.framework directly in Xcode project ────────────────
+// ── Step 3: Link AlarmKit.framework in the Xcode project ─────────────────────
 function withAlarmKitFramework(config) {
   return withXcodeProject(config, (cfg) => {
     const xcodeProject = cfg.modResults;
