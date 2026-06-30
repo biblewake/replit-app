@@ -242,9 +242,11 @@ function RootLayoutNav() {
       const payload = getLaunchPayload();
       if (!payload?.alarmId) return;
       // Omit 'type' so alarm-ringing.tsx derives it from alarm.wakeUpCheck.
+      // fromAlarmKit=true signals that the native UI already handled dismiss/sound,
+      // so alarm-ringing.tsx should skip the slide-to-stop ringing phase.
       router.push({
         pathname: "/alarm-ringing",
-        params: { alarmId: payload.alarmId },
+        params: { alarmId: payload.alarmId, fromAlarmKit: "true" },
       });
     };
 

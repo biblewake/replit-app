@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Animated,
   Easing,
@@ -17,10 +17,8 @@ import { useRouter } from "expo-router";
 import { useColors } from "@/hooks/useColors";
 import { useIsNativeTabs } from "@/hooks/useIsNativeTabs";
 import { Alarm, useAlarms } from "@/context/AlarmContext";
-import { useAlarmPermission } from "@/hooks/useAlarmPermission";
 import AlarmCard from "@/components/AlarmCard";
 import AlarmEditSheet from "@/components/AlarmEditSheet";
-import AlarmPermissionSheet from "@/components/AlarmPermissionSheet";
 
 const TAB_BAR_HEIGHT = Platform.OS === "web" ? 84 : 49;
 
@@ -29,33 +27,11 @@ export default function AlarmsScreen() {
   const insets = useSafeAreaInsets();
   const isNativeTabs = useIsNativeTabs();
   const router = useRouter();
-  const { alarms, addAlarm, updateAlarm, deleteAlarm, toggleAlarm, alarmKitDenied, clearAlarmKitDenied, alarmKitConfigureError, clearAlarmKitConfigureError } = useAlarms();
-  const { hasPermission, hasExactAlarmPermission, alarmKitAuthorized } = useAlarmPermission();
-  // On iOS 26+, AlarmKit authorization is the relevant gate; on Android, exact-alarm permission.
-  const allPermissionsGranted =
-    hasPermission &&
-    hasExactAlarmPermission &&
-    (Platform.OS !== "ios" || alarmKitAuthorized);
+  const { alarms, addAlarm, updateAlarm, deleteAlarm, toggleAlarm, alarmKitConfigureError, clearAlarmKitConfigureError } = useAlarms();
   const [editingAlarm, setEditingAlarm] = useState<Alarm | null>(null);
   const [showNewAlarm, setShowNewAlarm] = useState(false);
   const [newAlarmType, setNewAlarmType] = useState<"verse" | "normal">("verse");
   const [fabOpen, setFabOpen] = useState(false);
-  const [showPermissionSheet, setShowPermissionSheet] = useState(false);
-
-  // iOS 26+: show the AlarmKit permission sheet when the user denies Alarms access.
-  const [showAlarmKitSheet, setShowAlarmKitSheet] = useState(false);
-  useEffect(() => {
-    if (alarmKitDenied) setShowAlarmKitSheet(true);
-  }, [alarmKitDenied]);
-
-  const permissionSheetType =
-    !hasPermission
-      ? ("notification" as const)
-      : Platform.OS === "ios" && !alarmKitAuthorized
-      ? ("alarmKit" as const)
-      : ("exactAlarm" as const);
-
-  const openPermissionSheet = () => setShowPermissionSheet(true);
 
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const pill1TranslateY = useRef(new Animated.Value(40)).current;
@@ -70,11 +46,6 @@ export default function AlarmsScreen() {
   const openFab = () => {
     if (fabOpen) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (!allPermissionsGranted) {
-      setShowPermissionSheet(true);
-      return;
-    }
-
     currentAnim.current?.stop();
     overlayOpacity.setValue(0);
     pill1TranslateY.setValue(40);
@@ -187,10 +158,6 @@ export default function AlarmsScreen() {
 
   const handlePickAlarmType = (type: "verse" | "normal") => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (!allPermissionsGranted) {
-      closeFab(() => setShowPermissionSheet(true));
-      return;
-    }
     closeFab(() => {
       setNewAlarmType(type);
       setShowNewAlarm(true);
@@ -273,7 +240,7 @@ export default function AlarmsScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               setEditingAlarm(item);
             }}
-            onPermissionDenied={!allPermissionsGranted ? openPermissionSheet : undefined}
+            onPermissionDenied={undefined}
           />
         )}
       />
@@ -366,19 +333,6 @@ export default function AlarmsScreen() {
         alarm={editingAlarm}
         onSave={handleSaveEdit}
         onDelete={handleDelete}
-      />
-      <AlarmPermissionSheet
-        visible={showPermissionSheet}
-        onClose={() => setShowPermissionSheet(false)}
-        permissionType={permissionSheetType}
-      />
-      <AlarmPermissionSheet
-        visible={showAlarmKitSheet}
-        onClose={() => {
-          setShowAlarmKitSheet(false);
-          clearAlarmKitDenied();
-        }}
-        permissionType="alarmKit"
       />
     </View>
   );

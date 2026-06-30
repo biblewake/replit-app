@@ -315,7 +315,7 @@ export async function scheduleAlarmKit(
     ? 0
     : alarm.hour;
 
-  const title = alarm.name || "Bible Wake";
+  const title = "Bible Wake";
   const soundName = soundNameFromSoundId(alarm.soundId);
 
   // Respect scheduleType: "one-time" always takes the one-off path regardless

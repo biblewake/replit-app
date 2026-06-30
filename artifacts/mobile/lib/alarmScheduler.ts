@@ -107,10 +107,8 @@ export async function scheduleAlarmNotifications(alarm: Alarm): Promise<void> {
   await ensureAndroidAlarmChannel();
 
   const content: Notifications.NotificationContentInput = {
-    title: alarm.name || "Bible Wake",
-    body: alarm.verseRef
-      ? `Time to recite: ${alarm.verseRef}`
-      : "Time to wake up!",
+    title: "Bible Wake",
+    body: alarm.name || (alarm.verseRef ? `Time to recite: ${alarm.verseRef}` : "Time to wake up!"),
     data: {
       alarmId: alarm.id,
       type: alarm.wakeUpCheck ? "wakeup" : "verse",

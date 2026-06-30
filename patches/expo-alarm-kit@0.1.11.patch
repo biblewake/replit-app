@@ -29,7 +29,51 @@ diff --git a/ios/ExpoAlarmKit.podspec b/ios/ExpoAlarmKit.podspec
 diff --git a/ios/ExpoAlarmKitModule.swift b/ios/ExpoAlarmKitModule.swift
 --- a/ios/ExpoAlarmKitModule.swift
 +++ b/ios/ExpoAlarmKitModule.swift
-@@ -585,7 +585,12 @@
+@@ -350,20 +350,9 @@
+             )
+ 
+-            // Create snooze button
+-            let snoozeLabel = options.snoozeButtonLabel ?? "Snooze"
+-            let snoozeColor = options.snoozeButtonColor != nil ? colorFromHex(options.snoozeButtonColor!) : Color.white
+-            let snoozeButton = AlarmButton(
+-                text: LocalizedStringResource(stringLiteral: snoozeLabel),
+-                textColor: snoozeColor,
+-                systemImageName: "clock.badge.checkmark"
+-            )
+-
+             // Create alert presentation with intent if needed
+             let alertPresentation = AlarmPresentation.Alert(
+                 title: LocalizedStringResource(stringLiteral: options.title),
+-                stopButton: stopButton,
+-                secondaryButton: snoozeButton,
+-                secondaryButtonBehavior: .countdown
++                stopButton: stopButton
+             )
+ 
+             let presentation = AlarmPresentation(alert: alertPresentation)
+@@ -470,20 +459,9 @@
+             )
+ 
+-            // Create snooze button
+-            let snoozeLabel = options.snoozeButtonLabel ?? "Snooze"
+-            let snoozeColor = options.snoozeButtonColor != nil ? colorFromHex(options.snoozeButtonColor!) : Color.white
+-            let snoozeButton = AlarmButton(
+-                text: LocalizedStringResource(stringLiteral: snoozeLabel),
+-                textColor: snoozeColor,
+-                systemImageName: "clock.badge.checkmark"
+-            )
+-
+             // Create alert presentation
+             let alertPresentation = AlarmPresentation.Alert(
+                 title: LocalizedStringResource(stringLiteral: options.title),
+-                stopButton: stopButton,
+-                secondaryButton: snoozeButton,
+-                secondaryButtonBehavior: .countdown
++                stopButton: stopButton
+             )
+ 
+             let presentation = AlarmPresentation(alert: alertPresentation)
+@@ -585,7 +563,12 @@
  
              // Create alert presentation for when timer fires
 -            let alert = AlarmPresentation.Alert(

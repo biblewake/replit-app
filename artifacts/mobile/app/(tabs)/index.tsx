@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Image,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -21,7 +22,6 @@ import { useAlarmPermission } from "@/hooks/useAlarmPermission";
 import { useAuth } from "@/context/AuthContext";
 import WeekDots from "@/components/WeekDots";
 import AlarmEditSheet from "@/components/AlarmEditSheet";
-import AlarmPermissionSheet from "@/components/AlarmPermissionSheet";
 import VerseCard from "@/components/VerseCard";
 import { BIBLE_VERSES } from "@/constants/verses";
 import { getSoundById } from "@/constants/alarmSounds";
@@ -74,15 +74,9 @@ export default function HomeScreen() {
     hasPermission &&
     hasExactAlarmPermission &&
     (Platform.OS !== "ios" || alarmKitAuthorized);
-  const permissionSheetType = !hasPermission
-    ? ("notification" as const)
-    : Platform.OS === "ios" && !alarmKitAuthorized
-    ? ("alarmKit" as const)
-    : ("exactAlarm" as const);
   const { user, profile } = useAuth();
   const [showAddAlarm, setShowAddAlarm] = useState(false);
   const [editingAlarm, setEditingAlarm] = useState<import("@/context/AlarmContext").Alarm | null>(null);
-  const [showPermissionSheet, setShowPermissionSheet] = useState(false);
   const [todayVerse, setTodayVerse] = useState<TodayVerseState | null>(null);
 
   const todayIndex = new Date().getDay();
@@ -209,7 +203,7 @@ export default function HomeScreen() {
         {!allPermissionsGranted && (
           <Pressable
             style={[styles.permBanner, { backgroundColor: "#FF3B3012", borderColor: "#FF3B3030" }]}
-            onPress={() => setShowPermissionSheet(true)}
+            onPress={() => void Linking.openSettings()}
           >
             <View style={styles.permBannerIcon}>
               <Image
@@ -262,10 +256,6 @@ export default function HomeScreen() {
                 <Switch
                   value={nextAlarm.enabled}
                   onValueChange={() => {
-                    if (!allPermissionsGranted) {
-                      setShowPermissionSheet(true);
-                      return;
-                    }
                     Haptics.selectionAsync();
                     toggleAlarm(nextAlarm.id);
                   }}
@@ -377,10 +367,6 @@ export default function HomeScreen() {
               style={styles.emptyAddBtn}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                if (!allPermissionsGranted) {
-                  setShowPermissionSheet(true);
-                  return;
-                }
                 setShowAddAlarm(true);
               }}
             >
@@ -454,11 +440,6 @@ export default function HomeScreen() {
         onSave={(updated) => {
           if (editingAlarm) return updateAlarm(editingAlarm.id, updated);
         }}
-      />
-      <AlarmPermissionSheet
-        visible={showPermissionSheet}
-        onClose={() => setShowPermissionSheet(false)}
-        permissionType={permissionSheetType}
       />
     </View>
   );

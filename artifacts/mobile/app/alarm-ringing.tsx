@@ -45,7 +45,7 @@ function formatClock(date: Date) {
 export default function AlarmRingingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ alarmId: string; type: "verse" | "wakeup"; isTest?: string }>();
+  const params = useLocalSearchParams<{ alarmId: string; type: "verse" | "wakeup"; isTest?: string; fromAlarmKit?: string }>();
   const { alarms } = useAlarms();
   const { user, profile } = useAuth();
   const now = useCurrentTime();
@@ -65,7 +65,10 @@ export default function AlarmRingingScreen() {
   const alarm = alarms.find((a) => a.id === params.alarmId) ?? alarms[0] ?? null;
   const alarmType: "verse" | "wakeup" = params.type ?? (alarm?.wakeUpCheck ? "wakeup" : "verse");
 
-  const [phase, setPhase] = useState<"ringing" | "recital">("ringing");
+  // When launched via AlarmKit dismiss, the native alarm UI already handled sound
+  // and the user already slid to stop at the native level — skip our ringing screen.
+  const fromAlarmKit = params.fromAlarmKit === "true";
+  const [phase, setPhase] = useState<"ringing" | "recital">(fromAlarmKit ? "recital" : "ringing");
   const soundRef = useRef<Audio.Sound | null>(null);
 
   const thumbX = useRef(new Animated.Value(0)).current;
@@ -73,6 +76,7 @@ export default function AlarmRingingScreen() {
   const [slid, setSlid] = useState(false);
 
   useEffect(() => {
+    if (fromAlarmKit) return; // Native AlarmKit already handled alarm sound; no need to play here
     let mounted = true;
     const playAlarm = async () => {
       try {
