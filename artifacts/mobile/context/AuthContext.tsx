@@ -426,15 +426,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    // Flip onboardingComplete=false BEFORE calling supabase.auth.signOut() so
+    // that the very first gatekeeper re-render sees !onboardingComplete and
+    // routes to /onboarding (step 0) rather than hitting the !user && !isGuest
+    // branch (step 29) that fires when user becomes null ahead of this flag.
     setProfile(null);
     setIsGuest(false);
+    setOnboardingComplete(false);
+    await supabase.auth.signOut();
     try {
       await AsyncStorage.removeItem(ONBOARDING_COMPLETE_KEY);
     } catch {
-      // non-fatal
+      // non-fatal — in-memory flag is already false
     }
-    setOnboardingComplete(false);
   }, []);
 
   const isAnonymous = isGuest || (user?.is_anonymous === true);

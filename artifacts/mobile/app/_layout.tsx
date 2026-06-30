@@ -174,11 +174,13 @@ function RootLayoutNav() {
       return;
     }
 
-    // Onboarding complete but no session — user just signed out.
-    // Send them to the sign-in step (step 29) of onboarding instead of
-    // restarting the full quiz from step 0.
+    // Onboarding complete but no session — user signed out or session expired.
+    // Route to /onboarding (step 0) so a new account can start the full quiz.
+    // signOut() already sets onboardingComplete=false before this branch fires,
+    // so in practice this branch is only reached on session expiry (where
+    // onboardingComplete is still true but there is no active user).
     if (!user && !isGuest) {
-      if (!inOnboarding) router.replace("/onboarding?step=29");
+      if (!inOnboarding) router.replace("/onboarding");
       return;
     }
 
