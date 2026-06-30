@@ -65,8 +65,12 @@ function withExpoAlarmKitPodfile(config) {
       const podfilePath = path.join(iosDir, "Podfile");
       let podfile = fs.readFileSync(podfilePath, "utf8");
 
-      // 2. Add explicit pod line before the `post_install` block
-      if (!podfile.includes(POD_MARKER)) {
+      // 2. Add explicit pod line before the `post_install` block.
+      //    Skip if autolinking already added an ExpoAlarmKit entry (e.g. when
+      //    the pnpm patch still contains podspecPath in expo-module.config.json).
+      //    Adding a second entry with a different :path causes a CocoaPods error.
+      const podAlreadyPresent = podfile.includes(`pod '${POD_NAME}'`);
+      if (!podfile.includes(POD_MARKER) && !podAlreadyPresent) {
         const podLine =
           `\n  ${POD_MARKER}\n` +
           `  pod '${POD_NAME}', :path => '../node_modules/${PKG_NAME}/ios'\n`;
@@ -84,6 +88,10 @@ function withExpoAlarmKitPodfile(config) {
           podfile = podfile.replace(/(\nend\s*)$/, `\n${podLine}\nend\n`);
         }
         console.log(`[withExpoAlarmKit] Added ${POD_NAME} pod to Podfile`);
+      } else if (podAlreadyPresent && !podfile.includes(POD_MARKER)) {
+        console.log(
+          `[withExpoAlarmKit] ${POD_NAME} already in Podfile via autolinking — skipping explicit pod line`
+        );
       }
 
       // 3. Inject build-phase patching into the existing post_install block.
